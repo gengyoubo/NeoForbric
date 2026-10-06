@@ -92,7 +92,7 @@ public final class GamePreparation {
         System.out.println("Prepared Minecraft 1.21.1: " + libraries.size() + " verified libraries, official → mojang / intermediary");
     }
 
-    private static Path fetch(Path file, String url, String expected, String algorithm) throws Exception {
+    static Path fetch(Path file, String url, String expected, String algorithm) throws Exception {
         if (Files.exists(file)) {
             if (!hash(Files.readAllBytes(file), algorithm).equals(expected)) throw new Failure("INPUT_CHECKSUM", "Cached input differs: " + file);
             return file;
@@ -103,7 +103,10 @@ public final class GamePreparation {
         if (bytes.length > 70 * 1024 * 1024 || !hash(bytes, algorithm).equals(expected)) throw new Failure("INPUT_CHECKSUM", "Downloaded input differs: " + url);
         Files.write(file, bytes); return file;
     }
-    private static String hash(byte[] bytes, String algorithm) throws Exception { return HexFormat.of().formatHex(MessageDigest.getInstance(algorithm).digest(bytes)); }
+    static String hash(byte[] bytes, String algorithm) {
+        try { return HexFormat.of().formatHex(MessageDigest.getInstance(algorithm).digest(bytes)); }
+        catch (java.security.NoSuchAlgorithmException impossible) { throw new AssertionError(impossible); }
+    }
     private static String text(JarFile jar, String name) throws IOException {
         var entry = jar.getJarEntry(name); if (entry == null) throw new Failure("BUNDLE_ENTRY", "Missing " + name);
         try (InputStream in = jar.getInputStream(entry)) { return new String(in.readAllBytes(), StandardCharsets.UTF_8); }
@@ -164,7 +167,7 @@ public final class GamePreparation {
         List<Path> classpath = new ArrayList<>(inputs.libraries()); classpath.add(from.equals("intermediary") ? inputs.intermediaryGame() : inputs.game());
         remap(input, output, mappings(inputs.mappings(), inputs.intermediaryMappings()), from, to, classpath);
     }
-    private static void remap(Path input, Path output, MemoryMappingTree tree, String from, String to, List<Path> classpath) throws IOException {
+    static void remap(Path input, Path output, MemoryMappingTree tree, String from, String to, List<Path> classpath) throws IOException {
         Path temporary = output.resolveSibling(output.getFileName() + ".remapping.jar"); Files.deleteIfExists(temporary);
         TinyRemapper remapper = TinyRemapper.newRemapper().withMappings(TinyUtils.createMappingProvider(tree, from, to)).threads(2).build();
         try {
@@ -175,7 +178,7 @@ public final class GamePreparation {
             normalize(temporary, output);
         } finally { remapper.finish(); Files.deleteIfExists(temporary); }
     }
-    private static void add(List<Map<String, String>> files, Path root, Path path, String role, String original, String coordinate) throws IOException {
+    static void add(List<Map<String, String>> files, Path root, Path path, String role, String original, String coordinate) throws IOException {
         Map<String, String> entry = new LinkedHashMap<>(); entry.put("path", root.relativize(path).toString().replace('\\', '/'));
         entry.put("sha256", Archive.sha256(Files.readAllBytes(path))); entry.put("role", role); entry.put("originalSha256", original); entry.put("coordinate", coordinate); files.add(entry);
     }

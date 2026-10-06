@@ -46,6 +46,7 @@ tasks.register('minecraftTest', Test) {
     testClassesDirs = sourceSets.minecraftTest.output.classesDirs
     classpath = sourceSets.minecraftTest.runtimeClasspath
     exclude '**/MinecraftServerRuntimeTest.class'
+    exclude '**/MinecraftClientRuntimeTest.class'
     dependsOn ':prepareFabricProbe'
     systemProperty 'minecraft.runtime', rootProject.layout.buildDirectory.file('minecraft/runtime.json').get().asFile.absolutePath
     systemProperty 'minecraft.mods', rootProject.layout.buildDirectory.dir('minecraft/mods').get().asFile.absolutePath
@@ -64,6 +65,20 @@ tasks.register('minecraftServerTest', Test) {
     systemProperty 'minecraft.mods', rootProject.layout.buildDirectory.dir('minecraft/mods').get().asFile.absolutePath
     systemProperty 'loader.runtimeClasspath', sourceSets.main.runtimeClasspath.asPath
     systemProperty 'minecraft.acceptEula', providers.gradleProperty('acceptEula').getOrElse('false')
+}
+
+tasks.register('minecraftClientTest', Test) {
+    description = 'Open actual Windows x64 clients, render the main menu and verify failure auditing.'
+    group = 'verification'
+    useJUnitPlatform()
+    testClassesDirs = sourceSets.minecraftTest.output.classesDirs
+    classpath = sourceSets.minecraftTest.runtimeClasspath
+    include '**/MinecraftClientRuntimeTest.class'
+    dependsOn ':prepareFabricClientProbe'
+    systemProperty 'minecraft.clientRuntime', rootProject.layout.buildDirectory.file('minecraft-client/runtime.json').get().asFile.absolutePath
+    systemProperty 'minecraft.clientMods', rootProject.layout.buildDirectory.dir('minecraft-client/mods').get().asFile.absolutePath
+    systemProperty 'minecraft.clientAssets', rootProject.layout.buildDirectory.dir('minecraft-client/assets').get().asFile.absolutePath
+    systemProperty 'loader.runtimeClasspath', sourceSets.main.runtimeClasspath.asPath
 }
 
 // IDE imports resolve auxiliary artifacts that ordinary compilation never requests.

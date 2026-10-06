@@ -7,7 +7,7 @@ import net.minecraft.world.level.saveddata.SavedData;
 
 /** Probe-owned vanilla SavedData: proves the registered item survives a world save/reload. */
 public final class ProbeData extends SavedData {
-    public static final Factory<ProbeData> FACTORY = new Factory<>(ProbeData::new, ProbeData::load, null);
+    public static final Factory<ProbeData> FACTORY = new Factory<>(ProbeData::new, ProbeData::load, net.minecraft.util.datafix.DataFixTypes.SAVED_DATA_COMMAND_STORAGE);
     public ItemStack stack = new ItemStack(ItemProbe.ITEM, 3);
     public int launches;
     private static ProbeData load(CompoundTag tag, HolderLookup.Provider registries) {

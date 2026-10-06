@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neoforbric.api.ModInitializer;
 import org.neoforbric.api.GameHooks;
 import org.neoforbric.api.ServerHooks;
+import org.neoforbric.api.ClientHooks;
 import java.util.concurrent.CountDownLatch;
 import org.neoforbric.loader.*;
 import org.neoforbric.minecraft.*;
@@ -29,7 +30,7 @@ public final class Bootstrap {
         CountDownLatch completed = new CountDownLatch(1);
         Thread[] shutdownHook = {null};
         try {
-            audit.mode(options.inspect() ? "metadata-inspect" : options.runServer() ? "minecraft-1.21.1-server" : options.minecraft() ? "minecraft-1.21.1-server-settings" : "java-fixture");
+            audit.mode(options.inspect() ? "metadata-inspect" : options.client() ? "minecraft-1.21.1-client" : options.runServer() ? "minecraft-1.21.1-server" : options.minecraft() ? "minecraft-1.21.1-server-settings" : "java-fixture");
             audit.record(phase, "runtime", "JVM", Map.of("javaVersion", Runtime.version().toString(),
                     "javaVendor", System.getProperty("java.vendor"), "targetMinecraft", "1.21.1", "inspect", Boolean.toString(options.inspect())));
             if (Runtime.version().feature() != 21) throw new Failure("JAVA_VERSION", "Prototype requires Java 21, got " + Runtime.version());
@@ -52,7 +53,8 @@ public final class Bootstrap {
             var mods = Resolver.resolve(candidates, options.side(), audit, options.minecraft());
             phase("PREPARE");
             RuntimeInputs runtime = options.minecraft() ? RuntimeInputs.read(options.runtime(), audit) : null;
-            Archive game = Archive.read(runtime == null ? options.game() : runtime.game());
+            if (runtime != null && !runtime.side().equals(options.side())) throw new Failure("GAME_SIDE", "Runtime inputs belong to " + runtime.side() + ", requested " + options.side());
+            Archive game = runtime == null ? Archive.read(options.game()) : Archive.readRuntimeGame(runtime.game());
             audit.record(phase, "game-input", game.path().toString(), Map.of("sha256", game.hash()));
             List<Archive> inputs = new ArrayList<>();
             inputs.add(game);
@@ -60,6 +62,7 @@ public final class Bootstrap {
             if (runtime != null) {
                 for (Path library : runtime.libraries()) { Archive archive = Archive.read(library); inputs.add(archive); libraries.add(archive.path()); }
                 pipeline.add(new RegistryWindowHook(runtime.registryClassSha256()));
+                if (options.client()) pipeline.add(new ClientLifecycleHook(Archive.sha256(game.read("net/minecraft/client/Minecraft.class")), Archive.sha256(game.read("net/minecraft/client/main/Main.class"))));
                 if (options.runServer()) pipeline.add(new ServerLifecycleHook(Archive.sha256(game.read("net/minecraft/server/MinecraftServer.class")), Archive.sha256(game.read("net/minecraft/server/Main.class"))));
             }
             List<Discovery.Candidate> preparedMods = new ArrayList<>();
@@ -86,13 +89,15 @@ public final class Bootstrap {
                 Thread thread = Thread.currentThread();
                 ClassLoader previous = thread.getContextClassLoader();
                 java.io.PrintStream previousOut = System.out, previousErr = System.err;
+                String previousLwjgl = System.getProperty("org.lwjgl.librarypath");
                 try {
                     thread.setContextClassLoader(loader);
+                    if (options.client()) System.setProperty("org.lwjgl.librarypath", runtime.natives().toString());
                     // Check every entrypoint shape before executing any candidate static initializer / constructor.
                     List<Initializer> initializers = new ArrayList<>();
                     for (var mod : preparedMods) {
                         if (mod.metadata().ecosystem() == Metadata.Ecosystem.FABRIC) {
-                            for (var entry : FabricAdmission.entries(mod)) initializers.add(preflight(mod.metadata().id(), entry.group(), entry.className(), Class.forName(entry.api(), false, parent), entry.method(), loader));
+                            for (var entry : FabricAdmission.entries(mod, options.side())) initializers.add(preflight(mod.metadata().id(), entry.group(), entry.className(), Class.forName(entry.api(), false, parent), entry.method(), loader));
                         } else initializers.add(preflight(mod.metadata().id(), "prototype", mod.metadata().entrypoint(), ModInitializer.class, "onInitialize", loader));
                     }
                     Class<?> mainType = Class.forName(options.mainClass(), false, loader);
@@ -102,8 +107,8 @@ public final class Bootstrap {
                     Method verifier = null;
                     if (options.verifier() != null) {
                         Class<?> verifyType = Class.forName(options.verifier(), false, loader);
-                        if (options.runServer()) {
-                            try { verifier = verifyType.getMethod("verifyServer", Object.class); }
+                        if (options.runServer() || options.client()) {
+                            try { verifier = verifyType.getMethod(options.client() ? "verifyClient" : "verifyServer", Object.class); }
                             catch (NoSuchMethodException ordinaryVerifier) { verifier = verifyType.getMethod("verify"); }
                         } else verifier = verifyType.getMethod("verify");
                         if (!Modifier.isPublic(verifyType.getModifiers()) || !Modifier.isStatic(verifier.getModifiers()) || verifier.getReturnType() != void.class)
@@ -114,12 +119,30 @@ public final class Bootstrap {
                     } else {
                         try (GameHooks.Session hooks = GameHooks.attach(() -> {
                             phase("REGISTRY_OPEN"); audit.record(phase, "registry-window", "builtin", Map.of("state", "open", "anchor", "createContents-before-freeze"));
-                            initialize(initializers.stream().filter(i -> !i.group().equals("server")).toList(), initialized);
+                            initialize(initializers.stream().filter(i -> i.group().equals("main") || i.group().equals("prototype")).toList(), initialized);
                         }, () -> {
                             phase("REGISTRY_FROZEN"); audit.record(phase, "registry-window", "builtin", Map.of("state", "frozen", "freeze", "vanilla"));
-                            initialize(initializers.stream().filter(i -> i.group().equals("server")).toList(), initialized);
+                            initialize(initializers.stream().filter(i -> i.group().equals(options.side())).toList(), initialized);
                         })) {
-                            if (options.runServer()) {
+                            if (options.client()) {
+                                Method menuVerifier = verifier;
+                                try (ClientHooks.Session client = ClientHooks.attach(state -> {
+                                    audit.record("CLIENT", "client-lifecycle", state, Map.of("thread", Thread.currentThread().getName()));
+                                    if (state.equals("main-menu")) {
+                                        try { audit.write(options.audit(), "RUNNING"); }
+                                        catch (IOException error) { throw new Failure("AUDIT_IO", "Could not write client audit", error); }
+                                    }
+                                }, instance -> {
+                                    if (menuVerifier != null) {
+                                        try { menuVerifier.invoke(null, menuVerifier.getParameterCount() == 0 ? new Object[0] : new Object[]{instance}); }
+                                        catch (ReflectiveOperationException error) { throw new Failure("CLIENT_VERIFY", "Main menu verifier failed", error instanceof InvocationTargetException wrapper ? wrapper.getCause() : error); }
+                                        audit.record("CLIENT", "verification-complete", options.verifier(), Map.of("loader", "G", "thread", Thread.currentThread().getName()));
+                                    }
+                                }, options.stopAfterFrames())) {
+                                    invokeMain(main, options); hooks.verifyComplete(); client.verifyComplete();
+                                    audit.record("CLIENT", "client-complete", "Minecraft", Map.of("framesAfterMenu", Integer.toString(client.frames())));
+                                }
+                            } else if (options.runServer()) {
                                 Method firstTickVerifier = verifier;
                                 try (ServerHooks.Session server = ServerHooks.attach(state -> {
                                     audit.record("SERVER", "server-lifecycle", state, Map.of("thread", Thread.currentThread().getName()));
@@ -150,13 +173,16 @@ public final class Bootstrap {
                                     audit.record("SERVER", "server-complete", "Minecraft", Map.of("ticks", Integer.toString(server.ticks()), "loaderClosedAfterThread", "true"));
                                 }
                             } else { invokeMain(main, options); hooks.verifyComplete(); }
-                            if (!options.runServer() && verifier != null) {
+                            if (!options.runServer() && !options.client() && verifier != null) {
                                 phase("VERIFY"); verifier.invoke(null);
                                 audit.record(phase, "verification-complete", options.verifier(), Map.of("loader", "G"));
                             }
                         }
                     }
                 } finally {
+                    if (options.client()) {
+                        if (previousLwjgl == null) System.clearProperty("org.lwjgl.librarypath"); else System.setProperty("org.lwjgl.librarypath", previousLwjgl);
+                    }
                     thread.setContextClassLoader(previous);
                     if (options.minecraft()) {
                         System.setOut(previousOut); System.setErr(previousErr);

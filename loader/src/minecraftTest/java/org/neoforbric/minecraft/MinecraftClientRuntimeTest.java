@@ -1,0 +1,53 @@
+package org.neoforbric.minecraft;
+
+import com.google.gson.*;
+import java.nio.file.*;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import javax.imageio.ImageIO;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.*;
+
+class MinecraftClientRuntimeTest {
+    @TempDir Path temporary;
+    private record Launch(int status, String output, JsonObject audit) {}
+    @Test void nativeWindowLoadsResourcesRendersMainMenuAndClosesAfterFiveFrames() throws Exception {
+        Launch launch = launch(false);
+        assertEquals(0, launch.status(), launch.output()); assertEquals("SUCCESS", launch.audit().get("outcome").getAsString());
+        assertEquals("minecraft-1.21.1-client", launch.audit().get("mode").getAsString());
+        assertTrue(launch.output().contains("CLIENT_PROBE_OK main=1 client=1 menu=TitleScreen resourcesLoaded=true itemIdentity=true gameLoader=NeoForbric-Game"), launch.output());
+        var events = events(launch);
+        assertEquals(List.of("main", "client"), events.stream().filter(e -> e.get("type").getAsString().equals("entrypoint-complete")).map(e -> e.getAsJsonObject("details").get("group").getAsString()).toList());
+        assertEquals(List.of("main-menu", "stop-requested", "destroyed"), events.stream().filter(e -> e.get("type").getAsString().equals("client-lifecycle")).map(e -> e.get("subject").getAsString()).toList());
+        assertTrue(events.stream().anyMatch(e -> e.get("type").getAsString().equals("client-complete") && e.getAsJsonObject("details").get("framesAfterMenu").getAsString().equals("5")));
+        var image = ImageIO.read(temporary.resolve("screenshots/neoforbric-main-menu.png").toFile());
+        assertTrue(image.getWidth() >= 800 && image.getHeight() >= 450);
+        Set<Integer> colors = new HashSet<>();
+        for (int x = 0; x < image.getWidth(); x += 16) for (int y = 0; y < image.getHeight(); y += 16) colors.add(image.getRGB(x, y));
+        assertTrue(colors.size() > 100, "Framebuffer contains no rendered menu");
+    }
+    @Test void frameFailureCannotEscapeTheKernelAuditThroughVanillaSystemExit() throws Exception {
+        Launch launch = launch(true);
+        assertEquals(1, launch.status(), launch.output()); assertEquals("FAILED", launch.audit().get("outcome").getAsString());
+        assertTrue(launch.output().contains("intentional client frame failure"), launch.output());
+        assertFalse(events(launch).stream().anyMatch(e -> e.get("type").getAsString().equals("client-complete")));
+        assertTrue(Files.exists(temporary.resolve("crash-reports")));
+    }
+    private Launch launch(boolean fail) throws Exception {
+        Files.writeString(temporary.resolve("options.txt"), "onboardAccessibility:false\nrenderDistance:4\n");
+        Path java = Path.of(System.getProperty("java.home"), "bin/java.exe");
+        List<String> command = new ArrayList<>(List.of(java.toString(), "-Xmx2g"));
+        if (fail) command.add("-Dneoforbric.probe.client.fail=true");
+        command.addAll(List.of("-cp", System.getProperty("loader.runtimeClasspath"), "org.neoforbric.bootstrap.Main", "--minecraft-client", "--runtime", System.getProperty("minecraft.clientRuntime"),
+                "--mods", System.getProperty("minecraft.clientMods"), "--verify", "demo.clientprobe.ClientProbe", "--stop-after-frames", "5", "--audit", temporary.resolve("audit.json").toString(),
+                "--", "--username", "NeoForbricTest", "--uuid", "00000000-0000-0000-0000-000000000001", "--accessToken", "0", "--version", "1.21.1", "--gameDir", temporary.toString(),
+                "--assetsDir", System.getProperty("minecraft.clientAssets"), "--assetIndex", "17", "--width", "960", "--height", "540"));
+        Process process = new ProcessBuilder(command).directory(temporary.toFile()).redirectErrorStream(true).redirectOutput(temporary.resolve("output.txt").toFile()).start();
+        try {
+            assertTrue(process.waitFor(180, TimeUnit.SECONDS), "Client did not exit: " + Files.readString(temporary.resolve("output.txt")));
+            return new Launch(process.exitValue(), Files.readString(temporary.resolve("output.txt")), JsonParser.parseString(Files.readString(temporary.resolve("audit.json"))).getAsJsonObject());
+        } finally { if (process.isAlive()) process.destroyForcibly(); }
+    }
+    private List<JsonObject> events(Launch launch) { return launch.audit().getAsJsonArray("events").asList().stream().map(JsonElement::getAsJsonObject).toList(); }
+}

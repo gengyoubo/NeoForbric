@@ -1,0 +1,16 @@
+dependencies {
+    compileOnly 'net.fabricmc:fabric-loader:0.16.10@jar'
+    compileOnly files(rootProject.layout.buildDirectory.file('minecraft-client/client-mojang.jar'))
+    compileOnly fileTree(rootProject.layout.buildDirectory.dir('minecraft-client/libraries')) { include '*.jar' }
+}
+tasks.named('compileJava') { dependsOn ':prepareMinecraftClient' }
+tasks.register('remapJar', JavaExec) {
+    dependsOn tasks.named('jar'), ':prepareMinecraftClient'
+    javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+    classpath = project(':loader').sourceSets.main.runtimeClasspath
+    mainClass = 'org.neoforbric.minecraft.GamePreparation'
+    maxHeapSize = '2g'
+    args 'remap-probe', rootProject.layout.buildDirectory.dir('minecraft-client').get().asFile.absolutePath,
+            tasks.named('jar').get().archiveFile.get().asFile.absolutePath,
+            layout.buildDirectory.file('libs/fabric-client-intermediary.jar').get().asFile.absolutePath
+}

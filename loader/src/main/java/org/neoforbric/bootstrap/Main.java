@@ -16,6 +16,7 @@ public final class Main {
                     + "  --inspect --mods <directory> [--audit <json>]\n"
                     + "  --minecraft-server --runtime <runtime.json> --mods <directory> [--verify <class>] [--audit <json>] [-- --initSettings]\n"
                     + "  --minecraft-server --run-server --runtime <runtime.json> --mods <directory> [--verify <class>] [--stop-after-ticks <1..20000>] [--audit <json>] [-- nogui <args>]\n"
+                    + "  --minecraft-client --runtime <runtime.json> --mods <directory> [--verify <class>] [--stop-after-frames <1..20000>] [--audit <json>] -- <client args>\n"
                     + "Minecraft 1.21.1 supports plain Fabric Java main/server entrypoints; persistent servers require eula=true.");
             return 0;
         }

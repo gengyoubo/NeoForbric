@@ -20,6 +20,7 @@ class FabricProfileTest {
                  "entrypoints":{"server":["demo.Server"],"client":["demo.Client"],"main":[{"adapter":"default","value":"demo.Main"}]}}
                 """));
         assertEquals(List.of("main", "server"), FabricAdmission.entries(mod).stream().map(FabricAdmission.Entry::group).toList());
+        assertEquals(List.of("main", "client"), FabricAdmission.entries(mod, "client").stream().map(FabricAdmission.Entry::group).toList());
         assertEquals(List.of("native_sample"), Resolver.resolve(List.of(mod), "server", new AuditLog(), true).stream().map(m -> m.metadata().id()).toList());
         assertTrue(FabricAdmission.matches(">=21", "21.0.0"));
         assertFalse(FabricAdmission.matches("~1.21.1", "1.22.0"));
@@ -48,6 +49,15 @@ class FabricProfileTest {
         assertEquals("ARGUMENTS", assertThrows(Failure.class, () -> LaunchOptions.parse(new String[]{"--minecraft-server", "--run-server", "--runtime", "runtime.json", "--mods", "mods", "--", "--initSettings"})).code());
         for (String value : List.of("0", "20001", "invalid")) {
             assertEquals("ARGUMENTS", assertThrows(Failure.class, () -> LaunchOptions.parse(new String[]{"--minecraft-server", "--run-server", "--runtime", "runtime.json", "--mods", "mods", "--stop-after-ticks", value})).code());
+        }
+    }
+    @Test void clientOwnsItsMainSideAndFrameProbe() {
+        var options = LaunchOptions.parse(new String[]{"--minecraft-client", "--runtime", "runtime.json", "--mods", "mods", "--stop-after-frames", "5"});
+        assertTrue(options.client()); assertFalse(options.runServer()); assertEquals("client", options.side());
+        assertEquals("net.minecraft.client.main.Main", options.mainClass()); assertEquals(5, options.stopAfterFrames());
+        for (String[] bad : List.of(new String[]{"--run-server"}, new String[]{"--side", "server"}, new String[]{"--stop-after-frames", "0"}, new String[]{"--stop-after-ticks", "5"})) {
+            List<String> args = new ArrayList<>(List.of("--minecraft-client", "--runtime", "runtime.json", "--mods", "mods")); args.addAll(List.of(bad));
+            assertEquals("ARGUMENTS", assertThrows(Failure.class, () -> LaunchOptions.parse(args.toArray(String[]::new))).code());
         }
     }
 }

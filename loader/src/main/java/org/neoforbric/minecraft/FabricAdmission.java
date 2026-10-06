@@ -38,6 +38,9 @@ public final class FabricAdmission {
         return new Discovery.Candidate(candidate.archive(), new Metadata(old.id(), old.version(), old.ecosystem(), old.environment(), null, depends, Map.of(), Set.of()));
     }
     public static List<Entry> entries(Discovery.Candidate candidate) {
+        return entries(candidate, "server");
+    }
+    public static List<Entry> entries(Discovery.Candidate candidate, String side) {
         JsonObject json = json(candidate.archive()); List<Entry> result = new ArrayList<>();
         if (!json.has("entrypoints")) return List.of();
         JsonObject groups = json.getAsJsonObject("entrypoints");
@@ -51,9 +54,9 @@ public final class FabricAdmission {
                         && value.getAsJsonObject().get("adapter").getAsString().equals("default")) name = value.getAsJsonObject().get("value").getAsString();
                 else throw new Failure("FABRIC_FEATURE_UNSUPPORTED", "Only default Java class entrypoints are supported");
                 if (!name.matches("[A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)+")) throw new Failure("FABRIC_FEATURE_UNSUPPORTED", "Method / field entrypoints are not supported: " + name);
-                if (!group.equals("client")) result.add(new Entry(group, name,
-                        group.equals("main") ? "net.fabricmc.api.ModInitializer" : "net.fabricmc.api.DedicatedServerModInitializer",
-                        group.equals("main") ? "onInitialize" : "onInitializeServer"));
+                if (group.equals("main") || group.equals(side)) result.add(new Entry(group, name,
+                        group.equals("main") ? "net.fabricmc.api.ModInitializer" : group.equals("client") ? "net.fabricmc.api.ClientModInitializer" : "net.fabricmc.api.DedicatedServerModInitializer",
+                        group.equals("main") ? "onInitialize" : group.equals("client") ? "onInitializeClient" : "onInitializeServer"));
             }
         }
         // Main must finish before dedicated-server initializers, irrespective of JSON key order.

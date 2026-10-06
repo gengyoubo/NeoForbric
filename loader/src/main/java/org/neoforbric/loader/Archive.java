@@ -28,6 +28,12 @@ public final class Archive {
     }
 
     public static Archive read(Path path) throws IOException {
+        return read(path, 20000);
+    }
+    public static Archive readRuntimeGame(Path path) throws IOException {
+        return read(path, 40000);
+    }
+    private static Archive read(Path path, int maxEntries) throws IOException {
         Path actual = path.toRealPath();
         byte[] source;
         try (InputStream in = Files.newInputStream(actual)) {
@@ -46,7 +52,7 @@ public final class Archive {
                 if (entries.containsKey(name)) throw new Failure("DUPLICATE_ENTRY", actual + " contains duplicate " + name);
                 byte[] bytes = zip.readNBytes(MAX_ENTRY + 1);
                 expanded += bytes.length;
-                if (bytes.length > MAX_ENTRY || expanded > MAX_EXPANDED || entries.size() >= 20000)
+                if (bytes.length > MAX_ENTRY || expanded > MAX_EXPANDED || entries.size() >= maxEntries)
                     throw new Failure("ARCHIVE_LIMIT", actual + " exceeds expanded entry limits");
                 entries.put(name, bytes);
             }
