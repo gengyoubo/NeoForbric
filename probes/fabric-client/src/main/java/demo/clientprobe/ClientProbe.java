@@ -25,5 +25,6 @@ public final class ClientProbe implements ClientModInitializer {
         Path screenshot = client.gameDirectory.toPath().resolve("screenshots/neoforbric-main-menu.png"); Files.createDirectories(screenshot.getParent());
         try (var image = Screenshot.takeScreenshot(client.getMainRenderTarget())) { image.writeToFile(screenshot); }
         net.minecraft.server.Bootstrap.realStdoutPrintln("CLIENT_PROBE_OK main=1 client=1 menu=TitleScreen resourcesLoaded=true itemIdentity=true gameLoader=NeoForbric-Game renderer=" + GL11.glGetString(GL11.GL_RENDERER));
+        if (Boolean.getBoolean("neoforbric.probe.mods")) client.getClass().getClassLoader().loadClass("org.neoforbric.client.NeoForbricClientUi").getMethod("verifyTitleScreen", Object.class).invoke(null, client);
     }
 }

@@ -55,6 +55,8 @@ public final class ClientPreparation {
         Path mappings = artifact(root.resolve("downloads/client-mappings.txt"), version.getAsJsonObject("downloads").getAsJsonObject("client_mappings"));
         JsonObject lock = GamePreparation.lock();
         Path intermediary = GamePreparation.fetch(root.resolve("downloads/intermediary.jar"), lock.get("intermediaryUrl").getAsString(), lock.get("intermediarySha256").getAsString(), "SHA-256");
+        boolean cachedGame = Files.exists(root.resolve("runtime.json"));
+        if (cachedGame) verifyCachedGames(root, Archive.sha256(Files.readAllBytes(client)));
         List<Map<String, String>> files = new ArrayList<>(); List<Path> libraries = new ArrayList<>();
         GamePreparation.add(files, root, mappings, "mappings", GamePreparation.hash(Files.readAllBytes(mappings), "SHA-256"), "mojang-client-mappings");
         GamePreparation.add(files, root, intermediary, "intermediary-mappings", lock.get("intermediarySha256").getAsString(), "intermediary:1.21.1");
@@ -110,13 +112,10 @@ public final class ClientPreparation {
         } finally { executor.shutdownNow(); }
         Path named = root.resolve("client-mojang.jar"), inter = root.resolve("client-intermediary.jar");
         // Mapping input hashes invalidate both derived games. Libraries are always checked against the manifest.
-        if (!Files.exists(root.resolve("runtime.json"))) {
+        if (!cachedGame) {
             var tree = GamePreparation.mappings(mappings, intermediary);
             GamePreparation.remap(client, named, tree, "official", "mojang", libraries);
             GamePreparation.remap(client, inter, tree, "official", "intermediary", libraries);
-        } else {
-            // Never bless changed cached game bytes with a fresh hash.
-            RuntimeInputs.read(root.resolve("runtime.json"), new AuditLog());
         }
         String rawGame = Archive.sha256(Files.readAllBytes(client));
         GamePreparation.add(files, root, named, "game", rawGame, "minecraft:1.21.1:client:mojang");
@@ -127,5 +126,29 @@ public final class ClientPreparation {
         plan.put("files", files); Files.writeString(root.resolve("runtime.json"), new GsonBuilder().setPrettyPrinting().create().toJson(plan) + "\n");
         RuntimeInputs.read(root.resolve("runtime.json"), new AuditLog());
         System.out.println("Prepared Minecraft client 1.21.1: " + libraries.size() + " libraries, Windows x64 natives and complete assets");
+    }
+    /** Verify retained game bytes before regeneration; libraries are derived anew from verified official inputs. */
+    static void verifyCachedGames(Path root, String rawGameHash) throws Exception {
+        JsonObject plan = JsonParser.parseString(Files.readString(root.resolve("runtime.json"))).getAsJsonObject();
+        JsonObject lock = GamePreparation.lock();
+        if (plan.get("schemaVersion").getAsInt() != 1 || !plan.get("minecraft").getAsString().equals("1.21.1")
+                || plan.get("java").getAsInt() != 21 || !plan.get("namespace").getAsString().equals("mojang")
+                || !plan.get("side").getAsString().equals("client")
+                || !plan.get("inputLockSha256").getAsString().equals(Archive.sha256(GamePreparation.lockBytes()))
+                || !plan.get("versionSha1").getAsString().equals(lock.get("versionSha1").getAsString()))
+            throw new Failure("GAME_PLAN", "Cached client plan differs from pinned inputs");
+        Set<String> found = new HashSet<>();
+        for (JsonElement value : plan.getAsJsonArray("files")) {
+            JsonObject entry = value.getAsJsonObject(); String role = entry.get("role").getAsString();
+            if (!Set.of("game", "game-intermediary").contains(role)) continue;
+            String expected = role.equals("game") ? "client-mojang.jar" : "client-intermediary.jar";
+            Path path = root.resolve(expected).toRealPath();
+            if (!found.add(role) || !entry.get("path").getAsString().equals(expected) || !path.startsWith(root.toRealPath())
+                    || !entry.get("originalSha256").getAsString().equals(rawGameHash))
+                throw new Failure("GAME_PLAN", "Cached client game provenance differs: " + expected);
+            if (!Archive.sha256(Files.readAllBytes(path)).equals(entry.get("sha256").getAsString()))
+                throw new Failure("INPUT_CHECKSUM", "Prepared input differs: " + path);
+        }
+        if (found.size() != 2) throw new Failure("GAME_PLAN", "Cached client plan must contain both game artifacts");
     }
 }

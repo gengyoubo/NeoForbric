@@ -50,10 +50,23 @@ tasks.register('prepareFabricClientProbe', Sync) {
     into layout.buildDirectory.dir('minecraft-client/mods')
 }
 def clientDirectory = layout.projectDirectory.dir('run/client').asFile
+tasks.register('prepareClientUi') {
+    dependsOn ':client-ui:jar'
+    def uiJar = project(':client-ui').tasks.named('jar').flatMap { it.archiveFile }
+    def uiOutput = layout.buildDirectory.file('minecraft-client/client-ui.jar')
+    inputs.file(uiJar)
+    outputs.file(uiOutput)
+    doLast {
+        java.nio.file.Files.copy(uiJar.get().asFile.toPath(), uiOutput.get().asFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+    }
+}
 tasks.register('prepareClient') {
-    dependsOn 'prepareFabricClientProbe'
+    dependsOn 'prepareFabricClientProbe', 'prepareClientUi'
+    def probeJar = project(':probes:fabric-client').layout.buildDirectory.file('libs/fabric-client-intermediary.jar')
     doLast {
         clientDirectory.mkdirs()
+        new File(clientDirectory, 'mods').mkdirs()
+        java.nio.file.Files.copy(probeJar.get().asFile.toPath(), new File(clientDirectory, 'mods/fabric-client-intermediary.jar').toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
         def options = new File(clientDirectory, 'options.txt')
         if (!options.exists()) options.setText('onboardAccessibility:false\nrenderDistance:6\nsimulationDistance:6\n', 'UTF-8')
     }
@@ -68,9 +81,10 @@ tasks.register('runClient', JavaExec) {
     maxHeapSize = '2g'
     workingDir = clientDirectory
     args '--minecraft-client', '--runtime', layout.buildDirectory.file('minecraft-client/runtime.json').get().asFile.absolutePath,
-            '--mods', layout.buildDirectory.dir('minecraft-client/mods').get().asFile.absolutePath,
+            '--mods', new File(clientDirectory, 'mods').absolutePath, '--client-ui', layout.buildDirectory.file('minecraft-client/client-ui.jar').get().asFile.absolutePath,
             '--verify', 'demo.clientprobe.ClientProbe', '--audit', new File(clientDirectory, 'audit.json').absolutePath
     if (providers.gradleProperty('clientProbeFrames').isPresent()) args '--stop-after-frames', providers.gradleProperty('clientProbeFrames').get()
+    if (providers.gradleProperty('clientModsProbe').getOrElse('false') == 'true') systemProperty 'neoforbric.probe.mods', 'true'
     def username = providers.gradleProperty('clientUsername').getOrElse('NeoForbricDev')
     args '--', '--username', username, '--uuid', java.util.UUID.nameUUIDFromBytes(('OfflinePlayer:' + username).getBytes('UTF-8')).toString(),
             '--accessToken', '0', '--userType', 'legacy', '--version', '1.21.1', '--versionType', 'release',

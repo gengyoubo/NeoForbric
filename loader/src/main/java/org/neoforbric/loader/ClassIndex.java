@@ -24,6 +24,9 @@ public final class ClassIndex {
         return prepare(inputs, parent, audit, Set.of());
     }
     public static ClassIndex prepare(List<Archive> inputs, ClassLoader parent, AuditLog audit, Set<java.nio.file.Path> libraries) {
+        return prepare(inputs, parent, audit, libraries, Set.of());
+    }
+    public static ClassIndex prepare(List<Archive> inputs, ClassLoader parent, AuditLog audit, Set<java.nio.file.Path> libraries, Set<java.nio.file.Path> clientUi) {
         Map<String, Entry> classes = new TreeMap<>();
         Set<String> seenArchives = new HashSet<>();
         List<Archive> unique = new ArrayList<>();
@@ -34,8 +37,10 @@ public final class ClassIndex {
             for (String resource : new TreeSet<>(archive.names())) {
                 if (!resource.endsWith(".class")) continue;
                 String name = resource.substring(0, resource.length() - 6).replace('/', '.');
+                boolean ownedUi = clientUi.contains(archive.path()) && name.startsWith("org.neoforbric.client.");
+                if (clientUi.contains(archive.path()) && !ownedUi) throw new Failure("CLIENT_UI_PACKAGE", "First-party UI JAR contains an unexpected class " + name);
                 if (name.startsWith("java.") || name.startsWith("jdk.") || name.startsWith("sun.")
-                        || name.startsWith("org.neoforbric.") || shared(name))
+                        || (name.startsWith("org.neoforbric.") && !ownedUi) || shared(name))
                     throw new Failure("PROTECTED_PACKAGE", archive.path() + " attempts to define kernel / shared class " + name);
                 validateName(name, archive.read(resource));
                 Entry previous = classes.putIfAbsent(name, new Entry(archive, resource));

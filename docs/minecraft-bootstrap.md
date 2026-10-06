@@ -1,5 +1,7 @@
 # Minecraft 1.21.1 启动与物品注册实测
 
+> 本文记录最初的 `--initSettings` 探针。后续已实现 [持续服务端](minecraft-server.md) 和 [客户端与 Mods 列表](minecraft-client.md)，下文的“尚未启动世界 / 客户端”仅描述初始阶段。
+
 已接通真实服务端 JAR、映射转换、NeoForbric 游戏类加载器、Fabric Java 入口和原版静态注册表。当前运行的是 Minecraft 的 `--initSettings` 路径：初始化游戏、注册物品、冻结注册表、生成配置后退出。尚未启动世界、Tick 或网络，也没有接受 EULA；这不是完整整合包兼容声明。
 
 ## 运行与复现

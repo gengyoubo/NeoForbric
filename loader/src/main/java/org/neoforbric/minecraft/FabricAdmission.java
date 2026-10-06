@@ -35,7 +35,7 @@ public final class FabricAdmission {
         });
         entries(candidate); // Admission validates all executable entry declarations without loading classes.
         Metadata old = candidate.metadata();
-        return new Discovery.Candidate(candidate.archive(), new Metadata(old.id(), old.version(), old.ecosystem(), old.environment(), null, depends, Map.of(), Set.of()));
+        return new Discovery.Candidate(candidate.archive(), new Metadata(old.id(), old.version(), old.ecosystem(), old.environment(), null, depends, Map.of(), Set.of(), old.name(), old.description(), old.iconPath()));
     }
     public static List<Entry> entries(Discovery.Candidate candidate) {
         return entries(candidate, "server");

@@ -25,6 +25,8 @@
 | --- | --- |
 | [当前原型与运行](prototype.md) | 已实现的启动 / 类加载机制、运行命令、25 项测试、准入边界与下一步 |
 | [Minecraft 启动与物品注册实测](minecraft-bootstrap.md) | 真实 1.21.1 JAR、映射、Fabric Java 入口、注册窗口、31 项测试与运行边界 |
+| [持续服务端](minecraft-server.md) | runServer、世界 / Tick、保存重载、正常停止与失败处理 |
+| [客户端与 Mods 列表](minecraft-client.md) | runClient、窗口 / 资源、来源生态与运行适配器、Loader 最终状态和官方图标 |
 | [01 — 可行性与参考项目](01-feasibility.md) | README 三个方向的判断；Forbric、Connector、Architectury 的边界 |
 | [02 — 生命周期、类加载与映射](02-runtime-model.md) | 三端差异、统一模型草案、注册与网络约束 |
 | [03 — Patch 审计](03-patch-audit.md) | 全量文件计数、七个 Patch 样本、Hook 化边界 |
@@ -52,6 +54,6 @@
 
 ## 当前建议
 
-通用前期调查在 17 / 18 两篇收口。[首个原型](prototype.md) 已执行 Java 21 发现 / owner / 定义屏障与同对象夹具，[Minecraft 实测](minecraft-bootstrap.md) 已接自主 main、有限 Fabric Java 入口和原版 Item 注册。接下来闭环 Mixin / AW，再扩展 Forge / NeoForge 入口、服务端生命周期与三模组互操作；只针对实际失败补局部调查。29 项研究探针的完整验收仍待执行，语言 provider 和完整原生启动组件没有已验证支持声明。
+通用前期调查在 17 / 18 两篇收口。[首个原型](prototype.md) 已执行 Java 21 发现 / owner / 定义屏障与同对象夹具，[Minecraft 实测](minecraft-bootstrap.md) 已接自主 main、有限 Fabric Java 入口和原版 Item 注册；后续已接 [持续服务端](minecraft-server.md) 与 [客户端和 Mods 列表](minecraft-client.md)。接下来闭环 Mixin / AW，再扩展 Forge / NeoForge 入口与三模组互操作；只针对实际失败补局部调查。29 项研究探针的完整验收仍待执行，语言 provider 和完整原生启动组件没有已验证支持声明。
 
 早期可用三端原生环境验证统一 API 的契约，但它们是实验对照。最终的“统一底层运行模型”仍需要 NeoForbric 自己拥有启动、类定义与调度，详见 [原型路线](04-prototype-roadmap.md)。

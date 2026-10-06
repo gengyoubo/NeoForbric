@@ -74,8 +74,10 @@ tasks.register('minecraftClientTest', Test) {
     testClassesDirs = sourceSets.minecraftTest.output.classesDirs
     classpath = sourceSets.minecraftTest.runtimeClasspath
     include '**/MinecraftClientRuntimeTest.class'
-    dependsOn ':prepareFabricClientProbe'
+    dependsOn ':prepareFabricClientProbe', ':prepareClientUi'
     systemProperty 'minecraft.clientRuntime', rootProject.layout.buildDirectory.file('minecraft-client/runtime.json').get().asFile.absolutePath
+    systemProperty 'minecraft.clientUi', rootProject.layout.buildDirectory.file('minecraft-client/client-ui.jar').get().asFile.absolutePath
+    systemProperty 'minecraft.clientEvidence', layout.buildDirectory.dir('client-evidence').get().asFile.absolutePath
     systemProperty 'minecraft.clientMods', rootProject.layout.buildDirectory.dir('minecraft-client/mods').get().asFile.absolutePath
     systemProperty 'minecraft.clientAssets', rootProject.layout.buildDirectory.dir('minecraft-client/assets').get().asFile.absolutePath
     systemProperty 'loader.runtimeClasspath', sourceSets.main.runtimeClasspath.asPath

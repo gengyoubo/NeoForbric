@@ -9,7 +9,10 @@ public final class ClientHooks {
     private static final AtomicReference<Session> ACTIVE = new AtomicReference<>();
     private ClientHooks() {}
     public static Session attach(Consumer<String> lifecycle, Consumer<Object> ready, int stopAfterFrames) {
-        Session session = new Session(lifecycle, ready, stopAfterFrames);
+        return attach(lifecycle, ready, stopAfterFrames, screen -> {});
+    }
+    public static Session attach(Consumer<String> lifecycle, Consumer<Object> ready, int stopAfterFrames, Consumer<Object> title) {
+        Session session = new Session(lifecycle, ready, stopAfterFrames, title);
         if (!ACTIVE.compareAndSet(null, session)) throw new IllegalStateException("A client already owns this JVM");
         return session;
     }
@@ -17,6 +20,7 @@ public final class ClientHooks {
         Session session = ACTIVE.get(); if (session == null) throw new IllegalStateException("Client hook outside an active launch"); return session;
     }
     public static void frame(Object client) { current().frameRendered(client); }
+    public static void titleInitialized(Object screen) { current().title.accept(screen); }
     public static void registerShutdownHook(Runtime runtime, Thread hook) { runtime.addShutdownHook(hook); current().shutdownHook = hook; }
     public static void exit(int status) {
         Session session = current();
@@ -31,22 +35,26 @@ public final class ClientHooks {
     public static final class Session implements AutoCloseable {
         private final Consumer<String> lifecycle;
         private final Consumer<Object> ready;
+        private final Consumer<Object> title;
         private final int stopAfterFrames;
         private final AtomicReference<Throwable> failure = new AtomicReference<>();
         private Object client;
         private Thread shutdownHook;
-        private boolean menu, destroyed;
+        private boolean menu, destroyed, stopRequested;
         private int frames;
-        private Session(Consumer<String> lifecycle, Consumer<Object> ready, int stopAfterFrames) { this.lifecycle = lifecycle; this.ready = ready; this.stopAfterFrames = stopAfterFrames; }
+        private Session(Consumer<String> lifecycle, Consumer<Object> ready, int stopAfterFrames, Consumer<Object> title) { this.lifecycle = lifecycle; this.ready = ready; this.stopAfterFrames = stopAfterFrames; this.title = title; }
         private void frameRendered(Object instance) {
             client = instance;
+            if (stopRequested || destroyed) return;
             try {
                 Object screen = instance.getClass().getField("screen").get(instance);
                 Object overlay = instance.getClass().getMethod("getOverlay").invoke(instance);
                 if (!menu && screen != null && screen.getClass().getName().equals("net.minecraft.client.gui.screens.TitleScreen") && overlay == null) {
-                    ready.accept(instance); menu = true; lifecycle.accept("main-menu");
+                    // Fixed Mojang 1.21.1 field: wait until buttons/logo have finished their fade.
+                    Field fading = screen.getClass().getDeclaredField("fading"); fading.setAccessible(true);
+                    if (!fading.getBoolean(screen)) { ready.accept(instance); menu = true; lifecycle.accept("main-menu"); }
                 }
-                if (menu && ++frames == stopAfterFrames) { lifecycle.accept("stop-requested"); instance.getClass().getMethod("stop").invoke(instance); }
+                if (menu && ++frames == stopAfterFrames) { stopRequested = true; lifecycle.accept("stop-requested"); instance.getClass().getMethod("stop").invoke(instance); }
             } catch (ReflectiveOperationException error) {
                 RuntimeException failed = new IllegalStateException("Client frame callback failed", error instanceof InvocationTargetException wrapper ? wrapper.getCause() : error);
                 failure.compareAndSet(null, failed); throw failed;

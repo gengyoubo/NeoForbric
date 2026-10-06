@@ -1,0 +1,37 @@
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.result.ResolvedArtifactResult
+import org.gradle.api.artifacts.result.UnresolvedComponentResult
+import org.gradle.jvm.JvmLibrary
+import org.gradle.language.base.artifact.SourcesArtifact
+import org.gradle.language.java.artifact.JavadocArtifact
+
+dependencies {
+    compileOnly project(':loader')
+    // Vanilla GUI signatures reference JSR-305 annotations, absent from the shipped runtime libraries.
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compileOnly files(rootProject.layout.buildDirectory.file('minecraft-client/client-mojang.jar'))
+    compileOnly fileTree(rootProject.layout.buildDirectory.dir('minecraft-client/libraries')) { include '*.jar' }
+}
+tasks.named('compileJava') { dependsOn ':prepareMinecraftClient' }
+
+tasks.register('verifyIdeArtifacts') {
+    group = 'verification'
+    def compileLibraries = configurations.compileClasspath
+    def dependencyHandler = dependencies
+    doLast {
+        def components = compileLibraries.incoming.artifacts.artifacts.collect { it.id.componentIdentifier }
+                .findAll { it instanceof ModuleComponentIdentifier }.toSet()
+        def result = dependencyHandler.createArtifactResolutionQuery().forComponents(components)
+                .withArtifacts(JvmLibrary, SourcesArtifact, JavadocArtifact).execute()
+        result.components.each { component ->
+            if (component instanceof UnresolvedComponentResult) throw new GradleException("Cannot resolve ${component.id}", component.failure)
+            [SourcesArtifact, JavadocArtifact].each { type ->
+                component.getArtifacts(type).each { artifact ->
+                    if (!(artifact instanceof ResolvedArtifactResult)) throw new GradleException("Cannot resolve ${artifact.id}", artifact.failure)
+                    artifact.file
+                }
+            }
+        }
+        logger.lifecycle("Verified client UI IDE source/Javadoc artifacts for ${components.size()} locked dependencies.")
+    }
+}

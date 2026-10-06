@@ -6,7 +6,10 @@ import java.util.*;
 import org.neoforbric.loader.Failure;
 
 public record LaunchOptions(Path game, Path mods, String mainClass, String side, Path audit,
-                            boolean inspect, List<String> gameArguments, Path runtime, String verifier, boolean runServer, int stopAfterTicks, int stopAfterFrames) {
+                            boolean inspect, List<String> gameArguments, Path runtime, String verifier, boolean runServer, int stopAfterTicks, int stopAfterFrames, Path clientUi) {
+    public LaunchOptions(Path game, Path mods, String mainClass, String side, Path audit, boolean inspect, List<String> gameArguments, Path runtime, String verifier, boolean runServer, int stopAfterTicks, int stopAfterFrames) {
+        this(game, mods, mainClass, side, audit, inspect, gameArguments, runtime, verifier, runServer, stopAfterTicks, stopAfterFrames, null);
+    }
     public LaunchOptions(Path game, Path mods, String mainClass, String side, Path audit, boolean inspect, List<String> gameArguments, Path runtime, String verifier, boolean runServer, int stopAfterTicks) {
         this(game, mods, mainClass, side, audit, inspect, gameArguments, runtime, verifier, runServer, stopAfterTicks, 0);
     }
@@ -31,6 +34,7 @@ public record LaunchOptions(Path game, Path mods, String mainClass, String side,
         if ((runServer && runtime == null) || stopAfterTicks < 0 || stopAfterTicks > 20000 || (stopAfterTicks != 0 && !runServer))
             throw new Failure("ARGUMENTS", "stop-after-ticks requires --run-server and a value from 1 to 20000");
         if (stopAfterFrames < 0 || stopAfterFrames > 20000 || (stopAfterFrames != 0 && !clientProfile)) throw new Failure("ARGUMENTS", "stop-after-frames requires the client and a value from 1 to 20000");
+        if (clientUi != null && !clientProfile) throw new Failure("ARGUMENTS", "client-ui requires the client");
     }
 
     public static LaunchOptions parse(String[] args) {
@@ -45,7 +49,7 @@ public record LaunchOptions(Path game, Path mods, String mainClass, String side,
             if (arg.equals("--minecraft-server")) { if (minecraft) throw new Failure("ARGUMENTS", "Duplicate --minecraft-server"); minecraft = true; continue; }
             if (arg.equals("--minecraft-client")) { if (minecraft) throw new Failure("ARGUMENTS", "Choose one Minecraft side"); minecraft = true; client = true; continue; }
             if (arg.equals("--run-server")) { if (runServer) throw new Failure("ARGUMENTS", "Duplicate --run-server"); runServer = true; continue; }
-            if (!Set.of("--game", "--mods", "--main", "--side", "--audit", "--runtime", "--verify", "--stop-after-ticks", "--stop-after-frames").contains(arg) || i + 1 >= args.length || args[i + 1].startsWith("--"))
+            if (!Set.of("--game", "--mods", "--main", "--side", "--audit", "--runtime", "--verify", "--stop-after-ticks", "--stop-after-frames", "--client-ui").contains(arg) || i + 1 >= args.length || args[i + 1].startsWith("--"))
                 throw new Failure("ARGUMENTS", "Unknown option or missing value: " + arg);
             if (values.putIfAbsent(arg, args[++i]) != null) throw new Failure("ARGUMENTS", "Duplicate " + arg);
         }
@@ -73,7 +77,7 @@ public record LaunchOptions(Path game, Path mods, String mainClass, String side,
         try {
             return new LaunchOptions(values.containsKey("--game") ? Path.of(values.get("--game")) : null, Path.of(values.get("--mods")),
                     minecraft ? client ? "net.minecraft.client.main.Main" : "net.minecraft.server.Main" : values.get("--main"), values.getOrDefault("--side", client ? "client" : "server"), Path.of(values.getOrDefault("--audit", "build/launch-audit.json")), inspect, tail,
-                    minecraft ? Path.of(values.get("--runtime")) : null, values.get("--verify"), runServer, stopAfterTicks, stopAfterFrames);
+                    minecraft ? Path.of(values.get("--runtime")) : null, values.get("--verify"), runServer, stopAfterTicks, stopAfterFrames, values.containsKey("--client-ui") ? Path.of(values.get("--client-ui")) : null);
         } catch (InvalidPathException invalid) {
             throw new Failure("ARGUMENTS", "Invalid path: " + invalid.getReason(), invalid);
         }

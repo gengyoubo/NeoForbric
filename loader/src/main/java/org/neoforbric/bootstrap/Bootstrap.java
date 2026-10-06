@@ -29,6 +29,7 @@ public final class Bootstrap {
         List<String> initialized = new ArrayList<>();
         CountDownLatch completed = new CountDownLatch(1);
         Thread[] shutdownHook = {null};
+        ModCatalog catalog = null;
         try {
             audit.mode(options.inspect() ? "metadata-inspect" : options.client() ? "minecraft-1.21.1-client" : options.runServer() ? "minecraft-1.21.1-server" : options.minecraft() ? "minecraft-1.21.1-server-settings" : "java-fixture");
             audit.record(phase, "runtime", "JVM", Map.of("javaVersion", Runtime.version().toString(),
@@ -43,13 +44,15 @@ public final class Bootstrap {
             }
             phase("DISCOVER");
             var candidates = Discovery.discover(options.mods(), audit);
+            if (options.client()) catalog = new ModCatalog(candidates, audit);
             if (options.inspect()) {
                 phase("INSPECTED");
                 outcome = "INSPECTED";
                 return;
             }
             phase("RESOLVE");
-            if (options.minecraft()) candidates = candidates.stream().map(c -> c.metadata().available(options.side()) ? FabricAdmission.admit(c) : c).toList();
+            if (options.client()) candidates = catalog.selectClient(candidates);
+            else if (options.minecraft()) candidates = candidates.stream().map(c -> c.metadata().available(options.side()) ? FabricAdmission.admit(c) : c).toList();
             var mods = Resolver.resolve(candidates, options.side(), audit, options.minecraft());
             phase("PREPARE");
             RuntimeInputs runtime = options.minecraft() ? RuntimeInputs.read(options.runtime(), audit) : null;
@@ -59,10 +62,16 @@ public final class Bootstrap {
             List<Archive> inputs = new ArrayList<>();
             inputs.add(game);
             Set<Path> libraries = new HashSet<>();
+            Set<Path> clientUi = new HashSet<>();
             if (runtime != null) {
                 for (Path library : runtime.libraries()) { Archive archive = Archive.read(library); inputs.add(archive); libraries.add(archive.path()); }
                 pipeline.add(new RegistryWindowHook(runtime.registryClassSha256()));
                 if (options.client()) pipeline.add(new ClientLifecycleHook(Archive.sha256(game.read("net/minecraft/client/Minecraft.class")), Archive.sha256(game.read("net/minecraft/client/main/Main.class"))));
+                if (options.clientUi() != null) {
+                    Archive ui = Archive.read(options.clientUi()); inputs.add(ui); clientUi.add(ui.path());
+                    audit.record(phase, "kernel-client-ui", ui.path().toString(), Map.of("sha256", ui.hash(), "loader", "G"));
+                    pipeline.add(new TitleScreenHook(Archive.sha256(game.read("net/minecraft/client/gui/screens/TitleScreen.class"))));
+                }
                 if (options.runServer()) pipeline.add(new ServerLifecycleHook(Archive.sha256(game.read("net/minecraft/server/MinecraftServer.class")), Archive.sha256(game.read("net/minecraft/server/Main.class"))));
             }
             List<Discovery.Candidate> preparedMods = new ArrayList<>();
@@ -80,7 +89,7 @@ public final class Bootstrap {
             }
             preparedMods.forEach(m -> inputs.add(m.archive()));
             ClassLoader parent = Bootstrap.class.getClassLoader();
-            ClassIndex index = ClassIndex.prepare(inputs, parent, audit, libraries);
+            ClassIndex index = ClassIndex.prepare(inputs, parent, audit, libraries, clientUi);
             try (GameResources resources = options.minecraft() ? new GameResources(audit) : null;
                  GameClassLoader loader = new GameClassLoader(index, pipeline, parent, audit, resources)) {
                 pipeline.seal(audit);
@@ -105,6 +114,7 @@ public final class Bootstrap {
                     if (!Modifier.isPublic(mainType.getModifiers()) || !Modifier.isStatic(main.getModifiers()) || main.getReturnType() != void.class)
                         throw new Failure("MAIN_TYPE", options.mainClass() + " requires public static void main(String[])");
                     Method verifier = null;
+                    Method titleUi = options.clientUi() == null ? null : Class.forName("org.neoforbric.client.NeoForbricClientUi", false, loader).getMethod("onTitleScreen", Object.class);
                     if (options.verifier() != null) {
                         Class<?> verifyType = Class.forName(options.verifier(), false, loader);
                         if (options.runServer() || options.client()) {
@@ -117,12 +127,14 @@ public final class Bootstrap {
                     if (runtime == null) {
                         initialize(initializers, initialized); invokeMain(main, options);
                     } else {
+                        ModCatalog clientCatalog = catalog;
                         try (GameHooks.Session hooks = GameHooks.attach(() -> {
                             phase("REGISTRY_OPEN"); audit.record(phase, "registry-window", "builtin", Map.of("state", "open", "anchor", "createContents-before-freeze"));
                             initialize(initializers.stream().filter(i -> i.group().equals("main") || i.group().equals("prototype")).toList(), initialized);
                         }, () -> {
                             phase("REGISTRY_FROZEN"); audit.record(phase, "registry-window", "builtin", Map.of("state", "frozen", "freeze", "vanilla"));
                             initialize(initializers.stream().filter(i -> i.group().equals(options.side())).toList(), initialized);
+                            if (clientCatalog != null) clientCatalog.loaded(mods);
                         })) {
                             if (options.client()) {
                                 Method menuVerifier = verifier;
@@ -138,7 +150,13 @@ public final class Bootstrap {
                                         catch (ReflectiveOperationException error) { throw new Failure("CLIENT_VERIFY", "Main menu verifier failed", error instanceof InvocationTargetException wrapper ? wrapper.getCause() : error); }
                                         audit.record("CLIENT", "verification-complete", options.verifier(), Map.of("loader", "G", "thread", Thread.currentThread().getName()));
                                     }
-                                }, options.stopAfterFrames())) {
+                                }, options.stopAfterFrames(), screen -> {
+                                    if (titleUi != null) {
+                                        try { titleUi.invoke(null, screen); }
+                                        catch (ReflectiveOperationException error) { throw new Failure("CLIENT_UI", "Title screen UI hook failed", error instanceof InvocationTargetException wrapper ? wrapper.getCause() : error); }
+                                        audit.record("CLIENT", "title-ui-initialized", "Mods", Map.of("loader", "G"));
+                                    }
+                                })) {
                                     invokeMain(main, options); hooks.verifyComplete(); client.verifyComplete();
                                     audit.record("CLIENT", "client-complete", "Minecraft", Map.of("framesAfterMenu", Integer.toString(client.frames())));
                                 }
@@ -196,6 +214,7 @@ public final class Bootstrap {
         } catch (Exception | Error failed) {
             Throwable cause = failed instanceof InvocationTargetException reflection ? reflection.getTargetException() : failed;
             failure = cause instanceof Failure known ? known : new Failure("LAUNCH_FAILED", phase + ": " + cause, cause);
+            if (catalog != null) catalog.failed(failure.getMessage());
             boolean defined = audit.events().stream().anyMatch(e -> e.type().equals("class-defined"));
             audit.record(phase, "failure", "launch", Map.of("code", failure.code(), "message", failure.getMessage(), "severity", "INSTANCE_FATAL",
                     "stateTainted", Boolean.toString(defined || !initialized.isEmpty()), "initializedMods", initialized.toString(), "recovery", "restart"));
@@ -208,6 +227,7 @@ public final class Bootstrap {
                 if (failure != null) failure.addSuppressed(io);
                 else throw new Failure("AUDIT_IO", "Could not write audit " + options.audit(), io);
             } finally {
+                if (catalog != null) catalog.close();
                 completed.countDown();
                 if (shutdownHook[0] != null) {
                     try { Runtime.getRuntime().removeShutdownHook(shutdownHook[0]); }

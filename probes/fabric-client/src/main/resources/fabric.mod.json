@@ -2,6 +2,9 @@
   "schemaVersion": 1,
   "id": "neoforbric_client_probe",
   "version": "1.0.0",
+  "name": "NeoForbric Client Probe",
+  "description": "A plain Fabric Java mod testing client entrypoints, item identity and rendering.",
+  "icon": "assets/neoforbric_probe/icon.png",
   "environment": "client",
   "entrypoints": { "main": ["demo.clientprobe.ClientItemProbe"], "client": ["demo.clientprobe.ClientProbe"] },
   "depends": { "minecraft": "1.21.1", "java": ">=21", "fabricloader": ">=0.16.10" }
