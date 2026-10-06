@@ -45,7 +45,15 @@ public final class ClassIndex {
                     throw new Failure("PROTECTED_PACKAGE", archive.path() + " attempts to define kernel / shared class " + name);
                 validateName(name, archive.read(resource));
                 Entry previous = classes.putIfAbsent(name, new Entry(archive, resource));
-                if (previous != null) throw new Failure("DUPLICATE_CLASS", name + " belongs to both " + previous.archive().path() + " and " + archive.path());
+                if (previous != null) {
+                    // Split Fabric modules publish the same package annotations. Ordinary classes,
+                    // and package annotations which disagree, still have exactly one required owner.
+                    if (name.endsWith(".package-info") && Arrays.equals(previous.bytes(), archive.read(resource))) {
+                        audit.record("PREPARE", "identical-package-metadata", name, Map.of("owner", previous.archive().path().toString(), "duplicate", archive.path().toString()));
+                        continue;
+                    }
+                    throw new Failure("DUPLICATE_CLASS", name + " belongs to both " + previous.archive().path() + " and " + archive.path());
+                }
                 URL contamination = parent.getResource(resource);
                 // Explicit bundled libraries (e.g. game's Gson vs tools' Gson) are isolated in G.
                 // Game/mod types and shared APIs still cannot be duplicated on P.
@@ -72,6 +80,10 @@ public final class ClassIndex {
     }
     public List<URL> resources(String name) {
         return archives.stream().map(a -> a.resource(name)).filter(Objects::nonNull).toList();
+    }
+    public byte[] resourceBytes(String name) {
+        for (Archive archive : archives) if (archive.names().contains(name)) return archive.read(name);
+        return null;
     }
     public List<URL> resources(String name, GameResources resources) {
         return archives.stream().map(a -> resources.resource(a, name)).filter(Objects::nonNull).toList();

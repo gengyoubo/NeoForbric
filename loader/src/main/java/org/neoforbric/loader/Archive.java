@@ -19,6 +19,7 @@ public final class Archive {
     private final Manifest manifest;
     private final byte[] source;
     private Set<String> permittedNested = Set.of();
+    private boolean verifiedSignatures;
 
     private Archive(Path path, String hash, Map<String, byte[]> entries, Manifest manifest, byte[] source) {
         this.path = path;
@@ -89,7 +90,20 @@ public final class Archive {
     public Archive permitDeclaredNested(Set<String> names) {
         for (String name : names) if (!entries.containsKey(name) || !name.endsWith(".jar")) throw new Failure("NESTED_INPUT", path + " missing declared nested JAR " + name);
         Archive view = new Archive(path, hash, entries, manifest, source);
-        view.permittedNested = Set.copyOf(names); return view;
+        view.permittedNested = Set.copyOf(names); view.verifiedSignatures = verifiedSignatures; return view;
+    }
+    public Archive verifyJarSignatures(AuditLog audit) throws IOException {
+        boolean signed = names().stream().map(name -> name.toUpperCase(Locale.ROOT)).anyMatch(name -> name.startsWith("META-INF/") && name.matches(".*\\.(SF|RSA|DSA|EC)$"));
+        if (!signed) return this;
+        int verified = 0;
+        try (var jar = new java.util.jar.JarInputStream(new ByteArrayInputStream(source), true)) {
+            java.util.jar.JarEntry entry;
+            while ((entry = jar.getNextJarEntry()) != null) { jar.transferTo(OutputStream.nullOutputStream()); if (entry.getCodeSigners() != null) verified++; }
+        } catch (SecurityException invalid) { throw new Failure("JAR_SIGNATURE", "Invalid signed input " + path, invalid); }
+        if (verified == 0) throw new Failure("JAR_SIGNATURE", "Signature metadata could not be verified: " + path);
+        Archive view = new Archive(path, hash, entries, manifest, source); view.permittedNested = permittedNested; view.verifiedSignatures = true;
+        audit.record("DISCOVER", "jar-signature-verified", path.toString(), Map.of("sourceSha256", hash, "signedEntries", Integer.toString(verified), "derivedPolicy", "unsigned-remapped-artifact"));
+        return view;
     }
 
     public void requireSupportedLayout() {
@@ -103,7 +117,7 @@ public final class Archive {
             String upper = name.toUpperCase(Locale.ROOT);
             if (name.equals("module-info.class") || name.startsWith("META-INF/versions/")
                 || (upper.endsWith(".JAR") && !permittedNested.contains(name)) || (upper.startsWith("META-INF/")
-                    && (upper.matches(".*\\.(SF|RSA|DSA|EC)$") || upper.startsWith("META-INF/SIG-"))))
+                    && !verifiedSignatures && (upper.matches(".*\\.(SF|RSA|DSA|EC)$") || upper.startsWith("META-INF/SIG-"))))
                 throw new Failure("UNSUPPORTED_LAYOUT", path + " contains unsupported module / nested / signed entry " + name);
         }
     }

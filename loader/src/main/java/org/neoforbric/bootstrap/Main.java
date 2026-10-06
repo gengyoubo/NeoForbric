@@ -27,6 +27,7 @@ public final class Main {
             return 0;
         } catch (Failure failed) {
             System.err.println("[" + failed.code() + "] " + failed.getMessage());
+            if (Boolean.getBoolean("neoforbric.debug")) failed.printStackTrace(System.err);
             return failed.code().equals("ARGUMENTS") ? 2 : 1;
         }
     }

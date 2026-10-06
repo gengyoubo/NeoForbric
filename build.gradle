@@ -102,6 +102,38 @@ tasks.register('runClient', JavaExec) {
             '--assetIndex', '17', '--width', '960', '--height', '540'
 }
 
+def jeiDirectory = layout.buildDirectory.dir('jei-compat/run').get().asFile
+tasks.register('runJei', JavaExec) {
+    def jeiProbeJar = project(':probes:fabric-client').layout.buildDirectory.file('libs/fabric-client-intermediary.jar')
+    def jeiProbeOutput = layout.buildDirectory.file('jei-compat/mods/fabric-client-intermediary.jar')
+    group = 'application'
+    description = 'Run the fixed Fabric JEI sample through the experimental NeoForbric Fabric runtime.'
+    dependsOn 'prepareJeiInputs', 'prepareFabricClientProbe', 'prepareClientUi', ':loader:classes'
+    javaLauncher = project(':loader').javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+    classpath = project(':loader').sourceSets.main.runtimeClasspath
+    mainClass = 'org.neoforbric.bootstrap.Main'
+    maxHeapSize = '3g'
+    workingDir = jeiDirectory
+    systemProperty 'neoforbric.fabric.runtime', 'true'
+    systemProperty 'neoforbric.debug', 'true'
+    jvmArgs '-Dfile.encoding=UTF-8', '-Dstdout.encoding=UTF-8', '-Dstderr.encoding=UTF-8'
+    args '--minecraft-client', '--runtime', layout.buildDirectory.file('minecraft-client/runtime.json').get().asFile.absolutePath,
+            '--mods', layout.buildDirectory.dir('jei-compat/mods').get().asFile.absolutePath,
+            '--client-ui', layout.buildDirectory.file('minecraft-client/client-ui.jar').get().asFile.absolutePath,
+            '--verify', providers.gradleProperty('jeiVerify').isPresent() ? 'org.neoforbric.client.JeiRuntimeProbe' : 'demo.clientprobe.ClientProbe', '--audit', new File(jeiDirectory, 'audit.json').absolutePath
+    if (providers.gradleProperty('clientProbeFrames').isPresent() && !providers.gradleProperty('jeiVerify').isPresent()) args '--stop-after-frames', providers.gradleProperty('clientProbeFrames').get()
+    args '--', '--username', 'NeoJeiTest', '--uuid', '00000000-0000-0000-0000-000000000002', '--accessToken', '0',
+            '--version', '1.21.1', '--gameDir', jeiDirectory.absolutePath,
+            '--assetsDir', layout.buildDirectory.dir('minecraft-client/assets').get().asFile.absolutePath,
+            '--assetIndex', '17', '--width', '960', '--height', '540'
+    doFirst {
+        jeiDirectory.mkdirs()
+        def jeiOptions = new File(jeiDirectory, 'options.txt')
+        if (!jeiOptions.exists()) jeiOptions.setText('onboardAccessibility:false\nrenderDistance:4\nsimulationDistance:5\n', 'UTF-8')
+        java.nio.file.Files.copy(jeiProbeJar.get().asFile.toPath(), jeiProbeOutput.get().asFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+    }
+}
+
 tasks.register('prepareFabricProbe', Sync) {
     dependsOn ':probes:fabric-item:remapJar'
     from project(':probes:fabric-item').layout.buildDirectory.file('libs/fabric-item-intermediary.jar')

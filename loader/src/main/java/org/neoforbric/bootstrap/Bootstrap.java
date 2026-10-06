@@ -11,6 +11,8 @@ import org.neoforbric.api.ClientHooks;
 import java.util.concurrent.CountDownLatch;
 import org.neoforbric.loader.*;
 import org.neoforbric.minecraft.*;
+import org.neoforbric.fabric.NativeFabricRuntime;
+import org.neoforbric.api.FabricRuntimeHooks;
 import java.nio.file.*;
 
 public final class Bootstrap {
@@ -31,6 +33,7 @@ public final class Bootstrap {
         Thread[] shutdownHook = {null};
         ModCatalog catalog = null;
         List<Path> remapArtifacts = new ArrayList<>();
+        NativeFabricRuntime fabricRuntime = null;
         try {
             audit.mode(options.inspect() ? "metadata-inspect" : options.client() ? "minecraft-1.21.1-client" : options.runServer() ? "minecraft-1.21.1-server" : options.minecraft() ? "minecraft-1.21.1-server-settings" : "java-fixture");
             audit.record(phase, "runtime", "JVM", Map.of("javaVersion", Runtime.version().toString(),
@@ -45,6 +48,12 @@ public final class Bootstrap {
             }
             phase("DISCOVER");
             var candidates = Discovery.discover(options.mods(), audit);
+            RuntimeInputs runtime = null;
+            if (Boolean.getBoolean("neoforbric.fabric.runtime") && !options.inspect()) {
+                fabricRuntime = new NativeFabricRuntime(options, audit);
+                runtime = RuntimeInputs.read(options.runtime(), audit);
+                candidates = fabricRuntime.discover(candidates, runtime);
+            }
             if (options.client()) catalog = new ModCatalog(candidates, audit);
             if (options.inspect()) {
                 phase("INSPECTED");
@@ -52,11 +61,12 @@ public final class Bootstrap {
                 return;
             }
             phase("RESOLVE");
-            if (options.client()) candidates = catalog.selectClient(candidates);
-            else if (options.minecraft()) candidates = candidates.stream().map(c -> c.metadata().available(options.side()) ? FabricAdmission.admit(c) : c).toList();
-            var mods = Resolver.resolve(candidates, options.side(), audit, options.minecraft());
+            if (options.client() && fabricRuntime == null) candidates = catalog.selectClient(candidates);
+            else if (options.minecraft() && fabricRuntime == null) candidates = candidates.stream().map(c -> c.metadata().available(options.side()) ? FabricAdmission.admit(c) : c).toList();
+            var mods = fabricRuntime == null ? Resolver.resolve(candidates, options.side(), audit, options.minecraft()) : fabricRuntime.resolve();
+            if (fabricRuntime != null) catalog.selectFabricRuntime(candidates, mods);
             phase("PREPARE");
-            RuntimeInputs runtime = options.minecraft() ? RuntimeInputs.read(options.runtime(), audit) : null;
+            if (runtime == null) runtime = options.minecraft() ? RuntimeInputs.read(options.runtime(), audit) : null;
             if (runtime != null && !runtime.side().equals(options.side())) throw new Failure("GAME_SIDE", "Runtime inputs belong to " + runtime.side() + ", requested " + options.side());
             Archive game = runtime == null ? Archive.read(options.game()) : Archive.readRuntimeGame(runtime.game());
             audit.record(phase, "game-input", game.path().toString(), Map.of("sha256", game.hash()));
@@ -66,7 +76,7 @@ public final class Bootstrap {
             Set<Path> clientUi = new HashSet<>();
             if (runtime != null) {
                 for (Path library : runtime.libraries()) { Archive archive = Archive.read(library); inputs.add(archive); libraries.add(archive.path()); }
-                pipeline.add(new RegistryWindowHook(runtime.registryClassSha256()));
+                pipeline.add(new RegistryWindowHook(runtime.registryClassSha256(), fabricRuntime != null && fabricRuntime.defersRegistries()));
                 if (options.client()) pipeline.add(new ClientLifecycleHook(Archive.sha256(game.read("net/minecraft/client/Minecraft.class")), Archive.sha256(game.read("net/minecraft/client/main/Main.class"))));
                 if (options.clientUi() != null) {
                     Archive ui = Archive.read(options.clientUi()); inputs.add(ui); clientUi.add(ui.path());
@@ -76,7 +86,22 @@ public final class Bootstrap {
                 if (options.runServer()) pipeline.add(new ServerLifecycleHook(Archive.sha256(game.read("net/minecraft/server/MinecraftServer.class")), Archive.sha256(game.read("net/minecraft/server/Main.class"))));
             }
             List<Discovery.Candidate> preparedMods = new ArrayList<>();
-            for (var mod : mods) {
+            if (fabricRuntime != null) {
+                List<GamePreparation.FabricInput> remapInputs = new ArrayList<>();
+                for (var mod : mods) {
+                    Path cache = options.runtime().toAbsolutePath().getParent().resolve("remapped-mods").resolve(mod.archive().hash()); Files.createDirectories(cache);
+                    String launch = UUID.randomUUID().toString(); Path source = cache.resolve("input-" + launch + ".jar"), mapped = cache.resolve("mod-" + launch + ".jar");
+                    remapArtifacts.addAll(List.of(source, mapped, mapped.resolveSibling(mapped.getFileName() + ".remapping.jar"), mapped.resolveSibling(mapped.getFileName() + ".part")));
+                    Files.write(source, mod.archive().snapshot()); remapInputs.add(new GamePreparation.FabricInput(source, mapped));
+                }
+                GamePreparation.remapFabricMods(remapInputs, runtime);
+                for (int i = 0; i < mods.size(); i++) {
+                    var mod = mods.get(i); Archive mapped = Archive.read(remapInputs.get(i).output()).permitDeclaredNested(fabricRuntime.nestedPaths(mod));
+                    preparedMods.add(new Discovery.Candidate(mapped, mod.metadata()));
+                    audit.record(phase, "mod-remap", mod.metadata().id(), Map.of("sourceSha256", mod.archive().hash(), "outputSha256", mapped.hash(), "from", "intermediary", "to", "mojang", "mixinReferences", "manifest-static-or-refmap", "accessRules", "mojang"));
+                }
+                fabricRuntime.install(preparedMods, runtime, pipeline);
+            } else for (var mod : mods) {
                 if (runtime != null && mod.metadata().ecosystem() == Metadata.Ecosystem.FABRIC) {
                     // Remap the immutable discovered snapshot, never a later disk revision of the mod.
                     Path cache = options.runtime().toAbsolutePath().getParent().resolve("remapped-mods").resolve(mod.archive().hash()); Files.createDirectories(cache);
@@ -96,6 +121,10 @@ public final class Bootstrap {
             ClassIndex index = ClassIndex.prepare(inputs, parent, audit, libraries, clientUi);
             try (GameResources resources = options.minecraft() ? new GameResources(audit) : null;
                  GameClassLoader loader = new GameClassLoader(index, pipeline, parent, audit, resources)) {
+                if (fabricRuntime != null) {
+                    NativeFabricRuntime generatedFabric = fabricRuntime;
+                    loader.generatedClasses(name -> generatedFabric.generated(name, index));
+                }
                 pipeline.seal(audit);
                 phase("SEALED");
                 loader.open();
@@ -105,10 +134,11 @@ public final class Bootstrap {
                 String previousLwjgl = System.getProperty("org.lwjgl.librarypath");
                 try {
                     thread.setContextClassLoader(loader);
+                    if (fabricRuntime != null) fabricRuntime.bindAndPrepare(index, loader, pipeline, inputs);
                     if (options.client()) System.setProperty("org.lwjgl.librarypath", runtime.natives().toString());
                     // Check every entrypoint shape before executing any candidate static initializer / constructor.
                     List<Initializer> initializers = new ArrayList<>();
-                    for (var mod : preparedMods) {
+                    if (fabricRuntime == null) for (var mod : preparedMods) {
                         if (mod.metadata().ecosystem() == Metadata.Ecosystem.FABRIC) {
                             for (var entry : FabricAdmission.entries(mod, options.side())) initializers.add(preflight(mod.metadata().id(), entry.group(), entry.className(), Class.forName(entry.api(), false, parent), entry.method(), loader));
                         } else initializers.add(preflight(mod.metadata().id(), "prototype", mod.metadata().entrypoint(), ModInitializer.class, "onInitialize", loader));
@@ -132,17 +162,25 @@ public final class Bootstrap {
                         initialize(initializers, initialized); invokeMain(main, options);
                     } else {
                         ModCatalog clientCatalog = catalog;
+                        NativeFabricRuntime activeFabric = fabricRuntime;
                         try (GameHooks.Session hooks = GameHooks.attach(() -> {
-                            phase("REGISTRY_OPEN"); audit.record(phase, "registry-window", "builtin", Map.of("state", "open", "anchor", "createContents-before-freeze"));
-                            initialize(initializers.stream().filter(i -> i.group().equals("main") || i.group().equals("prototype")).toList(), initialized);
+                            phase("REGISTRY_OPEN"); audit.record(phase, "registry-window", "builtin", Map.of("state", "open", "anchor", activeFabric != null && activeFabric.defersRegistries() ? "minecraft-before-gameThread-fabric-deferred-freeze" : "createContents-before-freeze"));
+                            if (activeFabric == null) initialize(initializers.stream().filter(i -> i.group().equals("main") || i.group().equals("prototype")).toList(), initialized);
+                            else activeFabric.initializeMain();
                         }, () -> {
                             phase("REGISTRY_FROZEN"); audit.record(phase, "registry-window", "builtin", Map.of("state", "frozen", "freeze", "vanilla"));
-                            initialize(initializers.stream().filter(i -> i.group().equals(options.side())).toList(), initialized);
-                            if (clientCatalog != null) clientCatalog.loaded(mods);
+                            if (activeFabric == null) {
+                                initialize(initializers.stream().filter(i -> i.group().equals(options.side())).toList(), initialized);
+                                if (clientCatalog != null) clientCatalog.loaded(mods);
+                            }
                         })) {
                             if (options.client()) {
                                 Method menuVerifier = verifier;
-                                try (ClientHooks.Session client = ClientHooks.attach(state -> {
+                                try (AutoCloseable fabricClient = activeFabric == null ? () -> {} : FabricRuntimeHooks.attachClient(instance -> {
+                                    activeFabric.prepareClient(instance);
+                                    if (activeFabric.defersRegistries()) GameHooks.beforeRegistryFreeze();
+                                    activeFabric.initializeClient(instance); clientCatalog.loaded(mods);
+                                }); ClientHooks.Session client = ClientHooks.attach(state -> {
                                     audit.record("CLIENT", "client-lifecycle", state, Map.of("thread", Thread.currentThread().getName()));
                                     if (state.equals("main-menu")) {
                                         try { audit.write(options.audit(), "RUNNING"); }
@@ -226,6 +264,10 @@ public final class Bootstrap {
             Failure.rethrowFatal(cause);
             throw failure;
         } finally {
+            if (fabricRuntime != null) {
+                try { fabricRuntime.close(); }
+                catch (Exception error) { audit.record("CLEANUP", "fabric-runtime-close-failed", "adapter", Map.of("severity", "RESOURCE_WARNING", "message", error.toString())); }
+            }
             for (Path artifact : remapArtifacts) {
                 try { Files.deleteIfExists(artifact); }
                 catch (IOException error) { audit.record("CLEANUP", "remap-cleanup-failed", artifact.toString(), Map.of("message", error.toString(), "severity", "RESOURCE_WARNING")); }

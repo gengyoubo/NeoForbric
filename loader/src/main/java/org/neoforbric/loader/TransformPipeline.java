@@ -13,6 +13,7 @@ public final class TransformPipeline {
     }
     private final Map<String, Transformer> tools = new TreeMap<>();
     private List<Transformer> ordered;
+    private final ThreadLocal<String> activeRule = new ThreadLocal<>();
 
     public synchronized void add(Transformer transformer) {
         if (ordered != null) throw new Failure("PLAN_SEALED", "Cannot register transformer after seal");
@@ -30,6 +31,7 @@ public final class TransformPipeline {
 
     public synchronized boolean sealed() { return ordered != null; }
     public synchronized Set<String> registeredIds() { return Set.copyOf(tools.keySet()); }
+    public String activeRule() { return activeRule.get(); }
 
     // Serializes tooling until parallel-safety contracts exist. ClassLoader locks still enforce one definition per class.
     public synchronized byte[] apply(String name, byte[] original, BytecodeAccess source, AuditLog audit) throws Exception {
@@ -47,7 +49,9 @@ public final class TransformPipeline {
         for (Transformer tool : ordered) {
             if (tool.id().equals(boundary)) break;
             String before = Archive.sha256(bytes);
+            String previousRule = activeRule.get();
             try {
+                activeRule.set(tool.id());
                 bytes = Objects.requireNonNull(tool.transform(new Context(name, source), bytes.clone()), "transform output").clone();
                 ClassIndex.validateName(name, bytes);
             } catch (Exception | Error failed) {
@@ -55,6 +59,8 @@ public final class TransformPipeline {
                 audit.record("FAILED", "transform-failed", name, Map.of("rule", tool.id(), "inputSha256", before,
                         "cause", failed.getClass().getName(), "severity", "INSTANCE_FATAL"));
                 throw new Failure("TRANSFORM_FAILED", "Transformer " + tool.id() + " failed for " + name, failed);
+            } finally {
+                if (previousRule == null) activeRule.remove(); else activeRule.set(previousRule);
             }
             audit.record("GAME", "transform", name, Map.of("rule", tool.id(), "inputSha256", before, "outputSha256", Archive.sha256(bytes)));
         }

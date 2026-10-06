@@ -32,7 +32,7 @@ public final class FabricRuntimePlan {
         if (depth > 8 || nodes.size() >= 256) throw new Failure("NESTED_LIMIT", "Fabric graph exceeds depth / candidate limit");
         if (nestedPath != null && nestedByHash.containsKey(archive.hash())) return nestedByHash.get(archive.hash());
         LoaderModMetadata metadata;
-        try { metadata = ModMetadataParser.parseMetadata(new ByteArrayInputStream(archive.read("fabric.mod.json")), archive.path().toString(), parents, new VersionOverrides(), new DependencyOverrides(), false); }
+        try { metadata = ModMetadataParser.parseMetadata(new ByteArrayInputStream(archive.read("fabric.mod.json")), archive.path().toString(), parents, new VersionOverrides(), new DependencyOverrides(cache), false); }
         catch (Exception error) { throw new Failure("FABRIC_SCHEMA", archive.path().toString(), error); }
         if (!metadata.getLanguageAdapterDefinitions().isEmpty()) throw new Failure("FABRIC_FEATURE_UNSUPPORTED", metadata.getId() + " requires an unverified custom language adapter");
         Set<String> declared = new LinkedHashSet<>(); List<ModCandidateImpl> children = new ArrayList<>();
@@ -48,7 +48,7 @@ public final class FabricRuntimePlan {
             Node child = read(Archive.read(extracted), entry, chain, depth + 1); children.add(child.nativeCandidate());
             audit.record("DISCOVER", "nested-mod", child.metadata().getId(), Map.of("parent", metadata.getId(), "entry", entry, "sha256", hash));
         }
-        Archive permitted = archive.permitDeclaredNested(declared); permitted.requireSupportedLayout();
+        Archive permitted = archive.verifyJarSignatures(audit).permitDeclaredNested(declared); permitted.requireSupportedLayout();
         ModCandidateImpl nativeCandidate;
         if (nestedPath == null) nativeCandidate = plain(List.of(archive.path()), metadata, children);
         else {
@@ -67,13 +67,13 @@ public final class FabricRuntimePlan {
     }
     public void builtin(String id, String version, List<Path> paths) {
         ModMetadata metadata = new BuiltinModMetadata.Builder(id, version).setName(id).build();
-        builtins.add(plain(paths, new BuiltinMetadataWrapper(metadata), List.of()));
+        var wrapper = (LoaderModMetadata) NativeAccess.construct("net.fabricmc.loader.impl.discovery.BuiltinMetadataWrapper", new Class<?>[]{ModMetadata.class}, metadata);
+        builtins.add(plain(paths, wrapper, List.of()));
     }
     public List<Discovery.Candidate> resolve() {
         List<ModCandidateImpl> inputs = new ArrayList<>(builtins); inputs.addAll(nodes.stream().map(Node::nativeCandidate).toList());
         try { selected = ModResolver.resolve(inputs, side, new HashMap<>()); }
         catch (ModResolutionException error) { throw new Failure("FABRIC_DEPENDENCY", "Fabric dependency resolution failed", error); }
-        Set<ModCandidateImpl> selectedSet = new HashSet<>(selected);
         audit.record("RESOLVE", "fabric-runtime-order", "plan", Map.of("ids", selected.stream().map(ModCandidateImpl::getId).toList().toString(), "owner", "NeoForbric", "nativeDiscovery", "false"));
         return selected.stream().filter(c -> !builtins.contains(c)).map(c -> nodes.stream().filter(n -> n.nativeCandidate() == c).findFirst().orElseThrow().source()).toList();
     }

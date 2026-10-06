@@ -18,4 +18,8 @@ final class NativeAccess {
         try { Field field = type.getDeclaredField(name); field.setAccessible(true); field.set(receiver, value); }
         catch (ReflectiveOperationException error) { throw new Failure("FABRIC_RUNTIME_ABI", type.getName() + "." + name, error); }
     }
+    static Object construct(String name, Class<?>[] signature, Object... args) {
+        try { Constructor<?> constructor = Class.forName(name).getDeclaredConstructor(signature); constructor.setAccessible(true); return constructor.newInstance(args); }
+        catch (ReflectiveOperationException error) { throw new Failure("FABRIC_RUNTIME_ABI", name, error); }
+    }
 }

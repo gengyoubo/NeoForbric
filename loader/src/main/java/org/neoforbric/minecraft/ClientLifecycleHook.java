@@ -14,11 +14,12 @@ public final class ClientLifecycleHook implements TransformPipeline.Transformer 
         boolean client = context.name().equals(CLIENT), main = context.name().equals(MAIN);
         if (!client && !main) return bytes;
         if (!Archive.sha256(bytes).equals(client ? clientSha256 : mainSha256)) throw new Failure("HOOK_INPUT", "Client lifecycle input differs: " + context.name());
-        int[] anchors = new int[3]; ClassWriter output = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+        int[] anchors = new int[4]; ClassWriter output = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         new ClassReader(bytes).accept(new ClassVisitor(Opcodes.ASM9, output) {
             @Override public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
                 MethodVisitor method = super.visitMethod(access, name, descriptor, signature, exceptions);
                 boolean frame = client && name.equals("runTick") && descriptor.equals("(Z)V");
+                boolean constructor = client && name.equals("<init>");
                 return new MethodVisitor(Opcodes.ASM9, method) {
                     @Override public void visitInsn(int opcode) {
                         if (frame && opcode == Opcodes.RETURN) {
@@ -27,23 +28,22 @@ public final class ClientLifecycleHook implements TransformPipeline.Transformer 
                         super.visitInsn(opcode);
                     }
                     @Override public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
+                        // Fabric's 1.19.4+ entrypoint patch runs here: gameDirectory and User exist,
+                        // while Options and the resource/render systems have not initialized yet.
+                        if (constructor && opcode == Opcodes.INVOKESTATIC && owner.equals("java/lang/Thread") && name.equals("currentThread") && desc.equals("()Ljava/lang/Thread;")) {
+                            anchors[3]++; super.visitVarInsn(Opcodes.ALOAD, 0);
+                            super.visitMethodInsn(Opcodes.INVOKESTATIC, "org/neoforbric/api/FabricRuntimeHooks", "clientInit", "(Ljava/lang/Object;)V", false);
+                        }
                         if (client && opcode == Opcodes.INVOKESTATIC && owner.equals("java/lang/System") && name.equals("exit") && desc.equals("(I)V")) {
                             anchors[1]++; super.visitMethodInsn(Opcodes.INVOKESTATIC, HOOK, "exit", "(I)V", false);
                         } else if (main && opcode == Opcodes.INVOKEVIRTUAL && owner.equals("java/lang/Runtime") && name.equals("addShutdownHook") && desc.equals("(Ljava/lang/Thread;)V")) {
                             anchors[2]++; super.visitMethodInsn(Opcodes.INVOKESTATIC, HOOK, "registerShutdownHook", "(Ljava/lang/Runtime;Ljava/lang/Thread;)V", false);
                         } else super.visitMethodInsn(opcode, owner, name, desc, itf);
                     }
-                    @Override public void visitFieldInsn(int opcode, String owner, String field, String desc) {
-                        super.visitFieldInsn(opcode, owner, field, desc);
-                        if (client && name.equals("<init>") && opcode == Opcodes.PUTFIELD && owner.equals(CLIENT.replace('.', '/')) && field.equals("gameDirectory") && desc.equals("Ljava/io/File;")) {
-                            super.visitVarInsn(Opcodes.ALOAD, 0);
-                            super.visitMethodInsn(Opcodes.INVOKESTATIC, "org/neoforbric/api/FabricRuntimeHooks", "clientInit", "(Ljava/lang/Object;)V", false);
-                        }
-                    }
                 };
             }
         }, 0);
-        if (client ? anchors[0] != 1 || anchors[1] != 5 : anchors[2] != 1) throw new Failure("HOOK_ANCHOR", "Unexpected client lifecycle anchors: " + java.util.Arrays.toString(anchors));
+        if (client ? anchors[0] != 1 || anchors[1] != 5 || anchors[3] != 1 : anchors[2] != 1) throw new Failure("HOOK_ANCHOR", "Unexpected client lifecycle anchors: " + java.util.Arrays.toString(anchors));
         return output.toByteArray();
     }
 }

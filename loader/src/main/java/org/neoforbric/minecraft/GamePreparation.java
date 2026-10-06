@@ -12,6 +12,8 @@ import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.*;
+import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
+import net.fabricmc.accesswidener.*;
 import org.neoforbric.loader.*;
 
 /** Offline preparation tools. Never runs Mojang's bundler or loads a Minecraft Class. */
@@ -122,6 +124,9 @@ public final class GamePreparation {
 
     /** Materializes the Java 21 MR view; preserves services/resources; strips module/sealing/signature containers. */
     static int normalize(Path input, Path output) throws IOException {
+        return normalize(input, output, Map.of());
+    }
+    private static int normalize(Path input, Path output, Map<String, byte[]> replacements) throws IOException {
         Map<String, byte[]> entries = new TreeMap<>(); Map<String, Integer> versions = new HashMap<>(); int total = 0;
         try (JarFile jar = new JarFile(input.toFile())) {
             boolean multiRelease = jar.getManifest() != null && "true".equalsIgnoreCase(jar.getManifest().getMainAttributes().getValue("Multi-Release"));
@@ -144,6 +149,7 @@ public final class GamePreparation {
             }
         }
         Files.createDirectories(output.toAbsolutePath().getParent());
+        entries.putAll(replacements);
         Path temporary = output.resolveSibling(output.getFileName() + ".part");
         try (JarOutputStream out = new JarOutputStream(Files.newOutputStream(temporary))) {
             entries.put("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\r\n\r\n".getBytes(StandardCharsets.UTF_8));
@@ -166,6 +172,61 @@ public final class GamePreparation {
     public static void remap(Path input, Path output, RuntimeInputs inputs, String from, String to) throws IOException {
         List<Path> classpath = new ArrayList<>(inputs.libraries()); classpath.add(from.equals("intermediary") ? inputs.intermediaryGame() : inputs.game());
         remap(input, output, mappings(inputs.mappings(), inputs.intermediaryMappings()), from, to, classpath);
+    }
+
+    public record FabricInput(Path source, Path output) {}
+    /** A single symbol graph prevents repeated game scans and resolves cross-module inherited references. */
+    public static void remapFabricMods(List<FabricInput> mods, RuntimeInputs inputs) throws IOException {
+        // TinyRemapper can coalesce duplicate inputs. Reject conflicts in the original
+        // snapshots before that merge can hide disagreeing package annotations.
+        Map<String, byte[]> originalClasses = new HashMap<>();
+        for (FabricInput mod : mods) {
+            Archive original = Archive.read(mod.source());
+            for (String resource : original.names()) if (resource.endsWith(".class")) {
+                byte[] bytes = original.read(resource), previous = originalClasses.putIfAbsent(resource, bytes);
+                if (previous != null && !(resource.endsWith("/package-info.class") && Arrays.equals(previous, bytes)))
+                    throw new Failure("DUPLICATE_CLASS", "Conflicting Fabric input " + resource + " in " + mod.source());
+            }
+        }
+        MemoryMappingTree tree = mappings(inputs.mappings(), inputs.intermediaryMappings());
+        Set<InputTag> staticMixins = new HashSet<>();
+        TinyRemapper remapper = TinyRemapper.newRemapper().withMappings(TinyUtils.createMappingProvider(tree, "intermediary", "mojang"))
+                .extension(new MixinExtension(staticMixins::contains)).threads(2).build();
+        List<InputTag> tags = new ArrayList<>();
+        try {
+            List<Path> classpath = new ArrayList<>(inputs.libraries()); classpath.add(inputs.intermediaryGame());
+            remapper.readClassPath(classpath.toArray(Path[]::new));
+            for (FabricInput mod : mods) {
+                InputTag tag = remapper.createInputTag(); tags.add(tag);
+                try (JarFile jar = new JarFile(mod.source().toFile())) {
+                    Manifest manifest = jar.getManifest();
+                    if (manifest != null && "static".equalsIgnoreCase(manifest.getMainAttributes().getValue("Fabric-Loom-Mixin-Remap-Type"))) staticMixins.add(tag);
+                }
+                remapper.readInputs(tag, mod.source());
+            }
+            for (int index = 0; index < mods.size(); index++) {
+                FabricInput mod = mods.get(index); Path temporary = mod.output().resolveSibling(mod.output().getFileName() + ".remapping.jar");
+                try {
+                    try (OutputConsumerPath consumer = new OutputConsumerPath.Builder(temporary).build()) {
+                        consumer.addNonClassFiles(mod.source(), NonClassCopyMode.FIX_META_INF, remapper); remapper.apply(consumer, tags.get(index));
+                    }
+                    Map<String, byte[]> resources = new HashMap<>(); Archive source = Archive.read(mod.source());
+                    byte[] header = "accessWidener".getBytes(StandardCharsets.US_ASCII);
+                    for (String name : source.names()) {
+                        if (name.endsWith("refmap.json")) {
+                            resources.put(name, FabricRefmaps.remap(source.read(name), tree));
+                            continue;
+                        }
+                        if (name.endsWith(".class")) continue; byte[] bytes = source.read(name);
+                        if (bytes.length < header.length || !Arrays.equals(bytes, 0, header.length, header, 0, header.length)) continue;
+                        AccessWidenerWriter writer = new AccessWidenerWriter(AccessWidenerReader.readVersion(bytes));
+                        new AccessWidenerReader(new AccessWidenerRemapper(writer, remapper.getRemapper(), "intermediary", "mojang")).read(bytes, "intermediary");
+                        resources.put(name, writer.write());
+                    }
+                    normalize(temporary, mod.output(), resources);
+                } finally { Files.deleteIfExists(temporary); }
+            }
+        } finally { remapper.finish(); }
     }
     static void remap(Path input, Path output, MemoryMappingTree tree, String from, String to, List<Path> classpath) throws IOException {
         Path temporary = output.resolveSibling(output.getFileName() + ".remapping.jar"); Files.deleteIfExists(temporary);

@@ -45,6 +45,21 @@ class ClassLoadingTest {
         }
     }
 
+    @Test void identicalPackageAnnotationsMayBeSharedButConflictingMetadataFails() throws Exception {
+        String type = "demo.package-info";
+        Archive a = typeJar("metadata-a.jar", type), b = typeJar("metadata-b.jar", type);
+        AuditLog audit = new AuditLog();
+        ClassIndex index = ClassIndex.prepare(List.of(a, b), PARENT, audit);
+        assertSame(a, index.entry(type).archive());
+        assertEquals(1, audit.events().stream().filter(e -> e.type().equals("identical-package-metadata")).count());
+        ClassWriter writer = new ClassWriter(0);
+        new ClassReader(a.read("demo/package-info.class")).accept(new ClassVisitor(Opcodes.ASM9, writer) {
+            @Override public void visitEnd() { visitAnnotation("Ljava/lang/Deprecated;", true).visitEnd(); super.visitEnd(); }
+        }, 0);
+        Archive conflict = Archive.read(TestJars.jar(temporary.resolve("metadata-conflict.jar"), Map.of("demo/package-info.class", writer.toByteArray())));
+        assertEquals("DUPLICATE_CLASS", assertThrows(Failure.class, () -> ClassIndex.prepare(List.of(a, conflict), PARENT, new AuditLog())).code());
+    }
+
     @Test void finalTransformedBytesAreWhatTheVmExecutes() throws Exception {
         AuditLog audit = new AuditLog();
         TransformPipeline pipeline = new TransformPipeline();
@@ -90,6 +105,28 @@ class ClassLoadingTest {
             assertSame(a.get(5, TimeUnit.SECONDS), b.get(5, TimeUnit.SECONDS));
             assertEquals(1, transformed.get());
             assertEquals(1, audit.events().stream().filter(e -> e.type().equals("class-defined")).count());
+        }
+    }
+
+    @Test void generatedClassesNeedAnExplicitProviderAndStillRespectNameAndPackageBoundaries() throws Exception {
+        Archive owner = typeJar("generator-owner.jar", "demo.Generator");
+        AuditLog audit = new AuditLog(); TransformPipeline pipeline = new TransformPipeline();
+        try (var loader = loader(List.of(owner), pipeline, audit)) {
+            loader.generatedClasses(name -> name.equals("demo.Generated") ? new GameClassLoader.Generated(TestJars.type(name), owner, "fixture-generator") : null);
+            pipeline.seal(audit); loader.open();
+            assertSame(loader, loader.loadClass("demo.Generated").getClassLoader());
+            assertThrows(ClassNotFoundException.class, () -> loader.loadClass("demo.Unregistered"));
+            assertEquals(1, audit.events().stream().filter(event -> event.type().equals("generated-class-owner")).count());
+            assertThrows(Failure.class, () -> loader.generatedClasses(name -> null));
+        }
+        for (String name : List.of("demo.Invalid", "org.neoforbric.Untrusted")) {
+            TransformPipeline invalidPipeline = new TransformPipeline(); AuditLog invalidAudit = new AuditLog();
+            try (var loader = loader(List.of(owner), invalidPipeline, invalidAudit)) {
+                loader.generatedClasses(requested -> new GameClassLoader.Generated(TestJars.type("demo.Other"), owner, "broken-generator"));
+                invalidPipeline.seal(invalidAudit); loader.open();
+                assertEquals(name.startsWith("org.neoforbric.") ? "PROTECTED_PACKAGE" : "CLASS_NAME_MISMATCH", assertThrows(Failure.class, () -> loader.loadClass(name)).code());
+                assertEquals("INSTANCE_TAINTED", assertThrows(Failure.class, () -> loader.loadClass("demo.Generator")).code());
+            }
         }
     }
 
