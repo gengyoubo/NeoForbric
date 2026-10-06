@@ -1,0 +1,2 @@
+rootProject.name = 'NeoForbric'
+include 'loader', 'fixtures:game', 'fixtures:mod-a', 'fixtures:mod-b', 'fixtures:mod-c'

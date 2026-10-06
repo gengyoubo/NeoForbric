@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "id": "probe_a",
+  "version": "1.0.0",
+  "entrypoint": "demo.moda.Initializer",
+  "depends": { "minecraft": "1.21.1", "java": ">=21.0.0 <22.0.0" }
+}

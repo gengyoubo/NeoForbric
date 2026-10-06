@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "id": "probe_c",
+  "version": "1.0.0",
+  "entrypoint": "demo.modc.Initializer",
+  "depends": { "probe_b": "1.0.0" }
+}

@@ -1,0 +1,107 @@
+package org.neoforbric.loader;
+
+import java.io.Closeable;
+import java.net.URL;
+import java.security.*;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+
+/** The sole defining loader for all admitted game and mod types. Parent access is an allowlist. */
+public final class GameClassLoader extends SecureClassLoader implements Closeable {
+    static { registerAsParallelCapable(); }
+    private final ClassIndex index;
+    private final TransformPipeline transforms;
+    private final AuditLog audit;
+    private final AtomicReference<Failure> poison = new AtomicReference<>();
+    private final ThreadLocal<String> transforming = new ThreadLocal<>();
+    private volatile boolean ready;
+    private volatile boolean closed;
+
+    public GameClassLoader(ClassIndex index, TransformPipeline transforms, ClassLoader parent, AuditLog audit) {
+        super("NeoForbric-Game", parent);
+        this.index = index;
+        this.transforms = transforms;
+        this.audit = audit;
+        audit.record("PREPARE", "loader-created", "G", Map.of("definitionGate", "closed", "parent", parent.getName() == null ? "unnamed" : parent.getName()));
+    }
+
+    public synchronized void open() {
+        if (ready || closed) throw new Failure("LOADER_STATE", "Cannot reopen game loader");
+        if (!transforms.sealed()) throw new Failure("TRANSFORM_NOT_READY", "Seal transformation plan before opening G");
+        ready = true;
+        audit.record("SEALED", "definition-gate", "G", Map.of("state", "open"));
+    }
+
+    @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+        if (closed) throw new Failure("LOADER_CLOSED", "Game domain is closed");
+        if (poison.get() != null) throw new Failure("INSTANCE_TAINTED", "An earlier definition failed; restart required", poison.get());
+        if (ClassIndex.shared(name)) return getParent().loadClass(name);
+        try { return ClassLoader.getPlatformClassLoader().loadClass(name); }
+        catch (ClassNotFoundException expected) { /* Only the explicit game index may define other types. */ }
+        if (!ready) throw new Failure("EARLY_DEFINITION", "Game class requested before definition gate: " + name);
+        if (transforming.get() != null) throw new Failure("REENTRANT_DEFINITION", "Transformer for " + transforming.get() + " requested class " + name + "; use bytecode access");
+        synchronized (getClassLoadingLock(name)) {
+            if (poison.get() != null) throw new Failure("INSTANCE_TAINTED", "An earlier definition failed; restart required", poison.get());
+            Class<?> loaded = findLoadedClass(name);
+            if (loaded == null) loaded = findClass(name);
+            if (resolve) {
+                try { resolveClass(loaded); }
+                catch (LinkageError failed) { throw definitionFailure(name, failed); }
+            }
+            return loaded;
+        }
+    }
+
+    @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
+        ClassIndex.Entry entry = index.entry(name);
+        if (entry == null) throw new ClassNotFoundException(name + " has no admitted game-domain owner");
+        try {
+            byte[] bytes;
+            transforming.set(name);
+            try { bytes = transforms.apply(name, entry.bytes(), index::original, audit); }
+            finally { transforming.remove(); }
+            int separator = name.lastIndexOf('.');
+            if (separator > 0) {
+                String packageName = name.substring(0, separator);
+                synchronized (this) {
+                    if (getDefinedPackage(packageName) == null) definePackage(packageName, null, null, null, null, null, null, null);
+                }
+            }
+            CodeSource source = new CodeSource(entry.archive().codeSource(), (java.security.cert.Certificate[]) null);
+            Class<?> type = defineClass(name, bytes, 0, bytes.length, source);
+            audit.record("GAME", "class-defined", name, Map.of("loader", "G", "module", "unnamed", "source", entry.archive().path().toString(),
+                    "archiveSha256", entry.archive().hash(), "finalSha256", Archive.sha256(bytes)));
+            return type;
+        } catch (Exception | Error failed) {
+            Failure.rethrowFatal(failed);
+            throw definitionFailure(name, failed);
+        }
+    }
+
+    private Failure definitionFailure(String name, Throwable failed) {
+        Failure failure = failed instanceof Failure f ? f : new Failure("CLASS_DEFINITION", "Cannot define / resolve " + name, failed);
+        poison.compareAndSet(null, failure);
+        audit.record("FAILED", "definition-failed", name, Map.of("code", failure.code(), "message", failure.getMessage(),
+                "severity", "INSTANCE_FATAL", "stateTainted", "true"));
+        return failure;
+    }
+
+    @Override public URL getResource(String name) {
+        if (closed) return null;
+        if (sharedResource(name)) return getParent().getResource(name);
+        List<URL> resources = index.resources(name);
+        return resources.isEmpty() ? null : resources.getFirst();
+    }
+    @Override public Enumeration<URL> getResources(String name) {
+        if (closed) return Collections.emptyEnumeration();
+        if (sharedResource(name)) {
+            try { return getParent().getResources(name); }
+            catch (java.io.IOException failed) { throw new Failure("RESOURCE_IO", "Cannot enumerate " + name, failed); }
+        }
+        return Collections.enumeration(index.resources(name));
+    }
+    private static boolean sharedResource(String name) {
+        return name.startsWith("org/neoforbric/api/") || name.startsWith("org/objectweb/asm/");
+    }
+    @Override public void close() { closed = true; }
+}

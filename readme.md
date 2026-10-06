@@ -40,3 +40,15 @@ Fabric ─────┐
 Forge ──────┼─> NeoForbric Lifecycle / Hooks ─> Common Mod
 NeoForge ───┘
 ```
+
+# 当前实现与运行
+
+已实现 Java 21 启动内核原型：自有 JVM 入口、JAR 元数据发现、原型依赖图、单一游戏类加载器、转换定义屏障和 JSON 审计。三个独立样例 JAR 在同一游戏夹具对象上协作，验证初始化顺序与类 / 对象身份。
+
+```powershell
+$env:JAVA_HOME = 'C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot' # 换成自己的 JDK 21 路径
+./gradlew.bat runFixture
+./gradlew.bat :loader:test
+```
+
+Minecraft 与 Fabric / Forge / NeoForge 原生入口尚未接入；当前对原生模组只做元数据识别，执行时明确拒绝。详细运行方法、支持范围、测试与后续接入顺序见 [原型说明](docs/prototype.md)，前期调查见 [docs 索引](docs/README.md)。

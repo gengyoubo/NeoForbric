@@ -1,0 +1,1148 @@
+{
+  "schema_version": 1,
+  "investigation_date": "2026-10-06",
+  "timezone": "Asia/Tokyo",
+  "target": {
+    "minecraft": "1.21.1",
+    "java": 21
+  },
+  "scope": [
+    "17-cross-ecosystem-interoperability.md",
+    "18-bootstrap-and-classloading.md"
+  ],
+  "evidence_kind": "primary documentation and fixed source static inspection",
+  "not_performed": [
+    "Minecraft launch",
+    "game or mod JAR bytecode transformation",
+    "runtime dependency resolution",
+    "ModuleLayer or classloader fixture execution",
+    "language mod loading",
+    "cross-ecosystem object interaction",
+    "signed JAR fixture",
+    "worldgen / config / command runtime probes",
+    "save and reload",
+    "client-server protocol test"
+  ],
+  "is_runtime_dependency_lock": false,
+  "hash_conventions": {
+    "source_files": "download text decoded as UTF-8, CRLF normalized to LF, re-encoded UTF-8",
+    "source_artifacts": "original downloaded source JAR bytes"
+  },
+  "source_file_scope": "collected source inputs for selected contracts; collection and hashing do not imply every method was audited",
+  "repositories": {
+    "loader": {
+      "repository": "FabricMC/fabric-loader",
+      "commit": "fda9a7b84f0898f57b46fbbfda58795e7fa31cef",
+      "input_ref": "0.16.10"
+    },
+    "neo": {
+      "repository": "neoforged/NeoForge",
+      "commit": "a2d6402a3c1eec093aef7e7d10ac5145906c199e",
+      "input_ref": "1.21.1"
+    },
+    "forge": {
+      "repository": "MinecraftForge/MinecraftForge",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "input_ref": "1.21.1"
+    },
+    "fabric": {
+      "repository": "FabricMC/fabric",
+      "commit": "83c07162d88a703d15c8dae50cbbc12f4e9e63c3",
+      "input_ref": "1.21.1"
+    },
+    "flk": {
+      "repository": "FabricMC/fabric-language-kotlin",
+      "commit": "8e016c8109414898c4b45b9b7ab738da1ee14f5a",
+      "input_ref": "1.12.3+kotlin.2.0.21 tag"
+    },
+    "kff": {
+      "repository": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "input_ref": "5.x branch snapshot"
+    },
+    "gml": {
+      "repository": "GroovyMC/GroovyModLoader",
+      "commit": "4e9c837937796ca192f1eb8ccbac9dc62e5f0d0f",
+      "input_ref": "6.0.2 tag"
+    },
+    "scala1211": {
+      "repository": "Kotori316/SLP",
+      "commit": "3ae2ac491e94ca66586414e376197676ecd87111",
+      "input_ref": "2024-08-31 commit; Minecraft 1.21.1 explicitly declared"
+    }
+  },
+  "version_gaps": [
+    "NeoForge gradle.properties and FML 4.0.45 POM dependency declarations differ; preserve stage3-snapshot.json and resolve actual runtime before building.",
+    "Forge exact ModLauncher / AT / Coremods / Bus sources in earlier stage were unavailable (HTTP 403); series commits are mechanism evidence, not exact binary proof.",
+    "KFF 5.x fixed branch source is not a tested published artifact / FML combination.",
+    "GML 6.0.2 source declares NeoForge 21.0.14-beta and gml-core 7.0.3; 1.21.1 compiled-mod compatibility and script support have not been tested.",
+    "FLK Kotlin 2.0.21, KFF libraries and SLP Scala dependencies are investigation samples, not a chosen common runtime.",
+    "README Forbric ancestry and exact 1.21.1 baseline remain unconfirmed."
+  ],
+  "structural_conflicts": [
+    {
+      "target": "net.minecraft.world.entity.Entity",
+      "forge_super": "net.minecraftforge.common.capabilities.CapabilityProvider<Entity>",
+      "neoforge_super": "net.neoforged.neoforge.attachment.AttachmentHolder",
+      "resolution": "unimplemented; composition does not preserve arbitrary concrete-superclass ABI"
+    }
+  ],
+  "config_path_observation": {
+    "forge": "SERVER base = world/serverconfig in pinned source",
+    "neoforge": "SERVER base = instance config; existing world/serverconfig override in pinned source and FML 4.0.45 mechanism",
+    "is_all_1211_revisions_claim": false
+  },
+  "source_files": [
+    {
+      "id": "fabric",
+      "repo": "FabricMC/fabric",
+      "commit": "83c07162d88a703d15c8dae50cbbc12f4e9e63c3",
+      "path": "deprecated/fabric-command-api-v1/src/main/java/net/fabricmc/fabric/api/command/v1/CommandRegistrationCallback.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/deprecated/fabric-command-api-v1/src/main/java/net/fabricmc/fabric/api/command/v1/CommandRegistrationCallback.java",
+      "sha256_utf8_lf": "a76dd2c5e371e61bcea01e9fd32e8b44ffea8c1cccaad508ab977e21a4a6cde5",
+      "lines": 38
+    },
+    {
+      "id": "fabric",
+      "repo": "FabricMC/fabric",
+      "commit": "83c07162d88a703d15c8dae50cbbc12f4e9e63c3",
+      "path": "fabric-biome-api-v1/src/main/java/net/fabricmc/fabric/api/biome/v1/BiomeModifications.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-biome-api-v1/src/main/java/net/fabricmc/fabric/api/biome/v1/BiomeModifications.java",
+      "sha256_utf8_lf": "f3edb4bd287826b41d2755908cfa0158ce92d5d1d02376fab3044b032e3de66a",
+      "lines": 96
+    },
+    {
+      "id": "fabric",
+      "repo": "FabricMC/fabric",
+      "commit": "83c07162d88a703d15c8dae50cbbc12f4e9e63c3",
+      "path": "fabric-biome-api-v1/src/main/java/net/fabricmc/fabric/api/biome/v1/ModificationPhase.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-biome-api-v1/src/main/java/net/fabricmc/fabric/api/biome/v1/ModificationPhase.java",
+      "sha256_utf8_lf": "c96b6bea2cbfd16ad010785d8d7b124e87565e02581cb8d130a51e6dfd19dcfb",
+      "lines": 62
+    },
+    {
+      "id": "fabric",
+      "repo": "FabricMC/fabric",
+      "commit": "83c07162d88a703d15c8dae50cbbc12f4e9e63c3",
+      "path": "fabric-biome-api-v1/src/main/java/net/fabricmc/fabric/impl/biome/modification/BiomeModificationImpl.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-biome-api-v1/src/main/java/net/fabricmc/fabric/impl/biome/modification/BiomeModificationImpl.java",
+      "sha256_utf8_lf": "47ac907f2d345dcb50f9fcab89b2db35952863d872ff076ecde0c637c117bde9",
+      "lines": 238
+    },
+    {
+      "id": "fabric",
+      "repo": "FabricMC/fabric",
+      "commit": "83c07162d88a703d15c8dae50cbbc12f4e9e63c3",
+      "path": "fabric-command-api-v2/src/client/java/net/fabricmc/fabric/api/client/command/v2/ClientCommandRegistrationCallback.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-command-api-v2/src/client/java/net/fabricmc/fabric/api/client/command/v2/ClientCommandRegistrationCallback.java",
+      "sha256_utf8_lf": "5cf11ab4fc97a375e00ff44fb1ef8ddbfb8c1b8e763ca7b6521056454f77a8e8",
+      "lines": 47
+    },
+    {
+      "id": "fabric",
+      "repo": "FabricMC/fabric",
+      "commit": "83c07162d88a703d15c8dae50cbbc12f4e9e63c3",
+      "path": "fabric-command-api-v2/src/main/java/net/fabricmc/fabric/api/command/v2/CommandRegistrationCallback.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-command-api-v2/src/main/java/net/fabricmc/fabric/api/command/v2/CommandRegistrationCallback.java",
+      "sha256_utf8_lf": "5107979db4a102c2ca9c8f4f59469e06856cae7105c95f8142c9bfa87d033574",
+      "lines": 55
+    },
+    {
+      "id": "fabric",
+      "repo": "FabricMC/fabric",
+      "commit": "83c07162d88a703d15c8dae50cbbc12f4e9e63c3",
+      "path": "fabric-command-api-v2/src/main/java/net/fabricmc/fabric/mixin/command/CommandManagerMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-command-api-v2/src/main/java/net/fabricmc/fabric/mixin/command/CommandManagerMixin.java",
+      "sha256_utf8_lf": "49394b57446c2de5c46fe9c4698074f16e77d2f99acd0727a8f9d2b8f6a8e5db",
+      "lines": 50
+    },
+    {
+      "id": "fabric",
+      "repo": "FabricMC/fabric",
+      "commit": "83c07162d88a703d15c8dae50cbbc12f4e9e63c3",
+      "path": "fabric-gametest-api-v1/src/main/java/net/fabricmc/fabric/mixin/gametest/CommandManagerMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-gametest-api-v1/src/main/java/net/fabricmc/fabric/mixin/gametest/CommandManagerMixin.java",
+      "sha256_utf8_lf": "43a5d80d7318b1dc16d11963928202896ffd1d69ea4eb54650799913bc6887c9",
+      "lines": 48
+    },
+    {
+      "id": "fabric",
+      "repo": "FabricMC/fabric",
+      "commit": "83c07162d88a703d15c8dae50cbbc12f4e9e63c3",
+      "path": "fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/mixin/networking/CommandManagerMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/mixin/networking/CommandManagerMixin.java",
+      "sha256_utf8_lf": "00a9b5642f89eec94f76cd4706063f658933405b8267732c49693b88964fdfe0",
+      "lines": 55
+    },
+    {
+      "id": "flk",
+      "repo": "FabricMC/fabric-language-kotlin",
+      "commit": "8e016c8109414898c4b45b9b7ab738da1ee14f5a",
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-language-kotlin/8e016c8109414898c4b45b9b7ab738da1ee14f5a/README.md",
+      "sha256_utf8_lf": "32fcf76a99f131fd52db9f207633ba676ff74ba9b4215cbe74d35b161ffe9b61",
+      "lines": 260
+    },
+    {
+      "id": "flk",
+      "repo": "FabricMC/fabric-language-kotlin",
+      "commit": "8e016c8109414898c4b45b9b7ab738da1ee14f5a",
+      "path": "gradle.properties",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-language-kotlin/8e016c8109414898c4b45b9b7ab738da1ee14f5a/gradle.properties",
+      "sha256_utf8_lf": "d2524b5773f4afcdf1b449455f2637366a7e74c72751719e985a9fcc06ebf1c5",
+      "lines": 10
+    },
+    {
+      "id": "flk",
+      "repo": "FabricMC/fabric-language-kotlin",
+      "commit": "8e016c8109414898c4b45b9b7ab738da1ee14f5a",
+      "path": "src/main/kotlin/net/fabricmc/language/kotlin/KotlinAdapter.kt",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-language-kotlin/8e016c8109414898c4b45b9b7ab738da1ee14f5a/src/main/kotlin/net/fabricmc/language/kotlin/KotlinAdapter.kt",
+      "sha256_utf8_lf": "3a23ad66e008aaee5b2f4d3bb930a860a28a1e6f3e0b0086e2d00812a83482f4",
+      "lines": 121
+    },
+    {
+      "id": "flk",
+      "repo": "FabricMC/fabric-language-kotlin",
+      "commit": "8e016c8109414898c4b45b9b7ab738da1ee14f5a",
+      "path": "src/main/kotlin/net/fabricmc/language/kotlin/KotlinLanguageAdapter.kt",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-language-kotlin/8e016c8109414898c4b45b9b7ab738da1ee14f5a/src/main/kotlin/net/fabricmc/language/kotlin/KotlinLanguageAdapter.kt",
+      "sha256_utf8_lf": "42a31043accc5b588a4e7e5f5233a8162eefdfeab16b05303a4ece228675800c",
+      "lines": 32
+    },
+    {
+      "id": "flk",
+      "repo": "FabricMC/fabric-language-kotlin",
+      "commit": "8e016c8109414898c4b45b9b7ab738da1ee14f5a",
+      "path": "src/main/resources/fabric.mod.json",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-language-kotlin/8e016c8109414898c4b45b9b7ab738da1ee14f5a/src/main/resources/fabric.mod.json",
+      "sha256_utf8_lf": "fed0578ee3f9f3c6053edcca49d9487ee96832cd7f1fd75996889e93c9d54602",
+      "lines": 24
+    },
+    {
+      "id": "forge",
+      "repo": "MinecraftForge/MinecraftForge",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "path": "fmlcore/src/main/java/net/minecraftforge/fml/IModStateProvider.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlcore/src/main/java/net/minecraftforge/fml/IModStateProvider.java",
+      "sha256_utf8_lf": "f2971920ae54e8643f5aaa2e5937c46bedd35a776b01ae9447338bc73b2e9f6a",
+      "lines": 21
+    },
+    {
+      "id": "forge",
+      "repo": "MinecraftForge/MinecraftForge",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "path": "fmlcore/src/main/java/net/minecraftforge/fml/config/ConfigTracker.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlcore/src/main/java/net/minecraftforge/fml/config/ConfigTracker.java",
+      "sha256_utf8_lf": "239e576aa2e30239b135167f97ea4783524afbef8cbc1626ac09db3cb760baba",
+      "lines": 120
+    },
+    {
+      "id": "forge",
+      "repo": "MinecraftForge/MinecraftForge",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "path": "fmlcore/src/main/java/net/minecraftforge/fml/config/ModConfig.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlcore/src/main/java/net/minecraftforge/fml/config/ModConfig.java",
+      "sha256_utf8_lf": "9487f5075b4631fbb0c50c401377b7fece98cc753b944f8381838dffbb2e9f9d",
+      "lines": 127
+    },
+    {
+      "id": "forge",
+      "repo": "MinecraftForge/MinecraftForge",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "path": "fmlloader/src/main/java/net/minecraftforge/fml/loading/FMLServiceProvider.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlloader/src/main/java/net/minecraftforge/fml/loading/FMLServiceProvider.java",
+      "sha256_utf8_lf": "4ef927766dbdade3cf850dca3e35771a0d1fb138cd648178a6c93c4206b17cb0",
+      "lines": 76
+    },
+    {
+      "id": "forge",
+      "repo": "MinecraftForge/MinecraftForge",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "path": "javafmllanguage/src/main/java/net/minecraftforge/fml/javafmlmod/FMLModContainer.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/javafmllanguage/src/main/java/net/minecraftforge/fml/javafmlmod/FMLModContainer.java",
+      "sha256_utf8_lf": "2a5e026acd834ffce7ff29f8c6803de7dddc755191bd2fe999444a03fa0774d9",
+      "lines": 192
+    },
+    {
+      "id": "forge",
+      "repo": "MinecraftForge/MinecraftForge",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "path": "patches/minecraft/net/minecraft/commands/Commands.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/commands/Commands.java.patch",
+      "sha256_utf8_lf": "90c49e91ea478cb115de690393b8eee117a471da0d9d3d490ac7376e575d6016",
+      "lines": 49
+    },
+    {
+      "id": "forge",
+      "repo": "MinecraftForge/MinecraftForge",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "path": "patches/minecraft/net/minecraft/world/entity/Entity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/entity/Entity.java.patch",
+      "sha256_utf8_lf": "868c7afdbf4e7d1928bd3eb9463a15a3bec959c87edf3d7209c4bae424f6ec6f",
+      "lines": 579
+    },
+    {
+      "id": "forge",
+      "repo": "MinecraftForge/MinecraftForge",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "path": "patches/minecraft/net/minecraft/world/item/ItemStack.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/item/ItemStack.java.patch",
+      "sha256_utf8_lf": "903a9d51601bd6262c0650e52817d20de57a01b5d9c945b62510da803155bb5d",
+      "lines": 111
+    },
+    {
+      "id": "forge",
+      "repo": "MinecraftForge/MinecraftForge",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "path": "src/main/java/net/minecraftforge/common/capabilities/CapabilityProvider.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/common/capabilities/CapabilityProvider.java",
+      "sha256_utf8_lf": "6c681bce1c56176d18d600542dedf67b1917081fdc4e5b2538d8d31dd37a1331",
+      "lines": 180
+    },
+    {
+      "id": "forge",
+      "repo": "MinecraftForge/MinecraftForge",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "path": "src/main/java/net/minecraftforge/event/RegisterCommandsEvent.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/event/RegisterCommandsEvent.java",
+      "sha256_utf8_lf": "4d1dadf951c61f5a77925283c5e4e39bbfd876129da4e2b27ef6e7ed6ff99f71",
+      "lines": 60
+    },
+    {
+      "id": "forge",
+      "repo": "MinecraftForge/MinecraftForge",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "path": "src/main/java/net/minecraftforge/fml/core/ModStateProvider.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/fml/core/ModStateProvider.java",
+      "sha256_utf8_lf": "bc6cd06fa8a5dd102442ebbd4909678395f5203fa32a591bcf0a78329800de9d",
+      "lines": 141
+    },
+    {
+      "id": "forge",
+      "repo": "MinecraftForge/MinecraftForge",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "path": "src/main/java/net/minecraftforge/network/NetworkInitialization.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/network/NetworkInitialization.java",
+      "sha256_utf8_lf": "5bd4518176b76c58b8487961bb321642be23245bf5a1244a6ab6e3df94904f39",
+      "lines": 83
+    },
+    {
+      "id": "forge",
+      "repo": "MinecraftForge/MinecraftForge",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "path": "src/main/java/net/minecraftforge/server/ServerLifecycleHooks.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/server/ServerLifecycleHooks.java",
+      "sha256_utf8_lf": "9081bd3e18a61453b1ac8b1ef2c7c63b3f65f3e252dcfed3d2a91eaf8d3c61df",
+      "lines": 190
+    },
+    {
+      "id": "forge",
+      "repo": "MinecraftForge/MinecraftForge",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "path": "src/main/java/net/minecraftforge/server/permission/PermissionAPI.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/server/permission/PermissionAPI.java",
+      "sha256_utf8_lf": "7fd6a106a9e0cd4266e950f9ab10de7025f644b7572d75542d5d067713b2b3ac",
+      "lines": 137
+    },
+    {
+      "id": "gml",
+      "repo": "GroovyMC/GroovyModLoader",
+      "commit": "4e9c837937796ca192f1eb8ccbac9dc62e5f0d0f",
+      "path": "README.MD",
+      "url": "https://raw.githubusercontent.com/GroovyMC/GroovyModLoader/4e9c837937796ca192f1eb8ccbac9dc62e5f0d0f/README.MD",
+      "sha256_utf8_lf": "573bdef5e16a0006afe5be5cd473c126023af2be0a9dabd155f17b62b5ef7cb1",
+      "lines": 69
+    },
+    {
+      "id": "gml",
+      "repo": "GroovyMC/GroovyModLoader",
+      "commit": "4e9c837937796ca192f1eb8ccbac9dc62e5f0d0f",
+      "path": "build.gradle",
+      "url": "https://raw.githubusercontent.com/GroovyMC/GroovyModLoader/4e9c837937796ca192f1eb8ccbac9dc62e5f0d0f/build.gradle",
+      "sha256_utf8_lf": "86eedab5932c244a017b4023f0f5ff4084c5e9b52b3eca9fabf461bc496d571d",
+      "lines": 291
+    },
+    {
+      "id": "gml",
+      "repo": "GroovyMC/GroovyModLoader",
+      "commit": "4e9c837937796ca192f1eb8ccbac9dc62e5f0d0f",
+      "path": "gradle.properties",
+      "url": "https://raw.githubusercontent.com/GroovyMC/GroovyModLoader/4e9c837937796ca192f1eb8ccbac9dc62e5f0d0f/gradle.properties",
+      "sha256_utf8_lf": "f9f34bf5f6fa634b48c1c36efabe9183095b62e53b60b741bdd9017f02fe234e",
+      "lines": 8
+    },
+    {
+      "id": "gml",
+      "repo": "GroovyMC/GroovyModLoader",
+      "commit": "4e9c837937796ca192f1eb8ccbac9dc62e5f0d0f",
+      "path": "src/main/groovy/org/groovymc/gml/mod/GMLMod.groovy",
+      "url": "https://raw.githubusercontent.com/GroovyMC/GroovyModLoader/4e9c837937796ca192f1eb8ccbac9dc62e5f0d0f/src/main/groovy/org/groovymc/gml/mod/GMLMod.groovy",
+      "sha256_utf8_lf": "e721d74db86eb6b23a9d3433a41e907a28adb3339ce5bdd812eae8152289863d",
+      "lines": 14
+    },
+    {
+      "id": "gml",
+      "repo": "GroovyMC/GroovyModLoader",
+      "commit": "4e9c837937796ca192f1eb8ccbac9dc62e5f0d0f",
+      "path": "src/main/resources/mods.groovy",
+      "url": "https://raw.githubusercontent.com/GroovyMC/GroovyModLoader/4e9c837937796ca192f1eb8ccbac9dc62e5f0d0f/src/main/resources/mods.groovy",
+      "sha256_utf8_lf": "8e4700f28263ce7e709fb29a53b61101502ae66cbcd15c442961f8d183d4046f",
+      "lines": 23
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/README.md",
+      "sha256_utf8_lf": "1874e41ec11714ab8cf8387029a0abad11033ef8bc3f95a79bd06221a3c67c95",
+      "lines": 105
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "combined/kfflang/build.gradle.kts",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/combined/kfflang/build.gradle.kts",
+      "sha256_utf8_lf": "6d3d72a6185504fda2f3bb37516252ccf33dbf78b439c237bd498908cdf22f87",
+      "lines": 24
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "gradle.properties",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/gradle.properties",
+      "sha256_utf8_lf": "c5e0172061acfbfb02860e9a50ad66e3a75b3631cfe714ef1d7866ffb98b411f",
+      "lines": 16
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "src/kfflang/forge/kotlin/thedarkcolour/kotlinforforge/AutoKotlinEventBusSubscriber.kt",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/src/kfflang/forge/kotlin/thedarkcolour/kotlinforforge/AutoKotlinEventBusSubscriber.kt",
+      "sha256_utf8_lf": "e07773f1e600ddefd78506bb0fb06e51fcf1ddae57a8168b396a577503150a72",
+      "lines": 140
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "src/kfflang/forge/kotlin/thedarkcolour/kotlinforforge/EventBusMakers.kt",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/src/kfflang/forge/kotlin/thedarkcolour/kotlinforforge/EventBusMakers.kt",
+      "sha256_utf8_lf": "429ee5257027a67ad5f2817eb51e076b1874cec1c2ca9c1fa770603c6c9f5440",
+      "lines": 37
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "src/kfflang/forge/kotlin/thedarkcolour/kotlinforforge/KotlinLanguageProvider.kt",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/src/kfflang/forge/kotlin/thedarkcolour/kotlinforforge/KotlinLanguageProvider.kt",
+      "sha256_utf8_lf": "6347d83f3c6c733981609ffaa1f7566add3044a255e2a9d4b32a934cd6c7ac80",
+      "lines": 83
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "src/kfflang/forge/kotlin/thedarkcolour/kotlinforforge/KotlinModContainer.kt",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/src/kfflang/forge/kotlin/thedarkcolour/kotlinforforge/KotlinModContainer.kt",
+      "sha256_utf8_lf": "2811642eaf934f8c4ae2ecdec57b03c0d391247ab2542e669df2d254b75f7b67",
+      "lines": 98
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "src/kfflang/forge/kotlin/thedarkcolour/kotlinforforge/KotlinModLoadingContext.kt",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/src/kfflang/forge/kotlin/thedarkcolour/kotlinforforge/KotlinModLoadingContext.kt",
+      "sha256_utf8_lf": "adbbf17c2f20f77c90d545c8832b0e06361a9c66859e020bc47d018974d70e91",
+      "lines": 21
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "src/kfflang/forge/kotlin/thedarkcolour/kotlinforforge/Logger.kt",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/src/kfflang/forge/kotlin/thedarkcolour/kotlinforforge/Logger.kt",
+      "sha256_utf8_lf": "cc1d5831b45503b6f89119db7e36ff8dabe89f544f3d9bc01ada45af3381fb7e",
+      "lines": 11
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "src/kfflang/forge/resources/META-INF/services/net.minecraftforge.forgespi.language.IModLanguageProvider",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/src/kfflang/forge/resources/META-INF/services/net.minecraftforge.forgespi.language.IModLanguageProvider",
+      "sha256_utf8_lf": "63e58c78ee0ee7c6047c2aabc56eb47db374e8605a1488dade21732cc2a8ac66",
+      "lines": 1
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "src/kfflang/neoforge/kotlin/thedarkcolour/kotlinforforge/neoforge/AutoKotlinEventBusSubscriber.kt",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/src/kfflang/neoforge/kotlin/thedarkcolour/kotlinforforge/neoforge/AutoKotlinEventBusSubscriber.kt",
+      "sha256_utf8_lf": "46869172fe16f852a53ad1b193df7fd70dd4520b0cd484cb102745f395e916ab",
+      "lines": 175
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "src/kfflang/neoforge/kotlin/thedarkcolour/kotlinforforge/neoforge/KotlinLanguageLoader.kt",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/src/kfflang/neoforge/kotlin/thedarkcolour/kotlinforforge/neoforge/KotlinLanguageLoader.kt",
+      "sha256_utf8_lf": "b4fabdd3c23d66ca6f09ad819a5d52490650ceffe7e80d10d5bce530ab2b8480",
+      "lines": 62
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "src/kfflang/neoforge/kotlin/thedarkcolour/kotlinforforge/neoforge/KotlinModContainer.kt",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/src/kfflang/neoforge/kotlin/thedarkcolour/kotlinforforge/neoforge/KotlinModContainer.kt",
+      "sha256_utf8_lf": "f17a7aa286d3594c76b5bedd8a375a060b793785d83e289fe111b7b541036ccb",
+      "lines": 137
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "src/kfflang/neoforge/kotlin/thedarkcolour/kotlinforforge/neoforge/KotlinModLoadingContext.kt",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/src/kfflang/neoforge/kotlin/thedarkcolour/kotlinforforge/neoforge/KotlinModLoadingContext.kt",
+      "sha256_utf8_lf": "8cc95930369cb8b60bf22936887b6f433e0d179674f2b2506cad08b9b3ef050c",
+      "lines": 26
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "src/kfflang/neoforge/kotlin/thedarkcolour/kotlinforforge/neoforge/Logger.kt",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/src/kfflang/neoforge/kotlin/thedarkcolour/kotlinforforge/neoforge/Logger.kt",
+      "sha256_utf8_lf": "602c126b941f506a85fc8f9271829f8131372a768d903e82735d9cb4e4a3fa1c",
+      "lines": 11
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "src/kfflang/neoforge/resources/META-INF/services/net.neoforged.neoforgespi.language.IModLanguageLoader",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/src/kfflang/neoforge/resources/META-INF/services/net.neoforged.neoforgespi.language.IModLanguageLoader",
+      "sha256_utf8_lf": "fbcc9b5dc0af799c875a14bdc01f557a03f4ea5317781ada8b8b93160db0a4c4",
+      "lines": 1
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "src/kffmod/templates/META-INF/mods.toml",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/src/kffmod/templates/META-INF/mods.toml",
+      "sha256_utf8_lf": "232d64d351674dc37a876ba8cbf4c0c4c3bb490bc38fcb5bca265d653d66d93d",
+      "lines": 26
+    },
+    {
+      "id": "kff",
+      "repo": "thedarkcolour/KotlinForForge",
+      "commit": "0e8e3b579661acdad6ff76b9620dcc06f8885cab",
+      "path": "src/kffmod/templates/META-INF/neoforge.mods.toml",
+      "url": "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/0e8e3b579661acdad6ff76b9620dcc06f8885cab/src/kffmod/templates/META-INF/neoforge.mods.toml",
+      "sha256_utf8_lf": "27429cb2be451df6259e5e7628d29bfe9fdf9b9c2b6a74d3cfad08d0a817b8f3",
+      "lines": 25
+    },
+    {
+      "id": "loader",
+      "repo": "FabricMC/fabric-loader",
+      "commit": "fda9a7b84f0898f57b46fbbfda58795e7fa31cef",
+      "path": "minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/MinecraftGameProvider.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/MinecraftGameProvider.java",
+      "sha256_utf8_lf": "b62d0699be324c174123e75da7354da2dfe6d5cf13fafc181d9b1502d497b5c2",
+      "lines": 485
+    },
+    {
+      "id": "loader",
+      "repo": "FabricMC/fabric-loader",
+      "commit": "fda9a7b84f0898f57b46fbbfda58795e7fa31cef",
+      "path": "src/main/java/net/fabricmc/loader/impl/launch/FabricLauncherBase.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/launch/FabricLauncherBase.java",
+      "sha256_utf8_lf": "321efa46d06dac122b2410d4d55d1ba3b0c41d7539e0e8bd30d55fceb85f9ea8",
+      "lines": 148
+    },
+    {
+      "id": "loader",
+      "repo": "FabricMC/fabric-loader",
+      "commit": "fda9a7b84f0898f57b46fbbfda58795e7fa31cef",
+      "path": "src/main/java/net/fabricmc/loader/impl/launch/knot/Knot.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/launch/knot/Knot.java",
+      "sha256_utf8_lf": "a1612e97bc2246044710a0104005a2b032624f7f40f33f0ed4e9626425c162fe",
+      "lines": 347
+    },
+    {
+      "id": "loader",
+      "repo": "FabricMC/fabric-loader",
+      "commit": "fda9a7b84f0898f57b46fbbfda58795e7fa31cef",
+      "path": "src/main/java/net/fabricmc/loader/impl/launch/knot/KnotClassDelegate.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/launch/knot/KnotClassDelegate.java",
+      "sha256_utf8_lf": "4a3a5985e34fbbaf7d53f44dfc3952de90fd76ae223236c3d340234653667f01",
+      "lines": 543
+    },
+    {
+      "id": "loader",
+      "repo": "FabricMC/fabric-loader",
+      "commit": "fda9a7b84f0898f57b46fbbfda58795e7fa31cef",
+      "path": "src/main/java/net/fabricmc/loader/impl/launch/knot/KnotClassLoader.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/launch/knot/KnotClassLoader.java",
+      "sha256_utf8_lf": "edf75eecca1b61fc3f61c2c0781d1faa3fb570b5178734f10a2cf2087e7596d6",
+      "lines": 171
+    },
+    {
+      "id": "loader",
+      "repo": "FabricMC/fabric-loader",
+      "commit": "fda9a7b84f0898f57b46fbbfda58795e7fa31cef",
+      "path": "src/main/java/net/fabricmc/loader/impl/util/DefaultLanguageAdapter.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/util/DefaultLanguageAdapter.java",
+      "sha256_utf8_lf": "a94d8c1e8e9981bf5fd2a73bff72386d79e89482ff564efb65884f9318e863d7",
+      "lines": 141
+    },
+    {
+      "id": "neo",
+      "repo": "neoforged/NeoForge",
+      "commit": "a2d6402a3c1eec093aef7e7d10ac5145906c199e",
+      "path": "patches/net/minecraft/commands/Commands.java.patch",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/commands/Commands.java.patch",
+      "sha256_utf8_lf": "9834740ebf573d36042c2a8b21d5d19a91ad290aa45cc572f95c82d0fb2e9c26",
+      "lines": 46
+    },
+    {
+      "id": "neo",
+      "repo": "neoforged/NeoForge",
+      "commit": "a2d6402a3c1eec093aef7e7d10ac5145906c199e",
+      "path": "patches/net/minecraft/world/entity/Entity.java.patch",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/world/entity/Entity.java.patch",
+      "sha256_utf8_lf": "6390380526748cd991cdece8535909292bf212e73ba4544478c4239b80a81288",
+      "lines": 588
+    },
+    {
+      "id": "neo",
+      "repo": "neoforged/NeoForge",
+      "commit": "a2d6402a3c1eec093aef7e7d10ac5145906c199e",
+      "path": "patches/net/minecraft/world/item/ItemStack.java.patch",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/world/item/ItemStack.java.patch",
+      "sha256_utf8_lf": "c669d86ee854e43e57fe3110297135ca4786dc60d2c82387b684c60b8bef2f7a",
+      "lines": 255
+    },
+    {
+      "id": "neo",
+      "repo": "neoforged/NeoForge",
+      "commit": "a2d6402a3c1eec093aef7e7d10ac5145906c199e",
+      "path": "src/main/java/net/neoforged/neoforge/attachment/AttachmentHolder.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/attachment/AttachmentHolder.java",
+      "sha256_utf8_lf": "8a39c4a4cd669c60fc1a4666a4d4a4728af8724ad7aae48e1bafacb66bef1abe",
+      "lines": 200
+    },
+    {
+      "id": "neo",
+      "repo": "neoforged/NeoForge",
+      "commit": "a2d6402a3c1eec093aef7e7d10ac5145906c199e",
+      "path": "src/main/java/net/neoforged/neoforge/common/world/BiomeModifier.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/common/world/BiomeModifier.java",
+      "sha256_utf8_lf": "6f6d1789faff12aec0b4cea2bf1096095465787a83538b9176557603a852c7a5",
+      "lines": 93
+    },
+    {
+      "id": "neo",
+      "repo": "neoforged/NeoForge",
+      "commit": "a2d6402a3c1eec093aef7e7d10ac5145906c199e",
+      "path": "src/main/java/net/neoforged/neoforge/common/world/BiomeModifiers.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/common/world/BiomeModifiers.java",
+      "sha256_utf8_lf": "6accc01fea47e128b14e4e3dcce1853df974a26ac2522c95d69b9b4445dfe7a6",
+      "lines": 354
+    },
+    {
+      "id": "neo",
+      "repo": "neoforged/NeoForge",
+      "commit": "a2d6402a3c1eec093aef7e7d10ac5145906c199e",
+      "path": "src/main/java/net/neoforged/neoforge/event/RegisterCommandsEvent.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/event/RegisterCommandsEvent.java",
+      "sha256_utf8_lf": "0c8591eeeaf53fed656ad27839cb0487bcc7ac429b965a4bf4d2973d9f65eee2",
+      "lines": 53
+    },
+    {
+      "id": "neo",
+      "repo": "neoforged/NeoForge",
+      "commit": "a2d6402a3c1eec093aef7e7d10ac5145906c199e",
+      "path": "src/main/java/net/neoforged/neoforge/internal/CommonModLoader.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/internal/CommonModLoader.java",
+      "sha256_utf8_lf": "913e2309fb9fc404cc32fbb2249bdb88d150a9c1aca7d5c50a6cde8e67a34db0",
+      "lines": 88
+    },
+    {
+      "id": "neo",
+      "repo": "neoforged/NeoForge",
+      "commit": "a2d6402a3c1eec093aef7e7d10ac5145906c199e",
+      "path": "src/main/java/net/neoforged/neoforge/network/ConfigSync.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/network/ConfigSync.java",
+      "sha256_utf8_lf": "c57f5672b8c8d284a76044316648a110f83124b4579402df46211f482f76f749",
+      "lines": 44
+    },
+    {
+      "id": "neo",
+      "repo": "neoforged/NeoForge",
+      "commit": "a2d6402a3c1eec093aef7e7d10ac5145906c199e",
+      "path": "src/main/java/net/neoforged/neoforge/server/ServerLifecycleHooks.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/server/ServerLifecycleHooks.java",
+      "sha256_utf8_lf": "5aa550efe4408ae61e25f217b207dc1a749fa1e97bd3d3694e49840476c05d65",
+      "lines": 223
+    },
+    {
+      "id": "neo",
+      "repo": "neoforged/NeoForge",
+      "commit": "a2d6402a3c1eec093aef7e7d10ac5145906c199e",
+      "path": "src/main/java/net/neoforged/neoforge/server/permission/PermissionAPI.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/server/permission/PermissionAPI.java",
+      "sha256_utf8_lf": "c0bd1acba285294e5cf4b8bc9fc3e4920be80f7ece228a8cb98188130ab77041",
+      "lines": 122
+    },
+    {
+      "id": "scala1211",
+      "repo": "Kotori316/SLP",
+      "commit": "3ae2ac491e94ca66586414e376197676ecd87111",
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/Kotori316/SLP/3ae2ac491e94ca66586414e376197676ecd87111/README.md",
+      "sha256_utf8_lf": "a7e2220ac59e167fb901a09c7884e8b76b8b15bfc0c87fcc0a20a9a5673d9ea4",
+      "lines": 86
+    },
+    {
+      "id": "scala1211",
+      "repo": "Kotori316/SLP",
+      "commit": "3ae2ac491e94ca66586414e376197676ecd87111",
+      "path": "build-logic/common/build.gradle.kts",
+      "url": "https://raw.githubusercontent.com/Kotori316/SLP/3ae2ac491e94ca66586414e376197676ecd87111/build-logic/common/build.gradle.kts",
+      "sha256_utf8_lf": "fb54c77944b1a30ba47e7e83b9dc4147f73f3ea2015e31954d763af6134a526a",
+      "lines": 18
+    },
+    {
+      "id": "scala1211",
+      "repo": "Kotori316/SLP",
+      "commit": "3ae2ac491e94ca66586414e376197676ecd87111",
+      "path": "build.gradle.kts",
+      "url": "https://raw.githubusercontent.com/Kotori316/SLP/3ae2ac491e94ca66586414e376197676ecd87111/build.gradle.kts",
+      "sha256_utf8_lf": "d846cf94a2f9cbc83031154cb78bef419b0465189b46ed3df76d4fb36a0781aa",
+      "lines": 44
+    },
+    {
+      "id": "scala1211",
+      "repo": "Kotori316/SLP",
+      "commit": "3ae2ac491e94ca66586414e376197676ecd87111",
+      "path": "forge/src/main/java/com/kotori316/scala_lib/ScalaLanguageProvider.java",
+      "url": "https://raw.githubusercontent.com/Kotori316/SLP/3ae2ac491e94ca66586414e376197676ecd87111/forge/src/main/java/com/kotori316/scala_lib/ScalaLanguageProvider.java",
+      "sha256_utf8_lf": "9ca4033705203586f8719699e8c75358a5c1a0d1f3854fbfaee4e5e2e7e7cd94",
+      "lines": 47
+    },
+    {
+      "id": "scala1211",
+      "repo": "Kotori316/SLP",
+      "commit": "3ae2ac491e94ca66586414e376197676ecd87111",
+      "path": "forge/src/main/java/com/kotori316/scala_lib/ScalaModContainer.java",
+      "url": "https://raw.githubusercontent.com/Kotori316/SLP/3ae2ac491e94ca66586414e376197676ecd87111/forge/src/main/java/com/kotori316/scala_lib/ScalaModContainer.java",
+      "sha256_utf8_lf": "8a19c416ad224834f81c26359fc0deb938d14b1f815cb920a09277137eb9ca43",
+      "lines": 177
+    },
+    {
+      "id": "scala1211",
+      "repo": "Kotori316/SLP",
+      "commit": "3ae2ac491e94ca66586414e376197676ecd87111",
+      "path": "forge/src/main/resources/META-INF/services/net.minecraftforge.forgespi.language.IModLanguageProvider",
+      "url": "https://raw.githubusercontent.com/Kotori316/SLP/3ae2ac491e94ca66586414e376197676ecd87111/forge/src/main/resources/META-INF/services/net.minecraftforge.forgespi.language.IModLanguageProvider",
+      "sha256_utf8_lf": "0f8e172fc58ab38a31788cd7d6c5c1b525c2a15689b73626f12226539b654375",
+      "lines": 1
+    },
+    {
+      "id": "scala1211",
+      "repo": "Kotori316/SLP",
+      "commit": "3ae2ac491e94ca66586414e376197676ecd87111",
+      "path": "gradle.properties",
+      "url": "https://raw.githubusercontent.com/Kotori316/SLP/3ae2ac491e94ca66586414e376197676ecd87111/gradle.properties",
+      "sha256_utf8_lf": "322a46ed8d8b6e5ce4b2ba3d13bcaa11316715353f77391831b743072dbf4d91",
+      "lines": 13
+    },
+    {
+      "id": "scala1211",
+      "repo": "Kotori316/SLP",
+      "commit": "3ae2ac491e94ca66586414e376197676ecd87111",
+      "path": "gradle/libs.versions.toml",
+      "url": "https://raw.githubusercontent.com/Kotori316/SLP/3ae2ac491e94ca66586414e376197676ecd87111/gradle/libs.versions.toml",
+      "sha256_utf8_lf": "d6485945fb1f4c612c23ccee04ac7673d025be485def123acb6d4a02233252a4",
+      "lines": 47
+    },
+    {
+      "id": "scala1211",
+      "repo": "Kotori316/SLP",
+      "commit": "3ae2ac491e94ca66586414e376197676ecd87111",
+      "path": "neoforge/src/main/java/com/kotori316/scala_lib/ScalaLanguageProvider.java",
+      "url": "https://raw.githubusercontent.com/Kotori316/SLP/3ae2ac491e94ca66586414e376197676ecd87111/neoforge/src/main/java/com/kotori316/scala_lib/ScalaLanguageProvider.java",
+      "sha256_utf8_lf": "3334f354f07c80df5c73a13f9913d61fae1897db47ac01338e3cb1d25d24345b",
+      "lines": 92
+    },
+    {
+      "id": "scala1211",
+      "repo": "Kotori316/SLP",
+      "commit": "3ae2ac491e94ca66586414e376197676ecd87111",
+      "path": "neoforge/src/main/java/com/kotori316/scala_lib/ScalaModContainer.java",
+      "url": "https://raw.githubusercontent.com/Kotori316/SLP/3ae2ac491e94ca66586414e376197676ecd87111/neoforge/src/main/java/com/kotori316/scala_lib/ScalaModContainer.java",
+      "sha256_utf8_lf": "05e6192ee72cc522f8f9e5c814924454c06d9546cef908d37ed4951e6dcb6676",
+      "lines": 158
+    },
+    {
+      "id": "scala1211",
+      "repo": "Kotori316/SLP",
+      "commit": "3ae2ac491e94ca66586414e376197676ecd87111",
+      "path": "neoforge/src/main/resources/META-INF/services/net.neoforged.neoforgespi.language.IModLanguageLoader",
+      "url": "https://raw.githubusercontent.com/Kotori316/SLP/3ae2ac491e94ca66586414e376197676ecd87111/neoforge/src/main/resources/META-INF/services/net.neoforged.neoforgespi.language.IModLanguageLoader",
+      "sha256_utf8_lf": "0f8e172fc58ab38a31788cd7d6c5c1b525c2a15689b73626f12226539b654375",
+      "lines": 1
+    }
+  ],
+  "source_artifacts": [
+    {
+      "id": "bootstrap",
+      "url": "https://maven.neoforged.net/releases/cpw/mods/bootstraplauncher/2.0.2/bootstraplauncher-2.0.2-sources.jar",
+      "sha256": "d148fae013b890a08061cd0407bcdba9b836d4ddc6135f869d2c8b80913f056c",
+      "bytes": 5567,
+      "inspected_entries": [
+        "cpw/mods/bootstraplauncher/BootstrapLauncher.java"
+      ],
+      "inspection_scope": "selected methods / contracts, not exhaustive artifact audit; sources only, not runtime binary validation"
+    },
+    {
+      "id": "sjh",
+      "url": "https://maven.neoforged.net/releases/cpw/mods/securejarhandler/3.0.8/securejarhandler-3.0.8-sources.jar",
+      "sha256": "a08fff82e5f907434ad3c210d05b39b946994f245959b3eb6ca018f220fb676f",
+      "bytes": 42354,
+      "inspected_entries": [
+        "cpw/mods/cl/ModuleClassLoader.java",
+        "cpw/mods/jarhandling/impl/JarSigningData.java",
+        "cpw/mods/jarhandling/impl/ManifestVerifier.java"
+      ],
+      "inspection_scope": "selected methods / contracts, not exhaustive artifact audit; sources only, not runtime binary validation"
+    },
+    {
+      "id": "gml_core",
+      "url": "https://repo.maven.apache.org/maven2/org/groovymc/gml/gml-core/7.0.3/gml-core-7.0.3-sources.jar",
+      "sha256": "eb8aa3f55c6b7fa87bf612135d51223e6e2ff6b1cb69499a1fe0e22ce7d8594b",
+      "bytes": 30498,
+      "inspected_entries": [
+        "org/groovymc/gml/internal/GMLLangLoader.groovy",
+        "org/groovymc/gml/GModContainer.groovy",
+        "org/groovymc/gml/internal/locator/ModLocatorInjector.groovy",
+        "org/groovymc/gml/internal/locator/ModsDotGroovyCompiler.groovy",
+        "org/groovymc/gml/bus/GEventBusSubscriber.groovy"
+      ],
+      "inspection_scope": "selected methods / contracts, not exhaustive artifact audit; sources only, not runtime binary validation"
+    },
+    {
+      "id": "neo_fml",
+      "url": "https://maven.neoforged.net/releases/net/neoforged/fancymodloader/loader/4.0.45/loader-4.0.45-sources.jar",
+      "sha256": "232db58b2b6ac1bf3834e659fb156e8943b42cc2bc18ff8201ffb404d559c952",
+      "bytes": 275334,
+      "inspected_entries": [
+        "net/neoforged/fml/config/ConfigTracker.java",
+        "net/neoforged/fml/config/ConfigWatcher.java",
+        "net/neoforged/fml/javafmlmod/FMLModContainer.java",
+        "net/neoforged/fml/loading/FMLServiceProvider.java",
+        "net/neoforged/fml/loading/targets/CommonLaunchHandler.java"
+      ],
+      "inspection_scope": "selected methods / contracts, not exhaustive artifact audit; sources only, not runtime binary validation"
+    },
+    {
+      "id": "neo_modlauncher",
+      "url": "https://maven.neoforged.net/releases/cpw/mods/modlauncher/11.0.5/modlauncher-11.0.5-sources.jar",
+      "sha256": "91d7656f7c4113c50ce548e4e242613e1a934bc7e4c1f62f1057a37db6bd11fa",
+      "bytes": 68125,
+      "inspected_entries": [
+        "cpw/mods/modlauncher/Launcher.java",
+        "cpw/mods/modlauncher/BootstrapLaunchConsumer.java"
+      ],
+      "inspection_scope": "selected methods / contracts, not exhaustive artifact audit; sources only, not runtime binary validation"
+    }
+  ],
+  "primary_web_references": [
+    {
+      "url": "https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-5.html",
+      "retrieved": "2026-10-06",
+      "version_scope": "Java SE 21"
+    },
+    {
+      "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ClassLoader.html",
+      "retrieved": "2026-10-06",
+      "version_scope": "Java SE 21"
+    },
+    {
+      "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/ServiceLoader.html",
+      "retrieved": "2026-10-06",
+      "version_scope": "Java SE 21"
+    },
+    {
+      "url": "https://docs.oracle.com/en/java/javase/21/docs/specs/jar/jar.html",
+      "retrieved": "2026-10-06",
+      "version_scope": "Java SE 21"
+    },
+    {
+      "url": "https://docs.neoforged.net/docs/1.21.1/misc/config/",
+      "retrieved": "2026-10-06",
+      "version_scope": "mutable 1.21.1 docs; exact release source must be pinned"
+    },
+    {
+      "url": "https://docs.neoforged.net/docs/1.21.1/worldgen/biomemodifier/",
+      "retrieved": "2026-10-06",
+      "version_scope": "mutable 1.21.1 docs"
+    },
+    {
+      "url": "https://docs.minecraftforge.net/en/1.21.x/misc/config/",
+      "retrieved": "2026-10-06",
+      "version_scope": "mutable 1.21.x docs; pinned source used for exact mechanisms"
+    },
+    {
+      "url": "https://github.com/lucko/fabric-permissions-api",
+      "retrieved": "2026-10-06",
+      "version_scope": "maintainer repository; used only to identify independent third-party API, not exact 1.21.1 provider behavior"
+    }
+  ],
+  "architecture_status": "proposals only; no implemented loader or accepted runtime support matrix",
+  "probes": [
+    {
+      "id": "I-01",
+      "document": "17-cross-ecosystem-interoperability.md",
+      "operation": "A 直接注册；B/C 在各自合法就绪点查 `probe:shared_item`",
+      "acceptance": "同一 Item 和已绑定 value；提前求值或三份 registry 是失败",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "I-02",
+      "document": "17-cross-ecosystem-interoperability.md",
+      "operation": "三方收同一个 S；B 改数量、C 改 custom data、A 读取",
+      "acceptance": "同一过程引用身份及读写可见；门面拷贝 / 丢字段失败",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "I-03",
+      "document": "17-cross-ecosystem-interoperability.md",
+      "operation": "B Neo provider 与 C Forge provider 读写该计数；另查未注册能力",
+      "acceptance": "两套 token / 返回协议正确，底层 S 状态一致；默认凭空生成能力失败",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "I-04",
+      "document": "17-cross-ecosystem-interoperability.md",
+      "operation": "S.copy、替换 Stack；对新旧 provider 重查",
+      "acceptance": "Item 相同、Stack 不同；复制规则成立，无非预期可变状态共享",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "I-05",
+      "document": "17-cross-ecosystem-interoperability.md",
+      "operation": "Entity 死亡克隆、跨维度；卸载 BlockEntity / Chunk",
+      "acceptance": "按各生态契约复制 / 失效 / 重建；保留失效 LazyOptional 或旧 owner 失败",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "I-06",
+      "document": "17-cross-ecosystem-interoperability.md",
+      "operation": "新建世界、保存、退出、重载；另一世界同 key",
+      "acceptance": "key / 编码 / 数据恢复正确；不要求跨会话引用相同；旧 Holder 泄漏失败",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "I-07",
+      "document": "17-cross-ecosystem-interoperability.md",
+      "operation": "CLIENT / COMMON / STARTUP / SERVER 读值；不同世界配置及 watcher reload",
+      "acceptance": "值加载窗口、有效路径、事件、线程符合各固定基线；源 API 不支持 STARTUP 不伪造支持",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "I-08",
+      "document": "17-cross-ecosystem-interoperability.md",
+      "operation": "远程连接、SERVER config 初始同步、修改文件、断开再连",
+      "acceptance": "会话值与磁盘值分开；逐步确认是否广播 reload 及断开恢复，不将未验证行为算通过",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "I-09",
+      "document": "17-cross-ecosystem-interoperability.md",
+      "operation": "三方注册不同命令；`/reload` 重建；专用 / 集成服务端",
+      "acceptance": "同一 dispatcher 构建轮次内各派发一次；侧别选择正确，无旧 context 缓存",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "I-10",
+      "document": "17-cross-ecosystem-interoperability.md",
+      "operation": "同名节点、redirect、suggestions；普通玩家 / OP / 控制台 / 权限 deny",
+      "acceptance": "记录实际合并与顺序；已声明权限语义成立，未知 / deny 不放行",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "I-11",
+      "document": "17-cross-ecosystem-interoperability.md",
+      "operation": "一个世界 datapack 引用 A type、B feature、C modifier；含自定义 density codec",
+      "acceptance": "同 epoch 的 Holder 引用闭合，最终 settings / 新区块符合声明；serializer 缺失显式失败",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "I-12",
+      "document": "17-cross-ecosystem-interoperability.md",
+      "operation": "两 modifier 构造 feature cycle；错误 codec / Holder；reload 与新旧区块对比",
+      "acceptance": "cycle / 解码失败可归因且阻止不完整世界启动；旧区块不被默默重写",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "I-13",
+      "document": "17-cross-ecosystem-interoperability.md",
+      "operation": "cast 到两个生态具体父类；反射、super / MethodHandle、结构 Mixin",
+      "acceptance": "单独核对支持清单；组合状态方案不能把这些检查标为自动通过",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "I-14",
+      "document": "17-cross-ecosystem-interoperability.md",
+      "operation": "构造跨生态注册窗口等待环；config 同路径冲突",
+      "acceptance": "启动前给出依赖 / 路径证据并失败；不靠延迟重试或私改文件名蒙混",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "B-01",
+      "document": "18-bootstrap-and-classloading.md",
+      "operation": "NeoForbric main 起进程，记录所有定义、入口和 loader 创建",
+      "acceptance": "Minecraft main 一次；Minecraft 类型只由 G 定义；Knot / ML 启动 owner 不运行",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "B-02",
+      "document": "18-bootstrap-and-classloading.md",
+      "operation": "system classpath / nested JAR 放第二份游戏类、API / ASM 类型",
+      "acceptance": "discovery / owner 校验拒绝冲突；共享 SPI Class 一致，不在首次 cast 才发现",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "B-03",
+      "document": "18-bootstrap-and-classloading.md",
+      "operation": "discovery 注解与 prepare plugin 故意引用游戏类",
+      "acceptance": "bytecode 扫描不加载；未准备 define 被拒绝并记录请求栈；有早期契约的目标按该合同转换",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "B-04",
+      "document": "18-bootstrap-and-classloading.md",
+      "operation": "两线程请求同一类；transformer 重入请求本目标 / 父类",
+      "acceptance": "定义一次，必要层级查询走 bytes；递归可归因、无绕过转换和死锁",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "B-05",
+      "document": "18-bootstrap-and-classloading.md",
+      "operation": "两个 archive 同名类、不同 library 版本；mod 描述符传库类型",
+      "acceptance": "选择有证明的共同 ABI 或提前失败；不能按调用 mod 在同一 G 定义两份 Foo",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "B-06",
+      "document": "18-bootstrap-and-classloading.md",
+      "operation": "outer / nested service、同名 provider、错误 SPI 身份；线程池重复用 TCCL",
+      "acceptance": "准入服务来源与枚举可追踪；拒绝非子类型；任务结束恢复上下文，无启动 consumer 被 mod 接管",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "B-07",
+      "document": "18-bootstrap-and-classloading.md",
+      "operation": "原始 signed / sealed / multi-release JAR；变换并缓存；manifest Class-Path",
+      "acceptance": "原始校验与派生身份区分；条目选择 / CodeSource / package 来源一致，无伪称旧签名认证新内容",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "B-08",
+      "document": "18-bootstrap-and-classloading.md",
+      "operation": "module name 冲突 / split package；原语言 container 查 mod module",
+      "acceptance": "graph 提前报错；已支持 provider 获得正确 module / reads / opens 与唯一 G",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "B-09",
+      "document": "18-bootstrap-and-classloading.md",
+      "operation": "client / dedicated server / datagen 启动；bundled server 输入",
+      "acceptance": "side 与入口正确，只执行一次 main；client 类不泄漏到专用服务器；datagen 按独立合同报告",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "B-10",
+      "document": "18-bootstrap-and-classloading.md",
+      "operation": "Java Fabric 成员入口；Forge context / 无参；Neo 注入与重复参数",
+      "acceptance": "分生态原生对照一致；构造 / subscriber 次数、active context 和线程记录正确",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "B-11",
+      "document": "18-bootstrap-and-classloading.md",
+      "operation": "FLK / KFF 的 object、class、成员入口、object subscriber；不同 Kotlin 库版本",
+      "acceptance": "分 provider 原生对照；Class.forName 视图与 reflect / runtime ABI 满足，不只打印入口成功",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "B-12",
+      "document": "18-bootstrap-and-classloading.md",
+      "operation": "SLP MODULE$ 入口、class 构造；GML 编译 JAR 与脚本需求",
+      "acceptance": "只报告已验证 provider / 版本 / 形式；未知脚本 / private FML ABI 明确拒绝",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "B-13",
+      "document": "18-bootstrap-and-classloading.md",
+      "operation": "可选 feature / mod 失败与 required 依赖；必需 Mixin 失败",
+      "acceptance": "按 severity / 提交点决策；缩减集合单独报告，变更后失败不继续进入世界",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "B-14",
+      "document": "18-bootstrap-and-classloading.md",
+      "operation": "Mixin 后 transformer 改目标、coremod 吞异常、repair 指纹失配",
+      "acceptance": "final bytes 与后置条件失败可归因；活动记录不等同成功；必需 unknown 阻止启动",
+      "status": "pending",
+      "execution_evidence": null
+    },
+    {
+      "id": "B-15",
+      "document": "18-bootstrap-and-classloading.md",
+      "operation": "同版本修订 / 下一游戏版本变化；缓存命名不变但输入哈希变化",
+      "acceptance": "缓存失效、受影响规则与探针闭包可列出；旧目标规则不能静默使用",
+      "status": "pending",
+      "execution_evidence": null
+    }
+  ]
+}

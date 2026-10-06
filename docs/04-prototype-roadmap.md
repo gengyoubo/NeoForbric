@@ -1,6 +1,6 @@
 # 原型路线与验收
 
-以下是调查建议，尚无实现或通过的测试。目标持续固定为 Minecraft 1.21.1，基础环境采用 Java 21，依据 [NeoForge 目标分支配置](https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/gradle.properties)。
+以下是调查形成的路线，目标持续固定为 Minecraft 1.21.1，基础环境采用 Java 21，依据 [NeoForge 目标分支配置](https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/gradle.properties)。当前已交付 [Java 启动 / 类加载夹具](prototype.md) 并通过其测试；下面各阶段的真实 Minecraft、注册、映射、Mixin 和原生态模组验收仍待完成。
 
 ## 1. 阶段 0：固定输入与契约
 

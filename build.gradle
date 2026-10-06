@@ -1,0 +1,41 @@
+allprojects {
+    group = 'org.neoforbric'
+    version = '0.1.0-SNAPSHOT'
+    repositories { mavenCentral() }
+}
+
+subprojects {
+    if (name != 'fixtures') {
+        apply plugin: 'java-library'
+        java {
+            toolchain { languageVersion = JavaLanguageVersion.of(21) }
+            withSourcesJar()
+        }
+        tasks.withType(JavaCompile).configureEach {
+            options.encoding = 'UTF-8'
+            options.release = 21
+        }
+        tasks.withType(AbstractArchiveTask).configureEach {
+            preserveFileTimestamps = false
+            reproducibleFileOrder = true
+        }
+        dependencyLocking { lockAllConfigurations() }
+    }
+}
+
+def fixtureMods = [project(':fixtures:mod-a'), project(':fixtures:mod-b'), project(':fixtures:mod-c')]
+tasks.register('prepareFixture', Sync) {
+    dependsOn fixtureMods.collect { it.tasks.named('jar') }, project(':fixtures:game').tasks.named('jar')
+    from fixtureMods.collect { it.tasks.named('jar') }
+    into layout.buildDirectory.dir('fixture/mods')
+}
+
+tasks.register('runFixture', JavaExec) {
+    dependsOn 'prepareFixture', ':loader:classes'
+    javaLauncher = project(':loader').javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+    classpath = project(':loader').sourceSets.main.runtimeClasspath
+    mainClass = 'org.neoforbric.bootstrap.Main'
+    args = ['--fixture', '--game', project(':fixtures:game').tasks.named('jar').get().archiveFile.get().asFile.absolutePath,
+            '--mods', layout.buildDirectory.dir('fixture/mods').get().asFile.absolutePath,
+            '--main', 'demo.game.GameMain', '--audit', layout.buildDirectory.file('fixture/audit.json').get().asFile.absolutePath]
+}
