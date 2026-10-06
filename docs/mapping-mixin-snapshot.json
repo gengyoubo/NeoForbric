@@ -1,0 +1,401 @@
+{
+  "schema_version": 1,
+  "investigation_date": "2026-10-06",
+  "timezone": "Asia/Tokyo",
+  "target_minecraft": "1.21.1",
+  "method": "mapping artifact parsing and pinned-source excerpt inspection",
+  "is_build_dependency_lock": false,
+  "scope": {
+    "mapping_artifacts_parsed": 4,
+    "class_correspondences_checked": 3,
+    "method_correspondences_checked": 1,
+    "full_mapping_graph_composed": false,
+    "server_mappings_parsed": false,
+    "actual_mod_jar_transformed": false,
+    "mixin_runtime_tested": false,
+    "minecraft_runtime_tested": false
+  },
+  "mapping_inputs": {
+    "manifest_url": "https://piston-meta.mojang.com/v1/packages/22a1966494dfa4eeb5ee778c8e6ed5b774839582/1.21.1.json",
+    "java_major": 21,
+    "artifacts": [
+      {
+        "id": "intermediary",
+        "url": "https://maven.fabricmc.net/net/fabricmc/intermediary/1.21.1/intermediary-1.21.1-v2.jar",
+        "sha256": "e8bd6a4c39e235ee2dc73063558610775c72a2572fa0c6b32915b149074012a6",
+        "bytes": 582921
+      },
+      {
+        "id": "yarn",
+        "url": "https://maven.fabricmc.net/net/fabricmc/yarn/1.21.1+build.3/yarn-1.21.1+build.3-v2.jar",
+        "sha256": "4ec570889585cb958b7d3c9dd94ce4064b16ab797dffec152bc8486c59a4010b",
+        "bytes": 1464305
+      },
+      {
+        "id": "mcp",
+        "url": "https://maven.minecraftforge.net/de/oceanlabs/mcp/mcp_config/1.21.1-20240808.132146/mcp_config-1.21.1-20240808.132146.zip",
+        "sha256": "7aaa35810c5d3d831d4db986b622f763d3be631d6c66dbba1f8ee3e7f4c87bbb",
+        "bytes": 1888456
+      },
+      {
+        "id": "mojang_client_mappings",
+        "url": "https://piston-data.mojang.com/v1/objects/2244b6f072256667bcd9a73df124d6c58de77992/client.txt",
+        "sha256": "140c47931cccc8fc9e4c22d7603e2d714d1a953a146f51ea7397d95c955536ec",
+        "bytes": 9598610,
+        "manifest_sha1": "2244b6f072256667bcd9a73df124d6c58de77992",
+        "sha1_verified": true
+      }
+    ],
+    "class_examples": [
+      {
+        "intermediary": "net/minecraft/class_1799",
+        "obfuscated": "cuq",
+        "yarn": "net/minecraft/item/ItemStack",
+        "mojang": "net.minecraft.world.item.ItemStack"
+      },
+      {
+        "intermediary": "net/minecraft/class_1309",
+        "obfuscated": "btn",
+        "yarn": "net/minecraft/entity/LivingEntity",
+        "mojang": "net.minecraft.world.entity.LivingEntity"
+      },
+      {
+        "intermediary": "net/minecraft/class_2960",
+        "obfuscated": "akr",
+        "yarn": "net/minecraft/util/Identifier",
+        "mojang": "net.minecraft.resources.ResourceLocation"
+      }
+    ],
+    "method_example": {
+      "owner_intermediary": "net/minecraft/class_1799",
+      "descriptor": "()I",
+      "intermediary": "method_7947",
+      "yarn": "getCount",
+      "obfuscated": "H",
+      "mojang": "getCount",
+      "srg": "m_41613_",
+      "mojang_source_match": [
+        "992:992:int getCount() -> H"
+      ]
+    },
+    "headers": {
+      "intermediary": "tiny\t2\t0\tofficial\tintermediary",
+      "yarn": "tiny\t2\t0\tintermediary\tnamed",
+      "mcp": "tsrg2 obf srg id"
+    }
+  },
+  "tool_source_artifacts": [
+    {
+      "id": "tiny_remapper",
+      "url": "https://maven.fabricmc.net/net/fabricmc/tiny-remapper/0.10.4/tiny-remapper-0.10.4-sources.jar",
+      "sha256": "06dda0dc5e956cc4f3acf4b6b27533a8d3cfb145f745bc104ea763d55cfe66e1",
+      "bytes": 128345,
+      "inspected_entries": [
+        "net/fabricmc/tinyremapper/TinyRemapper.java",
+        "net/fabricmc/tinyremapper/extension/mixin/MixinExtension.java"
+      ]
+    },
+    {
+      "id": "mapping_io",
+      "url": "https://maven.fabricmc.net/net/fabricmc/mapping-io/0.5.0/mapping-io-0.5.0-sources.jar",
+      "sha256": "f32b9b6bf3034d71f4e99481e19b1bafcce0d64b3a9b64c1d81cf3938c038837",
+      "bytes": 81277,
+      "inspected_entries": [
+        "net/fabricmc/mappingio/MappingReader.java",
+        "net/fabricmc/mappingio/format/MappingFormat.java"
+      ]
+    }
+  ],
+  "source_repositories": [
+    {
+      "id": "connector",
+      "repository": "Sinytra/Connector",
+      "queried_ref": "1.21.x",
+      "commit": "5a2f668ad492c1586c279a197423f5a1d1a16509",
+      "tree_url": "https://api.github.com/repos/Sinytra/Connector/git/trees/5a2f668ad492c1586c279a197423f5a1d1a16509?recursive=1"
+    },
+    {
+      "id": "loader",
+      "repository": "FabricMC/fabric-loader",
+      "queried_ref": "0.16.10",
+      "commit": "fda9a7b84f0898f57b46fbbfda58795e7fa31cef",
+      "tree_url": "https://api.github.com/repos/FabricMC/fabric-loader/git/trees/fda9a7b84f0898f57b46fbbfda58795e7fa31cef?recursive=1"
+    },
+    {
+      "id": "forge",
+      "repository": "MinecraftForge/MinecraftForge",
+      "queried_ref": "1.21.1",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "tree_url": "https://api.github.com/repos/MinecraftForge/MinecraftForge/git/trees/a11d1936c53f1f93787f239ff42cb8e93a1d037a?recursive=1"
+    },
+    {
+      "id": "forbric",
+      "repository": "Ray-T-r/Minecraft-Forbric-mod-loader",
+      "queried_ref": "main",
+      "commit": "520d7aad11cc7c9b8c8278b5f541e4429e1f7623",
+      "tree_url": "https://api.github.com/repos/Ray-T-r/Minecraft-Forbric-mod-loader/git/trees/520d7aad11cc7c9b8c8278b5f541e4429e1f7623?recursive=1"
+    },
+    {
+      "id": "adapter",
+      "repository": "Sinytra/Adapter",
+      "queried_ref": "1.21.x",
+      "commit": "38d859495426fadb5db8b52afdb88deaa7132322",
+      "tree_url": "https://api.github.com/repos/Sinytra/Adapter/git/trees/38d859495426fadb5db8b52afdb88deaa7132322?recursive=1"
+    },
+    {
+      "id": "mixin",
+      "repository": "SpongePowered/Mixin",
+      "queried_ref": "0.8.7",
+      "commit": "4053421aa10aaac6127d969028a29c94fe3054f6",
+      "tree_url": "https://api.github.com/repos/SpongePowered/Mixin/git/trees/4053421aa10aaac6127d969028a29c94fe3054f6?recursive=1"
+    }
+  ],
+  "source_samples": [
+    {
+      "repository_id": "adapter",
+      "path": "core/src/main/java/org/sinytra/adapter/env/ctx/PatchEnvironment.java",
+      "url": "https://github.com/Sinytra/Adapter/blob/38d859495426fadb5db8b52afdb88deaa7132322/core/src/main/java/org/sinytra/adapter/env/ctx/PatchEnvironment.java",
+      "line_count": 33,
+      "sha256_utf8_lf": "19f7e544c9698cbc03b4fd08e81a610d48e2b837938419ced399cde5cc4f553a",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "adapter",
+      "path": "core/src/main/java/org/sinytra/adapter/env/ctx/PatchEnvironmentImpl.java",
+      "url": "https://github.com/Sinytra/Adapter/blob/38d859495426fadb5db8b52afdb88deaa7132322/core/src/main/java/org/sinytra/adapter/env/ctx/PatchEnvironmentImpl.java",
+      "line_count": 87,
+      "sha256_utf8_lf": "01b48e08513be8a1a95af488ddc0bc62e0edc87ea53c851f4d60c688c9236251",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "adapter",
+      "path": "core/src/main/java/org/sinytra/adapter/patch/DynamicPatches.java",
+      "url": "https://github.com/Sinytra/Adapter/blob/38d859495426fadb5db8b52afdb88deaa7132322/core/src/main/java/org/sinytra/adapter/patch/DynamicPatches.java",
+      "line_count": 31,
+      "sha256_utf8_lf": "280eca08d93a078e41d4b2c84a251ba02a01c5a8124b8f83949f32a9514b6583",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "adapter",
+      "path": "core/src/main/java/org/sinytra/adapter/patch/resolver/injection/ComparingInjectionPointResolver.java",
+      "url": "https://github.com/Sinytra/Adapter/blob/38d859495426fadb5db8b52afdb88deaa7132322/core/src/main/java/org/sinytra/adapter/patch/resolver/injection/ComparingInjectionPointResolver.java",
+      "line_count": 252,
+      "sha256_utf8_lf": "bf10a458e2d05585f2ab40b0b24c81423df59fc6ba590af420d921c433e75f7f",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "adapter",
+      "path": "core/src/main/java/org/sinytra/adapter/patch/resolver/special/InjectorOrdinalResolver.java",
+      "url": "https://github.com/Sinytra/Adapter/blob/38d859495426fadb5db8b52afdb88deaa7132322/core/src/main/java/org/sinytra/adapter/patch/resolver/special/InjectorOrdinalResolver.java",
+      "line_count": 463,
+      "sha256_utf8_lf": "328471a4d0859073abc3bbd4ea6bedf02a604136b2ad551d40a715dbd15a3348",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "adapter",
+      "path": "core/src/main/java/org/sinytra/adapter/patch/resolver/target/SplitTargetMethodSubResolver.java",
+      "url": "https://github.com/Sinytra/Adapter/blob/38d859495426fadb5db8b52afdb88deaa7132322/core/src/main/java/org/sinytra/adapter/patch/resolver/target/SplitTargetMethodSubResolver.java",
+      "line_count": 140,
+      "sha256_utf8_lf": "b16e72e420dd209c6bc2d7afe356c9640f7aa7941baa2320f0b7a24848b58b2c",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "connector",
+      "path": "src/main/java/org/sinytra/connector/service/FabricMixinBootstrap.java",
+      "url": "https://github.com/Sinytra/Connector/blob/5a2f668ad492c1586c279a197423f5a1d1a16509/src/main/java/org/sinytra/connector/service/FabricMixinBootstrap.java",
+      "line_count": 148,
+      "sha256_utf8_lf": "a107d1290205852ecc734add788a1fd71ed2f43a7c43b06ee232bcb1acbcd039",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "connector",
+      "path": "src/mod/java/org/sinytra/connector/mod/mixin/item/ItemStackMixin.java",
+      "url": "https://github.com/Sinytra/Connector/blob/5a2f668ad492c1586c279a197423f5a1d1a16509/src/mod/java/org/sinytra/connector/mod/mixin/item/ItemStackMixin.java",
+      "line_count": 36,
+      "sha256_utf8_lf": "0b118290a29b3c8855cb5dcf2455b86f9d26e47e9d8a9898569aab28493fa694",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "connector",
+      "path": "transformer/src/main/java/org/sinytra/connector/transformer/jar/BytecodeFixerUpperFrontend.java",
+      "url": "https://github.com/Sinytra/Connector/blob/5a2f668ad492c1586c279a197423f5a1d1a16509/transformer/src/main/java/org/sinytra/connector/transformer/jar/BytecodeFixerUpperFrontend.java",
+      "line_count": 78,
+      "sha256_utf8_lf": "07a9dfe6b3130670939ede4ea3d034c55aa7ceb150659f34ed028000e3515e41",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "connector",
+      "path": "transformer/src/main/java/org/sinytra/connector/transformer/jar/JarTransformInstance.java",
+      "url": "https://github.com/Sinytra/Connector/blob/5a2f668ad492c1586c279a197423f5a1d1a16509/transformer/src/main/java/org/sinytra/connector/transformer/jar/JarTransformInstance.java",
+      "line_count": 169,
+      "sha256_utf8_lf": "341ddb132c839855aecbfe3562b4bf0dc2f934b0a83ec18488b523cb960275ec",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "connector",
+      "path": "transformer/src/main/java/org/sinytra/connector/transformer/transform/MixinPatches.java",
+      "url": "https://github.com/Sinytra/Connector/blob/5a2f668ad492c1586c279a197423f5a1d1a16509/transformer/src/main/java/org/sinytra/connector/transformer/transform/MixinPatches.java",
+      "line_count": 225,
+      "sha256_utf8_lf": "63ffd4878485b4b41ae31dfdf9841eedad9cf550447c2b3471b1500e82cfb423",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "connector",
+      "path": "transformer/src/main/java/org/sinytra/connector/transformer/transform/MixinPatchTransformer.java",
+      "url": "https://github.com/Sinytra/Connector/blob/5a2f668ad492c1586c279a197423f5a1d1a16509/transformer/src/main/java/org/sinytra/connector/transformer/transform/MixinPatchTransformer.java",
+      "line_count": 205,
+      "sha256_utf8_lf": "bed36d4848c0743f3bc6b3df510464aa6e96cc97af7ea08fa8d6c9139d1dc4a8",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "connector",
+      "path": "transformer/src/main/java/org/sinytra/connector/transformer/transform/RefmapRemapper.java",
+      "url": "https://github.com/Sinytra/Connector/blob/5a2f668ad492c1586c279a197423f5a1d1a16509/transformer/src/main/java/org/sinytra/connector/transformer/transform/RefmapRemapper.java",
+      "line_count": 106,
+      "sha256_utf8_lf": "58bffe98b5b25f4ed80553a002b36129ede6fd8e170153e95f466795683eac8a",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "forbric",
+      "path": "forbric-kernel/src/main/java/net/forbric/kernel/mixin/FinalMixinApplications.java",
+      "url": "https://github.com/Ray-T-r/Minecraft-Forbric-mod-loader/blob/520d7aad11cc7c9b8c8278b5f541e4429e1f7623/forbric-kernel/src/main/java/net/forbric/kernel/mixin/FinalMixinApplications.java",
+      "line_count": 303,
+      "sha256_utf8_lf": "569b9f99e19c7771424a6e4b5bf72dd584775834619bbf3031e6f60e9319eac4",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "forbric",
+      "path": "forbric-kernel/src/main/java/net/forbric/kernel/mixin/MixinFit.java",
+      "url": "https://github.com/Ray-T-r/Minecraft-Forbric-mod-loader/blob/520d7aad11cc7c9b8c8278b5f541e4429e1f7623/forbric-kernel/src/main/java/net/forbric/kernel/mixin/MixinFit.java",
+      "line_count": 1773,
+      "sha256_utf8_lf": "b1bf0bdd83c478c6c076be0c0f4d87100fdd6ba8010befcc7f77b89d3e372fce",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "forbric",
+      "path": "forbric-kernel/src/main/java/net/forbric/kernel/mixin/MixinRetarget.java",
+      "url": "https://github.com/Ray-T-r/Minecraft-Forbric-mod-loader/blob/520d7aad11cc7c9b8c8278b5f541e4429e1f7623/forbric-kernel/src/main/java/net/forbric/kernel/mixin/MixinRetarget.java",
+      "line_count": 1552,
+      "sha256_utf8_lf": "514a65a42d1fd8e8643e66c49459ea797af08181c1386405a35e61603703c88b",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "forge",
+      "path": "build.gradle",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/build.gradle",
+      "line_count": 55,
+      "sha256_utf8_lf": "c42437faaecf7828d9a0809f43bd1ad5d4df60ad52d2e1c5bb3f294967803e78",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "forge",
+      "path": "fmlloader/src/main/java/net/minecraftforge/fml/loading/targets/CommonLaunchHandler.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlloader/src/main/java/net/minecraftforge/fml/loading/targets/CommonLaunchHandler.java",
+      "line_count": 107,
+      "sha256_utf8_lf": "5121bfa49aeedd931adfb446e62ef58053691b9dae6b0a753c94f94878c8b7f3",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "loader",
+      "path": "build.gradle",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/build.gradle",
+      "line_count": 452,
+      "sha256_utf8_lf": "516bbc411c1142020e72313450416fcdc72f024bc77450957216bce646aea3e1",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "loader",
+      "path": "gradle.properties",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/gradle.properties",
+      "line_count": 10,
+      "sha256_utf8_lf": "a7bdcaca17d5a9ef0e6e94ac5f02cee3b091b8a0069d231328be021b08b7570e",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/discovery/RuntimeModRemapper.java",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/discovery/RuntimeModRemapper.java",
+      "line_count": 270,
+      "sha256_utf8_lf": "7a0bb939358140de6ed4c445442030cb6ee899c0aee3a1d3363f7978063144bf",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/launch/FabricMixinBootstrap.java",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/launch/FabricMixinBootstrap.java",
+      "line_count": 187,
+      "sha256_utf8_lf": "0cf96995c30761003e4c53256f0a9075b11c0c449c464367b549a5d9c6e1c1fe",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/launch/MappingConfiguration.java",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/launch/MappingConfiguration.java",
+      "line_count": 203,
+      "sha256_utf8_lf": "12aaef244dbac2cd0f59fc9a6f6ecb3132876b78bdd2ad99d209e36ae47b0dc8",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "mixin",
+      "path": "src/main/java/org/spongepowered/asm/mixin/extensibility/IMixinConfigPlugin.java",
+      "url": "https://github.com/SpongePowered/Mixin/blob/4053421aa10aaac6127d969028a29c94fe3054f6/src/main/java/org/spongepowered/asm/mixin/extensibility/IMixinConfigPlugin.java",
+      "line_count": 125,
+      "sha256_utf8_lf": "d9767c7fbce7557b444a9ada119c660f3ee695b3c3cb4f7e6108942c1aae7f1b",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "mixin",
+      "path": "src/main/java/org/spongepowered/asm/mixin/injection/Inject.java",
+      "url": "https://github.com/SpongePowered/Mixin/blob/4053421aa10aaac6127d969028a29c94fe3054f6/src/main/java/org/spongepowered/asm/mixin/injection/Inject.java",
+      "line_count": 319,
+      "sha256_utf8_lf": "36f72f8264730b57ba301f959ed9bf2cfb574491c93f42db29b1d791234d2076",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "mixin",
+      "path": "src/main/java/org/spongepowered/asm/mixin/injection/invoke/RedirectInjector.java",
+      "url": "https://github.com/SpongePowered/Mixin/blob/4053421aa10aaac6127d969028a29c94fe3054f6/src/main/java/org/spongepowered/asm/mixin/injection/invoke/RedirectInjector.java",
+      "line_count": 796,
+      "sha256_utf8_lf": "a4628f0bd7d3a4a741cd488c109e62e6581939b884bc2affbc1c624632387649",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "mixin",
+      "path": "src/main/java/org/spongepowered/asm/mixin/injection/struct/InjectionInfo.java",
+      "url": "https://github.com/SpongePowered/Mixin/blob/4053421aa10aaac6127d969028a29c94fe3054f6/src/main/java/org/spongepowered/asm/mixin/injection/struct/InjectionInfo.java",
+      "line_count": 755,
+      "sha256_utf8_lf": "c951ae70f38685444f873028986eebbf603401c36eb80e4263650c95c6d559d0",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "mixin",
+      "path": "src/main/java/org/spongepowered/asm/mixin/MixinEnvironment.java",
+      "url": "https://github.com/SpongePowered/Mixin/blob/4053421aa10aaac6127d969028a29c94fe3054f6/src/main/java/org/spongepowered/asm/mixin/MixinEnvironment.java",
+      "line_count": 1851,
+      "sha256_utf8_lf": "537d04ea6704a393fdef78e9c70ce5f844c53a91823e18bfd64ab2a272d36000",
+      "inspection_scope": "relevant excerpts only"
+    },
+    {
+      "repository_id": "mixin",
+      "path": "src/main/java/org/spongepowered/asm/mixin/transformer/ext/extensions/ExtensionCheckClass.java",
+      "url": "https://github.com/SpongePowered/Mixin/blob/4053421aa10aaac6127d969028a29c94fe3054f6/src/main/java/org/spongepowered/asm/mixin/transformer/ext/extensions/ExtensionCheckClass.java",
+      "line_count": 103,
+      "sha256_utf8_lf": "315e30e603b067a2f0792923fc23b15a38a1f86fed46cd8895e10d9ed5da43a1",
+      "inspection_scope": "relevant excerpts only"
+    }
+  ],
+  "pending_validation_cases": [
+    "M01",
+    "M02",
+    "M03",
+    "M04",
+    "X01",
+    "X02",
+    "X03",
+    "X04",
+    "X05",
+    "X06",
+    "X07",
+    "X08"
+  ]
+}

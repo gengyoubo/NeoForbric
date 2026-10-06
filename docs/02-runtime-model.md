@@ -2,6 +2,8 @@
 
 目标：Minecraft 1.21.1。以下统一阶段名称与接口均为设计草案，尚未实现。
 
+映射文件的真实对应关系、refmap 转换、Mixin 结构修复与最小实验见 [映射与 Mixin 兼容专项](05-mapping-and-mixin.md)。它们是统一内核的前置能力。
+
 ## 1. 生命周期不是同一组事件的不同名字
 
 Fabric Loader 负责入口等基础加载功能，游戏领域的事件主要由 Fabric API 提供，见 [Fabric Loader 官方说明](https://docs.fabricmc.net/develop/loader/)。1.21.1 模组不能仅靠 Loader 获得完整的 Registry、资源和网络 API。

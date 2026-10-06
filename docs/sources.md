@@ -74,3 +74,24 @@ assert len(neo - forge) == 163
 - Connector 的实际目标分支是 `1.21.x`，其固定版本目录写明游戏为 `1.21.1`。主分支 / 默认页的最新状态不能替代此版本快照。
 - Forbric 候选项目目前面向 26.2。它的架构描述和测试方法可以参考，版本相关实现与成功率不能外推到本项目。
 - Patch 文件数、共同目标类数量、接口注入目标键数都是静态统计，不是已经完成的 Hook 数量、冲突数量或兼容率。
+
+## 5. 映射与 Mixin 专项补充
+
+补充调查同样于 2026-10-06 完成，详见 [专项文档](05-mapping-and-mixin.md) 与 [专项快照](mapping-mixin-snapshot.json)。前期快照保留原始调查范围，新增证据记录在专项快照中。
+
+| 补充来源 | 固定版本 / 提交 | 用途与限制 |
+| --- | --- | --- |
+| [SpongePowered Mixin](https://github.com/SpongePowered/Mixin/tree/4053421aa10aaac6127d969028a29c94fe3054f6) | `0.8.7` 分支，`4053421aa10aaac6127d969028a29c94fe3054f6` | 注入次数、plugin、Redirect 竞争、导出 / 校验；不是 Fabric fork 的完整替代性证明 |
+| [Sinytra Adapter](https://github.com/Sinytra/Adapter/tree/38d859495426fadb5db8b52afdb88deaa7132322) | `1.21.x` 分支，`38d859495426fadb5db8b52afdb88deaa7132322` | clean / dirty 结构对照、ordinal 与目标迁移；未核对其与 Connector 发布依赖的二进制一致性 |
+| [Mixin 注入点参考](https://github.com/SpongePowered/Mixin/wiki/Injection-Point-Reference) | 官方 Wiki，检索于调查日 | target、ordinal、slice / 指令查询的概念；准确要求用固定源码补证 |
+| [Mixin Callback Injectors](https://github.com/SpongePowered/Mixin/wiki/Advanced-Mixin-Usage---Callback-Injectors) | 官方 Wiki，检索于调查日 | `require` / `expect` 与 injector group 背景 |
+| [Mojang 1.21.1 元数据](https://piston-meta.mojang.com/v1/packages/22a1966494dfa4eeb5ee778c8e6ed5b774839582/1.21.1.json) | `client_mappings` 内容对象 `2244b6f072256667bcd9a73df124d6c58de77992` | 官方类 / 成员映射与 Java 21 要求；下载 SHA-1 已核对；未解析 server mappings |
+| [Intermediary 映射](https://maven.fabricmc.net/net/fabricmc/intermediary/1.21.1/intermediary-1.21.1-v2.jar) | `1.21.1`，v2 | 原始混淆名与 Intermediary 对应 |
+| [Yarn 映射](https://maven.fabricmc.net/net/fabricmc/yarn/1.21.1+build.3/yarn-1.21.1+build.3-v2.jar) | `1.21.1+build.3`，v2 | 固定 Yarn named 输入 |
+| [MCP config](https://maven.minecraftforge.net/de/oceanlabs/mcp/mcp_config/1.21.1-20240808.132146/mcp_config-1.21.1-20240808.132146.zip) | `1.21.1-20240808.132146` | `joined.tsrg` 原始 SRG 输入，不能直接等同于部署产物的完整命名 |
+| [TinyRemapper 源码包](https://maven.fabricmc.net/net/fabricmc/tiny-remapper/0.10.4/tiny-remapper-0.10.4-sources.jar) | `0.10.4` | Loader 固定依赖样本的命名转换与 MixinExtension；未调用工具转换 JAR |
+| [mapping-io 源码包](https://maven.fabricmc.net/net/fabricmc/mapping-io/0.5.0/mapping-io-0.5.0-sources.jar) | `0.5.0` | Loader 固定依赖样本的映射格式读取；本轮核对脚本直接解析文件，并未调用该库 |
+
+复核映射样本的方法：按专项快照中的 URL 下载输入并核对 SHA-256；从两个 Fabric JAR 读取 `mappings/mappings.tiny`，从 MCP ZIP 读取 `config/joined.tsrg`；通过同版本原始混淆类 / 方法与完整描述符连接三份映射，Mojang ProGuard 文件用于核对可读名称。已检查三个类及 `ItemStack#getCount()I`，没有声称完成全量合成。
+
+专项快照区分发布映射 / 工具源码包的原始下载字节哈希和 GitHub 源码的 UTF-8 / LF 哈希。补充源码检查仍以相关片段为单位；没有下载游戏 JAR、运行安装器、编译夹具或测试真实 Mixin。

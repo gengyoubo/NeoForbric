@@ -1,0 +1,416 @@
+{
+  "schema_version": 1,
+  "investigation_date": "2026-10-06",
+  "timezone": "Asia/Tokyo",
+  "target_minecraft": "1.21.1",
+  "method": "official documentation and pinned-source static inspection",
+  "runtime_tested": false,
+  "is_build_dependency_lock": false,
+  "repositories": [
+    {
+      "id": "forge",
+      "repository": "MinecraftForge/MinecraftForge",
+      "queried_ref": "1.21.1",
+      "commit": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "tree_url": "https://api.github.com/repos/MinecraftForge/MinecraftForge/git/trees/a11d1936c53f1f93787f239ff42cb8e93a1d037a?recursive=1",
+      "role": "1.21.1 upstream research"
+    },
+    {
+      "id": "neo",
+      "repository": "neoforged/NeoForge",
+      "queried_ref": "1.21.1",
+      "commit": "a2d6402a3c1eec093aef7e7d10ac5145906c199e",
+      "tree_url": "https://api.github.com/repos/neoforged/NeoForge/git/trees/a2d6402a3c1eec093aef7e7d10ac5145906c199e?recursive=1",
+      "role": "1.21.1 upstream research"
+    },
+    {
+      "id": "fabric",
+      "repository": "FabricMC/fabric",
+      "queried_ref": "1.21.1",
+      "commit": "83c07162d88a703d15c8dae50cbbc12f4e9e63c3",
+      "tree_url": "https://api.github.com/repos/FabricMC/fabric/git/trees/83c07162d88a703d15c8dae50cbbc12f4e9e63c3?recursive=1",
+      "role": "1.21.1 upstream research"
+    },
+    {
+      "id": "loader",
+      "repository": "FabricMC/fabric-loader",
+      "queried_ref": "0.16.10",
+      "commit": "fda9a7b84f0898f57b46fbbfda58795e7fa31cef",
+      "tree_url": "https://api.github.com/repos/FabricMC/fabric-loader/git/trees/fda9a7b84f0898f57b46fbbfda58795e7fa31cef?recursive=1",
+      "role": "fixed loader source sample; not a dependency recommendation"
+    },
+    {
+      "id": "connector",
+      "repository": "Sinytra/Connector",
+      "queried_ref": "1.21.x",
+      "commit": "5a2f668ad492c1586c279a197423f5a1d1a16509",
+      "tree_url": "https://api.github.com/repos/Sinytra/Connector/git/trees/5a2f668ad492c1586c279a197423f5a1d1a16509?recursive=1",
+      "role": "1.21.1 upstream research"
+    },
+    {
+      "id": "ffa",
+      "repository": "Sinytra/ForgifiedFabricAPI",
+      "queried_ref": "1.21.1",
+      "commit": "c2cb2ae0db344bd2efcf2d4fc8770d298377faa0",
+      "tree_url": "https://api.github.com/repos/Sinytra/ForgifiedFabricAPI/git/trees/c2cb2ae0db344bd2efcf2d4fc8770d298377faa0?recursive=1",
+      "role": "1.21.1 upstream research"
+    },
+    {
+      "id": "forbric",
+      "repository": "Ray-T-r/Minecraft-Forbric-mod-loader",
+      "queried_ref": "main",
+      "commit": "520d7aad11cc7c9b8c8278b5f541e4429e1f7623",
+      "tree_url": "https://api.github.com/repos/Ray-T-r/Minecraft-Forbric-mod-loader/git/trees/520d7aad11cc7c9b8c8278b5f541e4429e1f7623?recursive=1",
+      "role": "26.2 architecture reference; exact project ancestry unconfirmed"
+    }
+  ],
+  "patch_inventory": {
+    "forge": {
+      "path_prefix": "patches/minecraft/",
+      "suffix": ".java.patch",
+      "tree_truncated": false,
+      "file_count": 642,
+      "paths_containing_client_directory": 152,
+      "patch_files_with_inspected_excerpts": 3
+    },
+    "neo": {
+      "path_prefix": "patches/net/minecraft/",
+      "suffix": ".java.patch",
+      "tree_truncated": false,
+      "file_count": 733,
+      "paths_containing_client_directory": 185,
+      "patch_files_with_inspected_excerpts": 4
+    },
+    "target_path_comparison": {
+      "same_path": 570,
+      "forge_only": 72,
+      "neoforge_only": 163,
+      "meaning": "path comparison only; not semantic equivalence or conflict count"
+    },
+    "neoforge_injected_interface_target_keys": 90
+  },
+  "source_samples": [
+    {
+      "repository_id": "connector",
+      "path": "build.gradle.kts",
+      "url": "https://github.com/Sinytra/Connector/blob/5a2f668ad492c1586c279a197423f5a1d1a16509/build.gradle.kts",
+      "line_count": 327,
+      "sha256_utf8_lf": "713e98bd5f17504f9de2df86027bde844c4d54b218595365a59815a06699d13a"
+    },
+    {
+      "repository_id": "connector",
+      "path": "gradle/libs.versions.toml",
+      "url": "https://github.com/Sinytra/Connector/blob/5a2f668ad492c1586c279a197423f5a1d1a16509/gradle/libs.versions.toml",
+      "line_count": 35,
+      "sha256_utf8_lf": "1f03b07a3b54d0ca707db2031e7e13d462f079135e6e2f05ac512cf6477deec5"
+    },
+    {
+      "repository_id": "connector",
+      "path": "gradle.properties",
+      "url": "https://github.com/Sinytra/Connector/blob/5a2f668ad492c1586c279a197423f5a1d1a16509/gradle.properties",
+      "line_count": 23,
+      "sha256_utf8_lf": "57bb3876a3169cbc1fd4f31d95c6bf40fab32948985148dcacdcfbc872840bc8"
+    },
+    {
+      "repository_id": "connector",
+      "path": "README.md",
+      "url": "https://github.com/Sinytra/Connector/blob/5a2f668ad492c1586c279a197423f5a1d1a16509/README.md",
+      "line_count": 140,
+      "sha256_utf8_lf": "ae4bdfb20776841017fefcaaa493d31604bf4fe7d1d3bd3e51f5ba66d10ed7bd"
+    },
+    {
+      "repository_id": "connector",
+      "path": "transformer/src/main/java/org/sinytra/connector/transformer/jar/JarTransformer.java",
+      "url": "https://github.com/Sinytra/Connector/blob/5a2f668ad492c1586c279a197423f5a1d1a16509/transformer/src/main/java/org/sinytra/connector/transformer/jar/JarTransformer.java",
+      "line_count": 183,
+      "sha256_utf8_lf": "167ec6def695e40b9ad8658ec7d651aa070401596273a83c0cf54db9e9971c2f"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-events-interaction-v0/src/main/java/net/fabricmc/fabric/api/event/player/UseBlockCallback.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-events-interaction-v0/src/main/java/net/fabricmc/fabric/api/event/player/UseBlockCallback.java",
+      "line_count": 53,
+      "sha256_utf8_lf": "ea9beaf6a099425e54ef5f5f51edbc7c9877d231247ff86474ef620987c814b2"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-lifecycle-events-v1/src/client/java/net/fabricmc/fabric/api/client/event/lifecycle/v1/ClientLifecycleEvents.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-lifecycle-events-v1/src/client/java/net/fabricmc/fabric/api/client/event/lifecycle/v1/ClientLifecycleEvents.java",
+      "line_count": 60,
+      "sha256_utf8_lf": "efeda68f9d49694c64355d9c9da28643e451ba508ed79c803eb73f108001b08b"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-lifecycle-events-v1/src/main/java/net/fabricmc/fabric/api/event/lifecycle/v1/ServerLifecycleEvents.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-lifecycle-events-v1/src/main/java/net/fabricmc/fabric/api/event/lifecycle/v1/ServerLifecycleEvents.java",
+      "line_count": 205,
+      "sha256_utf8_lf": "3f792cb951b886c8c4ac5b87c03e6ee34520e0086fbeddbac641f6cd72622889"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-lifecycle-events-v1/src/main/java/net/fabricmc/fabric/api/event/lifecycle/v1/ServerTickEvents.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-lifecycle-events-v1/src/main/java/net/fabricmc/fabric/api/event/lifecycle/v1/ServerTickEvents.java",
+      "line_count": 86,
+      "sha256_utf8_lf": "f2d93aa7576a2b4981d7462d581c2c47bb0e88b40479d1fafbb70017758e67ad"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-lifecycle-events-v1/src/main/java/net/fabricmc/fabric/mixin/event/lifecycle/MinecraftServerMixin.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-lifecycle-events-v1/src/main/java/net/fabricmc/fabric/mixin/event/lifecycle/MinecraftServerMixin.java",
+      "line_count": 113,
+      "sha256_utf8_lf": "6874927441398b3d1b4082dfdb916a149707aea76680df70c536dd05fbfb6d43"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-lifecycle-events-v1/src/main/resources/fabric-lifecycle-events-v1.accesswidener",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-lifecycle-events-v1/src/main/resources/fabric-lifecycle-events-v1.accesswidener",
+      "line_count": 5,
+      "sha256_utf8_lf": "27ea0d28527fc43a01e6a67fb9a2eea0d7e5597108383eac08f9bee06ab60d8d"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/api/networking/v1/PayloadTypeRegistry.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/api/networking/v1/PayloadTypeRegistry.java",
+      "line_count": 73,
+      "sha256_utf8_lf": "1f5ee004e8933bbd1bff60313196360d43e94f7e3326ec333de4dc0cdcf34130"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/api/networking/v1/ServerPlayNetworking.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/api/networking/v1/ServerPlayNetworking.java",
+      "line_count": 343,
+      "sha256_utf8_lf": "00309b29404539c849562960a817aecfddb041ab413581a178bb2b1bfee52646"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-resource-loader-v0/src/main/java/net/fabricmc/fabric/api/resource/ResourceManagerHelper.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-resource-loader-v0/src/main/java/net/fabricmc/fabric/api/resource/ResourceManagerHelper.java",
+      "line_count": 165,
+      "sha256_utf8_lf": "1c230c748833a0a41833ea8552339d243b200d824f32137cea9f9a5f6e403aaf"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "gradle.properties",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/gradle.properties",
+      "line_count": 64,
+      "sha256_utf8_lf": "da5ed590afed322e6ae851b4e43f1a772d77fd42d13bb3b119f746b22f3eb81a"
+    },
+    {
+      "repository_id": "ffa",
+      "path": "gradle.properties",
+      "url": "https://github.com/Sinytra/ForgifiedFabricAPI/blob/c2cb2ae0db344bd2efcf2d4fc8770d298377faa0/gradle.properties",
+      "line_count": 64,
+      "sha256_utf8_lf": "38868a8b0f8bb317f3c580339d6b7c9fc7e429a7bacc0ded0aed1603780e22ba"
+    },
+    {
+      "repository_id": "ffa",
+      "path": "README.md",
+      "url": "https://github.com/Sinytra/ForgifiedFabricAPI/blob/c2cb2ae0db344bd2efcf2d4fc8770d298377faa0/README.md",
+      "line_count": 103,
+      "sha256_utf8_lf": "7e979b22fccb791a2ee67fd72f11af6aeb9465f537fc93695db4c888e3d50b86"
+    },
+    {
+      "repository_id": "forbric",
+      "path": "COMPATIBILITY_IMPLEMENTATION.md",
+      "url": "https://github.com/Ray-T-r/Minecraft-Forbric-mod-loader/blob/520d7aad11cc7c9b8c8278b5f541e4429e1f7623/COMPATIBILITY_IMPLEMENTATION.md",
+      "line_count": 1275,
+      "sha256_utf8_lf": "1fbaf7658ccea21b264eff03769f4da25ecd507d8350f3abb57ef2fba627e3c4"
+    },
+    {
+      "repository_id": "forbric",
+      "path": "forbric-kernel/README.zh-CN.md",
+      "url": "https://github.com/Ray-T-r/Minecraft-Forbric-mod-loader/blob/520d7aad11cc7c9b8c8278b5f541e4429e1f7623/forbric-kernel/README.zh-CN.md",
+      "line_count": 104,
+      "sha256_utf8_lf": "14d4c2f75cebb6385993e939a4cc9e7e7327febe56921f18050fe33e3376f656"
+    },
+    {
+      "repository_id": "forbric",
+      "path": "MOD_TEST_FAILURES.md",
+      "url": "https://github.com/Ray-T-r/Minecraft-Forbric-mod-loader/blob/520d7aad11cc7c9b8c8278b5f541e4429e1f7623/MOD_TEST_FAILURES.md",
+      "line_count": 295,
+      "sha256_utf8_lf": "fccf62faa52d6dec08c2516c69c5e3c3c907c98546be6ada029c7dbeaf3b02f1"
+    },
+    {
+      "repository_id": "forbric",
+      "path": "README.zh-CN.md",
+      "url": "https://github.com/Ray-T-r/Minecraft-Forbric-mod-loader/blob/520d7aad11cc7c9b8c8278b5f541e4429e1f7623/README.zh-CN.md",
+      "line_count": 196,
+      "sha256_utf8_lf": "0a8df7771052c485cd9b032254306bf7554b987cf908811a984e006deaaa9fb7"
+    },
+    {
+      "repository_id": "forge",
+      "path": "fmlloader/src/main/java/net/minecraftforge/fml/loading/FMLLoader.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlloader/src/main/java/net/minecraftforge/fml/loading/FMLLoader.java",
+      "line_count": 244,
+      "sha256_utf8_lf": "d8f639007faede9998ec56c7319b0132b8eb2f23ecd3ded4b9bb968a6128ca19"
+    },
+    {
+      "repository_id": "forge",
+      "path": "gradle.properties",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/gradle.properties",
+      "line_count": 17,
+      "sha256_utf8_lf": "25cc9e6ca7a2a601e3e10a9849d47a7f4a7d9b794ef8fc1f6bb3019b7a00156a"
+    },
+    {
+      "repository_id": "forge",
+      "path": "mdk/gradle.properties",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/mdk/gradle.properties",
+      "line_count": 9,
+      "sha256_utf8_lf": "7ec998e40179befacea7c733ae9865e38b98c132a7d7259ed2009154ba45cd08"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/server/MinecraftServer.java.patch",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/server/MinecraftServer.java.patch",
+      "line_count": 242,
+      "sha256_utf8_lf": "331645e56ab9220140050acc4e3c2f0d45e0809340d9af1d5a4b7f387ef73ae3"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/entity/LivingEntity.java.patch",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/entity/LivingEntity.java.patch",
+      "line_count": 683,
+      "sha256_utf8_lf": "d8356959151ffdbd9da021a20cb2b35cd35d1006b5cc35f69b85261cc2f8a5d4"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/item/ItemStack.java.patch",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/item/ItemStack.java.patch",
+      "line_count": 111,
+      "sha256_utf8_lf": "903a9d51601bd6262c0650e52817d20de57a01b5d9c945b62510da803155bb5d"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/event/entity/player/PlayerInteractEvent.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/event/entity/player/PlayerInteractEvent.java",
+      "line_count": 389,
+      "sha256_utf8_lf": "df8a8c20583534ccd1c9c68e26e2a92b20cdd83478c191450ff473973bf442f8"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/network/ChannelBuilder.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/network/ChannelBuilder.java",
+      "line_count": 232,
+      "sha256_utf8_lf": "db64891359475f1bdffdb4288857fd8fb128b6b91d276d0cfa8300ab79edb514"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/network/SimpleChannel.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/network/SimpleChannel.java",
+      "line_count": 564,
+      "sha256_utf8_lf": "a04fba0502674f3dac144a417ff2a9dfeaae6384017b04d9ea9c0b6f9139c7a5"
+    },
+    {
+      "repository_id": "loader",
+      "path": "minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/Hooks.java",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/Hooks.java",
+      "line_count": 70,
+      "sha256_utf8_lf": "df597ba3cb1360526976cd77e9d0ce3d51de72d531de2c1324c3339be02d4d0c"
+    },
+    {
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/launch/knot/Knot.java",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/launch/knot/Knot.java",
+      "line_count": 347,
+      "sha256_utf8_lf": "a1612e97bc2246044710a0104005a2b032624f7f40f33f0ed4e9626425c162fe"
+    },
+    {
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/launch/knot/KnotClassDelegate.java",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/launch/knot/KnotClassDelegate.java",
+      "line_count": 543,
+      "sha256_utf8_lf": "4a3a5985e34fbbaf7d53f44dfc3952de90fd76ae223236c3d340234653667f01"
+    },
+    {
+      "repository_id": "neo",
+      "path": "build.gradle",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/build.gradle",
+      "line_count": 162,
+      "sha256_utf8_lf": "416b3c1d1acaf8d62d0a1e77decc883bfb0880423fe3d0a6bf11d79269361128"
+    },
+    {
+      "repository_id": "neo",
+      "path": "gradle.properties",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/gradle.properties",
+      "line_count": 66,
+      "sha256_utf8_lf": "2fa1ebb51404543a0b0eabb22fb1348a21fbe0e0e974db7da871eff431a160dc"
+    },
+    {
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/server/MinecraftServer.java.patch",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/server/MinecraftServer.java.patch",
+      "line_count": 297,
+      "sha256_utf8_lf": "c8cd52bf6ce3b6c14decadc9df6d13e905b4acf422c6cf7b1e44a046e2cfeb82"
+    },
+    {
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/world/entity/Entity.java.patch",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/world/entity/Entity.java.patch",
+      "line_count": 588,
+      "sha256_utf8_lf": "6390380526748cd991cdece8535909292bf212e73ba4544478c4239b80a81288"
+    },
+    {
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/world/entity/LivingEntity.java.patch",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/world/entity/LivingEntity.java.patch",
+      "line_count": 760,
+      "sha256_utf8_lf": "3b2bd4404291a91e33ea656f85a91084bb0ce6f288d78a8310fe11c299e2e141"
+    },
+    {
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/world/item/ItemStack.java.patch",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/world/item/ItemStack.java.patch",
+      "line_count": 255,
+      "sha256_utf8_lf": "c669d86ee854e43e57fe3110297135ca4786dc60d2c82387b684c60b8bef2f7a"
+    },
+    {
+      "repository_id": "neo",
+      "path": "projects/base/build.gradle",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/projects/base/build.gradle",
+      "line_count": 34,
+      "sha256_utf8_lf": "9136466a60dc3dd0584cf31116158b423007ff261be15bd5b376e5d68e996b37"
+    },
+    {
+      "repository_id": "neo",
+      "path": "projects/neoforge/build.gradle",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/projects/neoforge/build.gradle",
+      "line_count": 397,
+      "sha256_utf8_lf": "f92f6871d18dba8aa6ce03ec773d56870ae3fee3d6bb7f90ac159df13d21ea63"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/event/AddReloadListenerEvent.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/event/AddReloadListenerEvent.java",
+      "line_count": 100,
+      "sha256_utf8_lf": "b310ab89f217ca9070b0006da7b9cfbd482d8e8c32c226e8459380a265d1d03a"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/event/entity/player/PlayerInteractEvent.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/event/entity/player/PlayerInteractEvent.java",
+      "line_count": 437,
+      "sha256_utf8_lf": "8e05f256378aee4167a4e917e1546d7cf50a98e9c8cf3b9cbe0ea599fd6fac82"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/network/event/RegisterPayloadHandlersEvent.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/network/event/RegisterPayloadHandlersEvent.java",
+      "line_count": 43,
+      "sha256_utf8_lf": "df017442c784c0e2c08ebf5151e5c6b4dd53c030fee099b04c33de4ae6442abd"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/resources/META-INF/accesstransformer.cfg",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/resources/META-INF/accesstransformer.cfg",
+      "line_count": 545,
+      "sha256_utf8_lf": "e5f6e279a19e7333507d90ab23a3ee6ba479dcbac5512b6122e0a082f38fabee"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/resources/META-INF/injected-interfaces.json",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/resources/META-INF/injected-interfaces.json",
+      "line_count": 274,
+      "sha256_utf8_lf": "79eba04a4d9edc9afdae0f7dc939334cc3a69193615ceda49c1dc6f03b5ffd23"
+    }
+  ]
+}
