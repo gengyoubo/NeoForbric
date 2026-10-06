@@ -53,6 +53,7 @@ public final class NativeFabricRuntime implements AutoCloseable {
     public boolean defersRegistries() { return plan.selectedNative().stream().anyMatch(mod -> mod.getId().equals("fabric-registry-sync-v0")); }
     public void prepareClient(Object minecraft) { facade.prepareModInit(provider.getLaunchDirectory(), minecraft); }
     public Set<String> nestedPaths(Discovery.Candidate candidate) { return plan.node(candidate).nestedPaths(); }
+    public String accessRules(Discovery.Candidate candidate) { return plan.node(candidate).metadata().getClassTweaker(); }
     public GameClassLoader.Generated generated(String name, ClassIndex index) { return NeoMixinService.generated(name, index); }
     public void install(List<Discovery.Candidate> prepared, RuntimeInputs inputs, TransformPipeline pipeline) throws IOException {
         Map<String, Discovery.Candidate> byId = new HashMap<>(); prepared.forEach(c -> byId.put(c.metadata().id(), c));

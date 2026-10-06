@@ -48,10 +48,24 @@ SSC 参考包从 [作者发布的 Modrinth 版本](https://modrinth.com/mod/shap
 
 `sscRenderProbe` 调用真实 GeckoLib `checkAndRefreshBuffer`：先检查两个正在构建的缓冲区，然后结束构建、检查两个缓冲区被重新获取。随后创建单独的 `neoforbric-ssc-probe-<UUID>` 世界，检查第一人称渲染 100 tick、保存截图并退出。结果写入 `run/client/ssc-render-probe.txt`，截图为 `run/client/screenshots/neoforbric-ssc-world.png`。
 
-19:15 新增到用户 mods 目录的 `shape-shifter-curse-addon-8.0.0-dev.1+1.21.1.jar` 带有 Yarn `named` 的 AW（例如 `net/minecraft/item/ItemStack`），当前 PREPARE 在 `FABRIC_ACCESS_NAMESPACE` 校验时拒绝。为验证本次 GeckoLib 修复，将此前的 13 个模组 JAR 复制到 `build/ssc-compat/render-mods`，使用以下命令；新增 addon 保留在用户目录。
+19:15 新增到用户 mods 目录的 `shape-shifter-curse-addon-8.0.0-dev.1+1.21.1.jar` 包含一份未声明的 Yarn `named` AW（例如 `net/minecraft/item/ItemStack`）。旧版 NF 扫描了所有具有 AW 标头的资源，因此 PREPARE 在 `FABRIC_ACCESS_NAMESPACE` 校验时拒绝。最初的 GeckoLib 验证将此前 13 个模组 JAR 复制到 `build/ssc-compat/render-mods`，使用以下命令；新增 addon 保留在用户目录。
 
 ```powershell
 ./gradlew.bat runClient -PsscRenderProbe -PclientModsDir=build/ssc-compat/render-mods
 ```
 
 2026-10-06 19:21（日本时间）独立副本实测通过：真实 GeckoLib 方法输出 `GECKO_BUFFER_PROBE_OK originalAndRefreshed=true`，测试世界渲染 100 tick 后输出 `SSC_RENDER_PROBE_OK` 并正常退出，Gradle 为 `BUILD SUCCESSFUL`。日志位于 `build/ssc-render-isolated.log`。这一检查覆盖内部类 / 字段访问、缓冲区刷新及新世界第一人称渲染；完整变身玩法仍需单独验证。
+
+## 未启用的 addon AW 资源
+
+addon 的代码已经是 `intermediary`，其 `fabric.mod.json` 没有 `accessWidener` 属性，`ssc_addon.accesswidener` 是未启用的资源。[Fabric Loader 0.19.5](https://github.com/FabricMC/fabric-loader/blob/0.19.5/src/main/java/net/fabricmc/loader/impl/FabricLoaderImpl.java#L485) 只读取元数据选择的访问文件；NF 现在使用同一个 Fabric 元数据解析器的 `getClassTweaker()` 结果来决定 remap 的资源。
+
+未声明的访问文件保留原始内容；实际声明的文件必须存在并经过原有命名空间 / 符号校验，失败消息包含资源路径和来源 JAR。Apoli 的 named Mojang AW 和 GeckoLib 的 intermediary AW 仍正常转换。新增四项回归覆盖未声明资源、扩展名与路径不同的声明文件、声明文件缺失，以及声明的未知 named 规则。完整组合的启动验证日志为 `build/fabric-declared-access-rules.log`。
+
+## refmap 模组的 Shadow 成员
+
+addon 的 `SscAddonTravelMixin` 声明 `protected @Shadow field_6282:Z`，别名包括 `jumping`，但其 refmap 只有 `travel` 注入选择器。`field_6282` 对应 Mojang `LivingEntity.jumping`。旧版 NF 只对标记 `Fabric-Loom-Mixin-Remap-Type: static` 的 JAR 启用 TinyRemapper 的 Mixin 扩展；这留下了原名声明及引用。Mixin 查找别名时命中 protected `jumping`，因其不是 private / synthetic 字段而拒绝应用。
+
+NF 现在对所有 Fabric 输入启用 Mixin 扩展的 `HARD` 部分，转换 Shadow 等成员声明并传播到字节码引用；`SOFT` 部分仍仅用于 Loom static 输入，旧式注入选择器继续通过 refmap 解析。`@Shadow(remap=false)` 保留原名，Mixin 自身的别名校验保持有效。三项 TinyRemapper 回归覆盖 refmap 模式、static 模式和禁用 Shadow remap 的声明。完整启动日志为 `build/fabric-shadow-remap.log`。
+
+2026-10-06 20:01（日本时间）包含 addon 8.0.0-dev.1 的完整 mods 组合实测进入主菜单，输出 `CLIENT_PROBE_OK`，渲染 5 帧后正常退出，Gradle 为 `BUILD SUCCESSFUL`；原 Shadow 别名错误未再出现。59 项 loader 测试和 4 项 installer 测试通过，根目录 `neoforbric-installer.jar` 已重新打包。启动日志仍包含 remapper 对混合命名空间 / 不存在的可选目标的诊断提示；本次验证范围为初始化、Mixin 应用及主菜单，尚未验证 addon 的世界内玩法。

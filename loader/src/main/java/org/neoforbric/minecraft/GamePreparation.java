@@ -188,7 +188,7 @@ public final class GamePreparation {
         try (JarFile jar = new JarFile(input.toFile())) { return Archive.sealingDirectives(jar.getManifest()); }
     }
 
-    public record FabricInput(Path source, Path output) {}
+    public record FabricInput(Path source, Path output, String accessRules) {}
     /** A single symbol graph prevents repeated game scans and resolves cross-module inherited references. */
     public static void remapFabricMods(List<FabricInput> mods, RuntimeInputs inputs) throws IOException {
         // TinyRemapper can coalesce duplicate inputs. Reject conflicts in the original
@@ -204,8 +204,7 @@ public final class GamePreparation {
         }
         MemoryMappingTree tree = mappings(inputs.mappings(), inputs.intermediaryMappings());
         Set<InputTag> staticMixins = new HashSet<>();
-        TinyRemapper remapper = TinyRemapper.newRemapper().withMappings(TinyUtils.createMappingProvider(tree, "intermediary", "mojang"))
-                .extension(new MixinExtension(staticMixins::contains)).threads(2).build();
+        TinyRemapper remapper = fabricRemapper(tree, staticMixins);
         List<InputTag> tags = new ArrayList<>();
         try {
             List<Path> classpath = new ArrayList<>(inputs.libraries()); classpath.add(inputs.intermediaryGame());
@@ -224,21 +223,34 @@ public final class GamePreparation {
                     try (OutputConsumerPath consumer = new OutputConsumerPath.Builder(temporary).build()) {
                         consumer.addNonClassFiles(mod.source(), NonClassCopyMode.FIX_META_INF, remapper); remapper.apply(consumer, tags.get(index));
                     }
-                    Map<String, byte[]> resources = new HashMap<>(); Archive source = Archive.read(mod.source());
-                    byte[] header = "accessWidener".getBytes(StandardCharsets.US_ASCII);
-                    for (String name : source.names()) {
-                        if (name.endsWith("refmap.json")) {
-                            resources.put(name, FabricRefmaps.remap(source.read(name), tree));
-                            continue;
-                        }
-                        if (name.endsWith(".class")) continue; byte[] bytes = source.read(name);
-                        if (bytes.length < header.length || !Arrays.equals(bytes, 0, header.length, header, 0, header.length)) continue;
-                        resources.put(name, FabricAccessRules.remap(bytes, tree, remapper.getRemapper()));
-                    }
+                    Archive source = Archive.read(mod.source());
+                    Map<String, byte[]> resources = fabricResources(source, mod.accessRules(), tree, remapper.getRemapper());
                     normalize(temporary, mod.output(), resources, source.sealingManifest());
                 } finally { Files.deleteIfExists(temporary); }
             }
         } finally { remapper.finish(); }
+    }
+    static TinyRemapper fabricRemapper(MemoryMappingTree tree, Set<InputTag> staticMixins) {
+        // Shadow declarations and their bytecode references belong to the target's
+        // namespace even when injection selectors are resolved through a refmap.
+        // Keep those selectors intact for legacy JARs; Loom static JARs remap both.
+        return TinyRemapper.newRemapper().withMappings(TinyUtils.createMappingProvider(tree, "intermediary", "mojang"))
+                .extension(new MixinExtension(EnumSet.of(MixinExtension.AnnotationTarget.HARD)))
+                .extension(new MixinExtension(EnumSet.of(MixinExtension.AnnotationTarget.SOFT),
+                        net.fabricmc.tinyremapper.extension.mixin.common.Logger.Level.WARN, staticMixins::contains))
+                .threads(2).build();
+    }
+    static Map<String, byte[]> fabricResources(Archive source, String accessRules, MemoryMappingTree tree, org.objectweb.asm.commons.Remapper remapper) {
+        Map<String, byte[]> resources = new HashMap<>();
+        for (String name : source.names()) if (name.endsWith("refmap.json")) resources.put(name, FabricRefmaps.remap(source.read(name), tree));
+        // Fabric enables exactly the access file selected by its metadata parser.
+        // A JAR may also contain unused development resources in another namespace.
+        if (accessRules != null) {
+            if (!source.names().contains(accessRules)) throw new Failure("FABRIC_ACCESS_RESOURCE", "Declared Fabric access file is missing: " + accessRules + " in " + source.path());
+            try { resources.put(accessRules, FabricAccessRules.remap(source.read(accessRules), tree, remapper)); }
+            catch (Failure failure) { throw new Failure(failure.code(), "Access file " + accessRules + " in " + source.path() + ": " + failure.getMessage(), failure); }
+        }
+        return resources;
     }
     static void remap(Path input, Path output, MemoryMappingTree tree, String from, String to, List<Path> classpath) throws IOException {
         remap(input, output, tree, from, to, classpath, null);

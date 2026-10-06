@@ -93,7 +93,7 @@ public final class Bootstrap {
                     Path cache = options.runtime().toAbsolutePath().getParent().resolve("remapped-mods").resolve(mod.archive().hash()); Files.createDirectories(cache);
                     String launch = UUID.randomUUID().toString(); Path source = cache.resolve("input-" + launch + ".jar"), mapped = cache.resolve("mod-" + launch + ".jar");
                     remapArtifacts.addAll(List.of(source, mapped, mapped.resolveSibling(mapped.getFileName() + ".remapping.jar"), mapped.resolveSibling(mapped.getFileName() + ".part")));
-                    Files.write(source, mod.archive().snapshot()); remapInputs.add(new GamePreparation.FabricInput(source, mapped));
+                    Files.write(source, mod.archive().snapshot()); remapInputs.add(new GamePreparation.FabricInput(source, mapped, fabricRuntime.accessRules(mod)));
                 }
                 GamePreparation.remapFabricMods(remapInputs, runtime);
                 for (int i = 0; i < mods.size(); i++) {
