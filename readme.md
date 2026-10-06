@@ -2,6 +2,13 @@
 本项目仅为学习目的制作的forbric的改版NeoForbric,这个模组加载器所造成的崩溃和稳定性不能保证。
 # 目标版本
 1.21.1
+# 如何使用
+下载最新构建的neoforbric-installer.jar，然后在java21版本中运行
+```
+java -jar neoforbric-installer.jar
+```
+然后指定目录就可以
+（PCL可以正常识别这个模组加载器)
 # 实现思路
 
 NeoForbric 的目标不是简单地在 Forge/Fabric/NeoForge 之间建立兼容层，
@@ -42,6 +49,8 @@ NeoForge ───┘
 ```
 
 # 当前实现与运行
+
+客户端安装器：使用 Java 21 运行项目根目录的 `neoforbric-installer.jar`，选择 `.minecraft` 目录后安装。构建命令为 `./gradlew.bat assembleInstaller`，详情见 [安装器说明](docs/installer.md)。
 
 已实现 Java 21 启动内核原型：自有 JVM 入口、JAR 元数据发现、原型依赖图、单一游戏类加载器、转换定义屏障和 JSON 审计。三个独立样例 JAR 在同一游戏夹具对象上协作，验证初始化顺序与类 / 对象身份。
 

@@ -9,7 +9,6 @@ import java.security.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.jar.*;
 import java.util.stream.Stream;
 
 /** Installs a launcher version while keeping Minecraft classes off the bootstrap classpath. */
@@ -142,7 +141,8 @@ public final class Installer {
                         copyCache(path, contained(target, actual.relativize(path).toString()));
                     }
                 }
-            } else copyCache(input, target.resolve(name));
+            } else if (name.equals("runtime.json")) atomicWrite(target.resolve(name), Files.readAllBytes(input));
+            else copyCache(input, target.resolve(name));
         }
     }
     private static void copyCache(Path source, Path target) throws IOException {

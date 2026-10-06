@@ -1,6 +1,8 @@
 package org.neoforbric.installer;
 
 import java.awt.GraphicsEnvironment;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
 import javax.swing.*;
@@ -8,6 +10,8 @@ import javax.swing.*;
 public final class Main {
     private Main() {}
     public static void main(String[] args) {
+        System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out), true, StandardCharsets.UTF_8));
+        System.setErr(new PrintStream(new FileOutputStream(FileDescriptor.err), true, StandardCharsets.UTF_8));
         if (args.length == 0) {
             if (GraphicsEnvironment.isHeadless()) { System.err.println("没有图形环境。使用 --help 查看命令行安装方式。"); System.exit(2); }
             SwingUtilities.invokeLater(InstallerWindow::show); return;

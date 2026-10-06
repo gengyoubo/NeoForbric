@@ -53,3 +53,5 @@ SSC 参考包从 [作者发布的 Modrinth 版本](https://modrinth.com/mod/shap
 ```powershell
 ./gradlew.bat runClient -PsscRenderProbe -PclientModsDir=build/ssc-compat/render-mods
 ```
+
+2026-10-06 19:21（日本时间）独立副本实测通过：真实 GeckoLib 方法输出 `GECKO_BUFFER_PROBE_OK originalAndRefreshed=true`，测试世界渲染 100 tick 后输出 `SSC_RENDER_PROBE_OK` 并正常退出，Gradle 为 `BUILD SUCCESSFUL`。日志位于 `build/ssc-render-isolated.log`。这一检查覆盖内部类 / 字段访问、缓冲区刷新及新世界第一人称渲染；完整变身玩法仍需单独验证。
