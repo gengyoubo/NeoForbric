@@ -5,6 +5,7 @@ import java.net.URL;
 import java.security.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import org.neoforbric.fabric.NativeFabricRuntime;
 
 /** The sole defining loader for all admitted game and mod types. Parent access is an allowlist. */
 public final class GameClassLoader extends SecureClassLoader implements Closeable {
@@ -54,7 +55,7 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
         if (transforming.get() != null && findLoadedClass(name) == null) {
             // Mixin configuration plugins must execute in G. They may load their own helpers,
             // but a metadata callback cannot define an additional Minecraft target class.
-            boolean metadataTool = Boolean.getBoolean("neoforbric.fabric.runtime") && "fabric-runtime-mixin".equals(transforms.activeRule()) && !name.startsWith("net.minecraft.");
+            boolean metadataTool = NativeFabricRuntime.active() && "fabric-runtime-mixin".equals(transforms.activeRule()) && !name.startsWith("net.minecraft.");
             if (!metadataTool) throw new Failure("REENTRANT_DEFINITION", "Transformer for " + transforming.get() + " requested class " + name + "; use bytecode access");
             audit.record("PREPARE", "mixin-plugin-class", name, Map.of("requestingTarget", transforming.get(), "loader", "G"));
         }
@@ -89,12 +90,7 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
             }
             finally { if (previousTarget == null) transforming.remove(); else transforming.set(previousTarget); }
             int separator = name.lastIndexOf('.');
-            if (separator > 0) {
-                String packageName = name.substring(0, separator);
-                synchronized (this) {
-                    if (getDefinedPackage(packageName) == null) definePackage(packageName, null, null, null, null, null, null, null);
-                }
-            }
+            if (separator > 0) definePackage(name.substring(0, separator), owner);
             CodeSource source = new CodeSource(owner.codeSource(), (java.security.cert.Certificate[]) null);
             Class<?> type = defineClass(name, bytes, 0, bytes.length, source);
             audit.record("GAME", "class-defined", name, Map.of("loader", "G", "module", "unnamed", "source", owner.path().toString(),
@@ -103,6 +99,24 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
         } catch (Exception | Error failed) {
             Failure.rethrowFatal(failed);
             throw definitionFailure(name, failed);
+        }
+    }
+
+    /** JVM package sealing: a sealed package only accepts classes from the archive that declared the seal. */
+    private void definePackage(String packageName, Archive owner) {
+        synchronized (this) {
+            URL sealBase = owner.seals(packageName) ? owner.codeSource() : null;
+            Package defined = getDefinedPackage(packageName);
+            if (defined == null) {
+                definePackage(packageName, null, null, null, null, null, null, sealBase);
+                return;
+            }
+            if (defined.isSealed()) {
+                if (sealBase == null || !defined.isSealed(sealBase))
+                    throw new Failure("PACKAGE_SEALED", "Sealed package " + packageName + " rejects " + owner.path());
+            } else if (sealBase != null) {
+                throw new Failure("PACKAGE_SEALED", "Package " + packageName + " is already loaded unsealed and cannot be sealed by " + owner.path());
+            }
         }
     }
 

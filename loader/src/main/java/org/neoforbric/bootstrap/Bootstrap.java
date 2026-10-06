@@ -48,8 +48,9 @@ public final class Bootstrap {
             }
             phase("DISCOVER");
             var candidates = Discovery.discover(options.mods(), audit);
+            boolean hasFabricMods = candidates.stream().anyMatch(candidate -> candidate.metadata().ecosystem() == Metadata.Ecosystem.FABRIC);
             RuntimeInputs runtime = null;
-            if (Boolean.getBoolean("neoforbric.fabric.runtime") && !options.inspect()) {
+            if (options.client() && hasFabricMods && !Boolean.getBoolean("neoforbric.fabric.plain")) {
                 fabricRuntime = new NativeFabricRuntime(options, audit);
                 runtime = RuntimeInputs.read(options.runtime(), audit);
                 candidates = fabricRuntime.discover(candidates, runtime);

@@ -17,6 +17,8 @@ import com.llamalad7.mixinextras.MixinExtrasBootstrap;
 
 /** One process, one passive Fabric facade; NeoForbric owns discovery, preparation, G and Minecraft main. */
 public final class NativeFabricRuntime implements AutoCloseable {
+    private static volatile boolean active;
+    public static boolean active() { return active; }
     private final NeoGameProvider provider;
     private final NeoFabricLauncher launcher;
     private final FabricLoaderImpl facade;
@@ -26,6 +28,7 @@ public final class NativeFabricRuntime implements AutoCloseable {
     private boolean mainInvoked, clientInvoked;
     public NativeFabricRuntime(LaunchOptions options, AuditLog audit) {
         if (!options.client()) throw new Failure("FABRIC_RUNTIME_SCOPE", "Initial experimental Fabric runtime is client-only");
+        active = true;
         this.audit = audit; provider = new NeoGameProvider(options);
         launcher = new NeoFabricLauncher(EnvType.CLIENT, options.mainClass(), audit);
         facade = FabricLoaderImpl.INSTANCE; facade.setGameProvider(provider);
@@ -122,6 +125,7 @@ public final class NativeFabricRuntime implements AutoCloseable {
         }
     }
     @Override public void close() {
+        active = false;
         Set<FileSystem> filesystems = new HashSet<>();
         for (var mod : facade.getModsInternal()) for (Path path : mod.getRootPaths()) if (path.getFileSystem() != FileSystems.getDefault()) filesystems.add(path.getFileSystem());
         for (FileSystem filesystem : filesystems) {

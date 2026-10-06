@@ -5,6 +5,7 @@ import java.net.*;
 import java.nio.file.*;
 import java.security.*;
 import java.util.*;
+import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.zip.*;
 
@@ -109,10 +110,8 @@ public final class Archive {
     public void requireSupportedLayout() {
         var attributes = manifest.getMainAttributes();
         if (attributes.getValue("Class-Path") != null || attributes.getValue("Automatic-Module-Name") != null
-                || "true".equalsIgnoreCase(attributes.getValue("Multi-Release"))
-                || "true".equalsIgnoreCase(attributes.getValue("Sealed"))
-                || manifest.getEntries().values().stream().anyMatch(a -> "true".equalsIgnoreCase(a.getValue("Sealed"))))
-            throw new Failure("UNSUPPORTED_LAYOUT", path + " requires manifest classpath, modules, sealing or multi-release support");
+                || "true".equalsIgnoreCase(attributes.getValue("Multi-Release")))
+            throw new Failure("UNSUPPORTED_LAYOUT", path + " requires manifest classpath, modules or multi-release support");
         for (String name : names()) {
             String upper = name.toUpperCase(Locale.ROOT);
             if (name.equals("module-info.class") || name.startsWith("META-INF/versions/")
@@ -120,6 +119,33 @@ public final class Archive {
                     && !verifiedSignatures && (upper.matches(".*\\.(SF|RSA|DSA|EC)$") || upper.startsWith("META-INF/SIG-"))))
                 throw new Failure("UNSUPPORTED_LAYOUT", path + " contains unsupported module / nested / signed entry " + name);
         }
+    }
+
+    /** Whether the manifest seals the given dotted package; a per-package entry overrides the main attribute. */
+    public boolean seals(String packageName) {
+        Attributes entry = manifest.getEntries().get(packageName.replace('.', '/') + "/");
+        String value = entry == null ? null : entry.getValue("Sealed");
+        if (value == null) value = manifest.getMainAttributes().getValue("Sealed");
+        return "true".equalsIgnoreCase(value);
+    }
+
+    /** Sealing directives only, so remapped artifacts keep the JVM package-sealing contract without other manifest state. */
+    public Manifest sealingManifest() { return sealingDirectives(manifest); }
+    public static Manifest sealingDirectives(Manifest source) {
+        Manifest result = new Manifest();
+        result.getMainAttributes().putValue("Manifest-Version", "1.0");
+        if (source == null) return result;
+        String main = source.getMainAttributes().getValue("Sealed");
+        if (main != null) result.getMainAttributes().putValue("Sealed", main);
+        for (var entry : source.getEntries().entrySet()) {
+            String value = entry.getValue().getValue("Sealed");
+            if (value != null) {
+                Attributes attributes = new Attributes();
+                attributes.putValue("Sealed", value);
+                result.getEntries().put(entry.getKey(), attributes);
+            }
+        }
+        return result;
     }
 
     public URL resource(String name) {

@@ -211,7 +211,7 @@ class ClassLoadingTest {
     }
 
     @Test void unsupportedJarLayoutsAreRejectedInsteadOfSilentlyFlattened() throws Exception {
-        for (String attribute : List.of("Class-Path", "Automatic-Module-Name", "Multi-Release", "Sealed")) {
+        for (String attribute : List.of("Class-Path", "Automatic-Module-Name", "Multi-Release")) {
             Manifest manifest = new Manifest(); manifest.getMainAttributes().putValue("Manifest-Version", "1.0");
             manifest.getMainAttributes().putValue(attribute, attribute.equals("Class-Path") ? "other.jar" : attribute.equals("Automatic-Module-Name") ? "example" : "true");
             Archive archive = Archive.read(TestJars.jar(temporary.resolve("unsupported.jar"), Map.of("demo/Target.class", TestJars.type("demo.Target")), manifest));
@@ -220,6 +220,20 @@ class ClassLoadingTest {
         for (String entry : List.of("META-INF/SAMPLE.SF", "META-INF/SIG-CUSTOM", "lib/nested.jar", "lib/nested.JAR", "module-info.class", "META-INF/versions/21/demo/Target.class")) {
             Archive archive = Archive.read(TestJars.jar(temporary.resolve("entry.jar"), Map.of(entry, TestJars.text("unsupported"))));
             assertEquals("UNSUPPORTED_LAYOUT", assertThrows(Failure.class, archive::requireSupportedLayout).code());
+        }
+    }
+
+    @Test void sealedPackagesOnlyAcceptClassesFromTheirDeclaringArchive() throws Exception {
+        Manifest sealed = new Manifest(); sealed.getMainAttributes().putValue("Manifest-Version", "1.0"); sealed.getMainAttributes().putValue("Sealed", "true");
+        Archive owner = Archive.read(TestJars.jar(temporary.resolve("sealed.jar"), Map.of("demo/sealed/Target.class", TestJars.type("demo.sealed.Target")), sealed));
+        Archive intruder = typeJar("intruder.jar", "demo.sealed.Intruder");
+        owner.requireSupportedLayout();
+        AuditLog audit = new AuditLog(); TransformPipeline pipeline = new TransformPipeline();
+        try (var loader = loader(List.of(owner, intruder), pipeline, audit)) {
+            pipeline.seal(audit); loader.open();
+            loader.loadClass("demo.sealed.Target");
+            assertTrue(loader.getDefinedPackage("demo.sealed").isSealed());
+            assertEquals("PACKAGE_SEALED", assertThrows(Failure.class, () -> loader.loadClass("demo.sealed.Intruder")).code());
         }
     }
 

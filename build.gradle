@@ -95,6 +95,7 @@ tasks.register('runClient', JavaExec) {
             '--verify', 'demo.clientprobe.ClientProbe', '--audit', new File(clientDirectory, 'audit.json').absolutePath
     if (providers.gradleProperty('clientProbeFrames').isPresent()) args '--stop-after-frames', providers.gradleProperty('clientProbeFrames').get()
     if (providers.gradleProperty('clientModsProbe').getOrElse('false') == 'true') systemProperty 'neoforbric.probe.mods', 'true'
+    if (providers.gradleProperty('fabricPlainProfile').getOrElse('false') == 'true') systemProperty 'neoforbric.fabric.plain', 'true'
     def username = providers.gradleProperty('clientUsername').getOrElse('NeoForbricDev')
     args '--', '--username', username, '--uuid', java.util.UUID.nameUUIDFromBytes(('OfflinePlayer:' + username).getBytes('UTF-8')).toString(),
             '--accessToken', '0', '--userType', 'legacy', '--version', '1.21.1', '--versionType', 'release',
@@ -114,7 +115,6 @@ tasks.register('runJei', JavaExec) {
     mainClass = 'org.neoforbric.bootstrap.Main'
     maxHeapSize = '3g'
     workingDir = jeiDirectory
-    systemProperty 'neoforbric.fabric.runtime', 'true'
     systemProperty 'neoforbric.debug', 'true'
     jvmArgs '-Dfile.encoding=UTF-8', '-Dstdout.encoding=UTF-8', '-Dstderr.encoding=UTF-8'
     args '--minecraft-client', '--runtime', layout.buildDirectory.file('minecraft-client/runtime.json').get().asFile.absolutePath,

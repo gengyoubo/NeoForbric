@@ -124,9 +124,12 @@ public final class GamePreparation {
 
     /** Materializes the Java 21 MR view; preserves services/resources; strips module/sealing/signature containers. */
     static int normalize(Path input, Path output) throws IOException {
-        return normalize(input, output, Map.of());
+        return normalize(input, output, Map.of(), null);
     }
     private static int normalize(Path input, Path output, Map<String, byte[]> replacements) throws IOException {
+        return normalize(input, output, replacements, null);
+    }
+    private static int normalize(Path input, Path output, Map<String, byte[]> replacements, Manifest sealing) throws IOException {
         Map<String, byte[]> entries = new TreeMap<>(); Map<String, Integer> versions = new HashMap<>(); int total = 0;
         try (JarFile jar = new JarFile(input.toFile())) {
             boolean multiRelease = jar.getManifest() != null && "true".equalsIgnoreCase(jar.getManifest().getMainAttributes().getValue("Multi-Release"));
@@ -152,13 +155,21 @@ public final class GamePreparation {
         entries.putAll(replacements);
         Path temporary = output.resolveSibling(output.getFileName() + ".part");
         try (JarOutputStream out = new JarOutputStream(Files.newOutputStream(temporary))) {
-            entries.put("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\r\n\r\n".getBytes(StandardCharsets.UTF_8));
+            entries.put("META-INF/MANIFEST.MF", manifestBytes(sealing));
             for (var entry : entries.entrySet()) {
                 JarEntry next = new JarEntry(entry.getKey()); next.setTime(0); out.putNextEntry(next); out.write(entry.getValue()); out.closeEntry();
             }
         }
         Files.move(temporary, output, StandardCopyOption.REPLACE_EXISTING);
         return (int) versions.values().stream().filter(v -> v > 0).count();
+    }
+
+    private static byte[] manifestBytes(Manifest sealing) throws IOException {
+        Manifest manifest = sealing == null ? new Manifest() : new Manifest(sealing);
+        if (manifest.getMainAttributes().getValue("Manifest-Version") == null) manifest.getMainAttributes().putValue("Manifest-Version", "1.0");
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        manifest.write(out);
+        return out.toByteArray();
     }
 
     public static MemoryMappingTree mappings(Path mojang, Path intermediary) throws IOException {
@@ -171,7 +182,11 @@ public final class GamePreparation {
     }
     public static void remap(Path input, Path output, RuntimeInputs inputs, String from, String to) throws IOException {
         List<Path> classpath = new ArrayList<>(inputs.libraries()); classpath.add(from.equals("intermediary") ? inputs.intermediaryGame() : inputs.game());
-        remap(input, output, mappings(inputs.mappings(), inputs.intermediaryMappings()), from, to, classpath);
+        remap(input, output, mappings(inputs.mappings(), inputs.intermediaryMappings()), from, to, classpath, sealingOf(input));
+    }
+    /** Mod artifacts keep their manifest sealing directives; the game and its libraries remain stripped. */
+    private static Manifest sealingOf(Path input) throws IOException {
+        try (JarFile jar = new JarFile(input.toFile())) { return Archive.sealingDirectives(jar.getManifest()); }
     }
 
     public record FabricInput(Path source, Path output) {}
@@ -223,12 +238,15 @@ public final class GamePreparation {
                         new AccessWidenerReader(new AccessWidenerRemapper(writer, remapper.getRemapper(), "intermediary", "mojang")).read(bytes, "intermediary");
                         resources.put(name, writer.write());
                     }
-                    normalize(temporary, mod.output(), resources);
+                    normalize(temporary, mod.output(), resources, source.sealingManifest());
                 } finally { Files.deleteIfExists(temporary); }
             }
         } finally { remapper.finish(); }
     }
     static void remap(Path input, Path output, MemoryMappingTree tree, String from, String to, List<Path> classpath) throws IOException {
+        remap(input, output, tree, from, to, classpath, null);
+    }
+    static void remap(Path input, Path output, MemoryMappingTree tree, String from, String to, List<Path> classpath, Manifest sealing) throws IOException {
         Path temporary = output.resolveSibling(output.getFileName() + ".remapping.jar"); Files.deleteIfExists(temporary);
         TinyRemapper remapper = TinyRemapper.newRemapper().withMappings(TinyUtils.createMappingProvider(tree, from, to)).threads(2).build();
         try {
@@ -236,7 +254,7 @@ public final class GamePreparation {
             try (OutputConsumerPath consumer = new OutputConsumerPath.Builder(temporary).build()) {
                 consumer.addNonClassFiles(input, NonClassCopyMode.FIX_META_INF, remapper); remapper.apply(consumer);
             }
-            normalize(temporary, output);
+            normalize(temporary, output, Map.of(), sealing);
         } finally { remapper.finish(); Files.deleteIfExists(temporary); }
     }
     static void add(List<Map<String, String>> files, Path root, Path path, String role, String original, String coordinate) throws IOException {
