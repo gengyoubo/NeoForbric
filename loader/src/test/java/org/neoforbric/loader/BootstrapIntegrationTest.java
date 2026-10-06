@@ -1,6 +1,7 @@
 package org.neoforbric.loader;
 
 import com.google.gson.*;
+import java.io.File;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -66,7 +67,7 @@ class BootstrapIntegrationTest {
     @Test void standaloneSuccessExitsAfterCleanupAndAuditDespiteRetainedModWorkers() throws Exception {
         Path report = directory.resolve("retained-worker.json"), marker = directory.resolve("exit-marker.txt"), output = directory.resolve("retained-worker-output.txt");
         Path java = Path.of(System.getProperty("java.home"), "bin", System.getProperty("os.name").startsWith("Windows") ? "java.exe" : "java");
-        String classpath = System.getProperty("loader.runtimeClasspath") + java.io.File.pathSeparator
+        String classpath = System.getProperty("loader.runtimeClasspath") + File.pathSeparator
                 + Path.of(BootstrapIntegrationTest.class.getProtectionDomain().getCodeSource().getLocation().toURI());
         Process process = new ProcessBuilder(java.toString(), "-Dprobe.audit=" + report, "-Dprobe.marker=" + marker, "-cp", classpath,
                 RetainedWorkerProbe.class.getName(), "--fixture", "--game", System.getProperty("fixture.game"),

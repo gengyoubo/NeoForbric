@@ -11,9 +11,10 @@ import java.util.zip.*;
 
 /** One immutable byte snapshot: discovery, resources and definition cannot observe different file revisions. */
 public final class Archive {
-    private static final int MAX_ARCHIVE = 64 * 1024 * 1024;
-    private static final int MAX_ENTRY = 16 * 1024 * 1024;
-    private static final int MAX_EXPANDED = 128 * 1024 * 1024;
+    // Large content mods bundle resources and language runtimes (e.g. Cobblemon).
+    private static final int MAX_ARCHIVE = 256 * 1024 * 1024;
+    public static final int MAX_ENTRY = 32 * 1024 * 1024;
+    public static final int MAX_EXPANDED = 256 * 1024 * 1024;
     // Resource-heavy mods such as Chipped contain tens of thousands of small files.
     private static final int MAX_ENTRIES = 100_000;
     private final Path path;
@@ -23,6 +24,7 @@ public final class Archive {
     private final Manifest manifest;
     private final byte[] source;
     private Set<String> permittedNested = Set.of();
+    private boolean inertNestedResources;
     private boolean verifiedSignatures;
 
     private Archive(Path path, String hash, Map<String, byte[]> entries, Manifest manifest, byte[] source) {
@@ -44,7 +46,7 @@ public final class Archive {
         try (InputStream in = Files.newInputStream(actual)) {
             source = in.readNBytes(MAX_ARCHIVE + 1);
         }
-        if (source.length > MAX_ARCHIVE) throw new Failure("ARCHIVE_LIMIT", actual + " exceeds 64 MiB");
+        if (source.length > MAX_ARCHIVE) throw new Failure("ARCHIVE_LIMIT", actual + " exceeds 256 MiB");
         Map<String, byte[]> entries = new LinkedHashMap<>();
         int expanded = 0;
         try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(source))) {
@@ -60,9 +62,9 @@ public final class Archive {
                 byte[] bytes = zip.readNBytes(MAX_ENTRY + 1);
                 expanded += bytes.length;
                 if (bytes.length > MAX_ENTRY)
-                    throw new Failure("ARCHIVE_LIMIT", actual + " entry " + name + " exceeds 16 MiB");
+                    throw new Failure("ARCHIVE_LIMIT", actual + " entry " + name + " exceeds 32 MiB");
                 if (expanded > MAX_EXPANDED)
-                    throw new Failure("ARCHIVE_LIMIT", actual + " exceeds 128 MiB expanded size at " + name);
+                    throw new Failure("ARCHIVE_LIMIT", actual + " exceeds 256 MiB expanded size at " + name);
                 entries.put(name, bytes);
             }
         }
@@ -99,11 +101,12 @@ public final class Archive {
         catch (MalformedURLException impossible) { throw new AssertionError(impossible); }
     }
 
-    /** The runtime plan must discover and verify every declared nested input before granting this view. */
+    /** The Fabric plan verifies declared nested inputs; other embedded JARs stay inert resources. */
     public Archive permitDeclaredNested(Set<String> names) {
         for (String name : names) if (!entries.containsKey(name) || !name.endsWith(".jar")) throw new Failure("NESTED_INPUT", path + " missing declared nested JAR " + name);
         Archive view = new Archive(path, hash, entries, manifest, source);
-        view.permittedNested = Set.copyOf(names); view.verifiedSignatures = verifiedSignatures; return view;
+        view.permittedNested = Set.copyOf(names); view.inertNestedResources = true;
+        view.verifiedSignatures = verifiedSignatures; return view;
     }
     public Archive verifyJarSignatures(AuditLog audit) throws IOException {
         boolean signed = names().stream().map(name -> name.toUpperCase(Locale.ROOT)).anyMatch(name -> name.startsWith("META-INF/") && name.matches(".*\\.(SF|RSA|DSA|EC)$"));
@@ -114,7 +117,8 @@ public final class Archive {
             while ((entry = jar.getNextJarEntry()) != null) { jar.transferTo(OutputStream.nullOutputStream()); if (entry.getCodeSigners() != null) verified++; }
         } catch (SecurityException invalid) { throw new Failure("JAR_SIGNATURE", "Invalid signed input " + path, invalid); }
         if (verified == 0) throw new Failure("JAR_SIGNATURE", "Signature metadata could not be verified: " + path);
-        Archive view = new Archive(path, hash, entries, manifest, source); view.permittedNested = permittedNested; view.verifiedSignatures = true;
+        Archive view = new Archive(path, hash, entries, manifest, source); view.permittedNested = permittedNested;
+        view.inertNestedResources = inertNestedResources; view.verifiedSignatures = true;
         audit.record("DISCOVER", "jar-signature-verified", path.toString(), Map.of("sourceSha256", hash, "signedEntries", Integer.toString(verified), "derivedPolicy", "unsigned-remapped-artifact"));
         return view;
     }
@@ -123,7 +127,7 @@ public final class Archive {
         requireSupportedLayout(false);
     }
 
-    /** Fabric snapshots are normalized to Java 21; manifest Class-Path is never followed. */
+    /** Fabric snapshots are normalized to Java 21; only metadata-declared JARs are discovered. */
     public void requireFabricLayout() {
         requireSupportedLayout(true);
     }
@@ -136,7 +140,7 @@ public final class Archive {
         for (String name : names()) {
             String upper = name.toUpperCase(Locale.ROOT);
             if ((!normalizeModules && (name.equals("module-info.class") || name.startsWith("META-INF/versions/")))
-                || (upper.endsWith(".JAR") && !permittedNested.contains(name)) || (upper.startsWith("META-INF/")
+                || (!normalizeModules && !inertNestedResources && upper.endsWith(".JAR") && !permittedNested.contains(name)) || (upper.startsWith("META-INF/")
                     && !verifiedSignatures && (upper.matches(".*\\.(SF|RSA|DSA|EC)$") || upper.startsWith("META-INF/SIG-"))))
                 throw new Failure("UNSUPPORTED_LAYOUT", path + " contains unsupported module / nested / signed entry " + name);
         }

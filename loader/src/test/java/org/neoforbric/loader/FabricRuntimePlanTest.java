@@ -143,10 +143,21 @@ class FabricRuntimePlanTest {
         future.builtin("fabricloader", FabricLoaderImpl.VERSION, List.of(temporary));
         assertEquals("FABRIC_DEPENDENCY", assertThrows(Failure.class, future::resolve).code());
     }
-    @Test void undeclaredNestedArchiveAndUnresolvedVersionRangeRemainFatal() throws Exception {
-        var invalid = root("{}", Map.of("META-INF/jars/helper.jar", helper(), "unlisted.jar", helper()));
+    @Test void undeclaredNestedArchiveRemainsAnInertResource() throws Exception {
+        byte[] unlisted = Files.readAllBytes(TestJars.jar(temporary.resolve("other.jar"), Map.of(
+                "fabric.mod.json", TestJars.text("{\"schemaVersion\":1,\"id\":\"other_platform\",\"version\":\"1.0.0\"}"),
+                "demo/OtherPlatform.class", TestJars.type("demo.OtherPlatform"))));
+        var mod = root("{}", Map.of("META-INF/jars/helper.jar", helper(), "unlisted.jar", unlisted));
         var plan = new FabricRuntimePlan(temporary.resolve("cache"), EnvType.CLIENT, new AuditLog());
-        assertEquals("UNSUPPORTED_LAYOUT", assertThrows(Failure.class, () -> plan.discover(List.of(invalid))).code());
+        var discovered = plan.discover(List.of(mod));
+        assertEquals(Set.of("rootmod", "helpermod"), discovered.stream().map(c -> c.metadata().id()).collect(java.util.stream.Collectors.toSet()));
+        assertArrayEquals(unlisted, discovered.stream().filter(c -> c.metadata().id().equals("rootmod")).findFirst().orElseThrow().archive().read("unlisted.jar"));
+        assertTrue(discovered.stream().noneMatch(c -> c.archive().names().contains("demo/OtherPlatform.class")));
+        ClassIndex index = ClassIndex.prepare(discovered.stream().map(Discovery.Candidate::archive).toList(), getClass().getClassLoader(), new AuditLog());
+        assertNull(index.entry("demo.OtherPlatform"));
+        assertNotNull(index.entry("demo.NestedHelper"));
+    }
+    @Test void unresolvedVersionRangeRemainsFatal() throws Exception {
         var incompatible = new FabricRuntimePlan(temporary.resolve("other-cache"), EnvType.CLIENT, new AuditLog());
         incompatible.discover(List.of(root("{\"helpermod\":\">=2 <3\"}", Map.of("META-INF/jars/helper.jar", helper()))));
         assertEquals("FABRIC_DEPENDENCY", assertThrows(Failure.class, incompatible::resolve).code());

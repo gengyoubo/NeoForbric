@@ -11,6 +11,14 @@ $env:JAVA_HOME = 'C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot' # 换成自�
 
 `runClient` 默认最大堆为 6 GiB，可用 `-PclientHeap=4g` 等参数覆盖。完整包重映射缓存位于 `build/minecraft-client/fabric-remap-cache`；命中前逐一校验输入、游戏和映射、转换代码、工具依赖及输出 SHA-256，任何变化都会重建。`-PclientDebug=true` 输出异常原因链，`-PclientProbeFrames=40` 在主菜单探针成功后渲染 40 帧并自动结束。
 
+归档读取及重映射规范化支持压缩体 256 MiB、单项 32 MiB、展开总量 256 MiB，仍限制为 100,000 个文件。Fabric 只发现 `jars` 元数据声明的嵌套 JAR；其他内附 JAR 保留为普通资源，不展开进类索引，例如 LambDynamicLights 附带的 NeoForge 版本。Minecraft 1.21.1 自带 ICU 73.2 作为 `com_ibm_icu_icu4j` builtin 参与依赖解析，避免 Cobblemon 的 generated ICU 71.1 与游戏库定义同名类；显式不满足的 ICU 版本要求仍失败。
+
+`bwncr-fabric-1.21.1-3.20.4.jar` 的 `fabric.mod.json` 描述包含三处未转义换行。`python tools/repair_client_metadata.py` 可备份原 JAR、只转义 JSON 字符串中的控制字符，并逐项确认其他条目内容未变；原始与修复后的 SHA-256 记录在 `run/client/mod-backups/metadata-controls`。运行时元数据解析仍保持严格模式。
+
+Kotlin 模组在字节码重映射后，通过固定 `kotlin-metadata-jvm:2.2.20` 同步转换 `@kotlin.Metadata` 中的类 / 类型图和 JVM 属性、函数、构造器签名，避免 `kotlin-reflect` 从旧的 intermediary 描述符加载不存在的类（Cobblemon 的 `SpeciesAdditions`）。解析和序列化使用[官方 Kotlin Metadata JVM API](https://kotlinlang.org/docs/metadata-jvm.html)，不改写普通字符串；不支持的元数据转换会以 `KOTLIN_METADATA` 终止启动。`FabricKotlinMetadataTest` 使用真实 Kotlin 反射验证转换前失败、转换后成功解析 getter。元数据工具及其 Kotlin 标准库也纳入重映射缓存指纹。
+
+目标命名空间可能使原本不同的父子方法重名，例如 UniLib 开放 `EditBox.method_20316()` 后转换为 final `isEditable()`，与 Konkrete 自定义的 `AdvancedTextField.isEditable()` 相撞。重映射前扫描游戏祖先方法，给这类独立模组方法及其字节码引用分配 `neoforbric$distinct$` 名称；保留游戏方法的访问 / final 规则和原有覆盖关系。Mixin 声明由 Mixin 专项重映射处理。回归测试加载实际转换后的父子类并验证两种方法的独立返回值及组合调用结果。
+
 同一个 JAR 可以包含多平台描述文件，统一按 `neoforbric.mod.json → fabric.mod.json → META-INF/neoforge.mods.toml → META-INF/mods.toml` 选择第一份，只发现和加载一次，不合并各平台入口。Explorify 等同时携带 Fabric / Forge / NeoForge 描述的模组会选择 Fabric。选中描述文件无效时直接报错，不回退到其他平台；审计 `mod-discovered.details.descriptor` 记录选择结果。该优先级决定模组使用哪个适配器，不改变依赖版本检查或让尚不支持的 Forge / NeoForge 入口执行。
 
 Fabric Loader 被动组件已升级到 **0.19.5**；构建依赖与两个 Fabric 探针共用根构建中的版本配置，默认 runtime、plain profile 和启动审计均从实际依赖的 `FabricLoaderImpl.VERSION` 获取内建身份。Mixin 0.17.4+mixin.0.8.7、ASM 9.10.1 和 MixinExtras 0.5.5 对齐 [Loader 0.19.5 的上游配置](https://github.com/FabricMC/fabric-loader/blob/0.19.5/gradle.properties)。默认 runtime 使用新版 `loadClassTweakers()` 读取已转换到 Mojang 的 AW，并通过 GameProvider 声明运行命名空间和转换范围。`fabricloader >=0.17` 不再被旧的 0.16.10 身份阻挡；更高且未满足的版本要求仍由解析器拒绝。

@@ -144,8 +144,8 @@ public final class GamePreparation {
                         || upper.startsWith("META-INF/SIG-") || (upper.startsWith("META-INF/") && upper.matches(".*\\.(SF|RSA|DSA|EC)$"))) continue;
                 if (version < versions.getOrDefault(name, -1)) continue;
                 try (InputStream in = jar.getInputStream(entry)) {
-                    byte[] bytes = in.readNBytes(16 * 1024 * 1024 + 1); total += bytes.length;
-                    if (bytes.length > 16 * 1024 * 1024 || total > 128 * 1024 * 1024) throw new Failure("ARCHIVE_LIMIT", input.toString());
+                    byte[] bytes = in.readNBytes(Archive.MAX_ENTRY + 1); total += bytes.length;
+                    if (bytes.length > Archive.MAX_ENTRY || total > Archive.MAX_EXPANDED) throw new Failure("ARCHIVE_LIMIT", input.toString());
                     entries.put(name, bytes); versions.put(name, version);
                 }
             }
@@ -223,7 +223,8 @@ public final class GamePreparation {
         }
         FabricRefmaps.SelectorMapper selectors = new FabricRefmaps.SelectorMapper(tree);
         Set<InputTag> staticMixins = new HashSet<>();
-        TinyRemapper remapper = fabricRemapper(tree, staticMixins, access);
+        TinyRemapper remapper = fabricRemapper(tree, staticMixins, access,
+                FabricNameCollisions.mappings(originalClasses, inputs.intermediaryGame(), tree));
         List<InputTag> tags = new ArrayList<>();
         try {
             List<Path> classpath = new ArrayList<>(inputs.libraries()); classpath.add(inputs.intermediaryGame());
@@ -248,6 +249,7 @@ public final class GamePreparation {
                     boolean staticMixin = staticMixins.contains(tags.get(index));
                     for (String name : mapped.names()) if (name.endsWith(".class")) {
                         byte[] original = mapped.read(name), translated = FabricStaticSelectors.remap(original, selectors, staticMixin);
+                        translated = FabricKotlinMetadata.remap(translated, remapper.getRemapper());
                         if (!Arrays.equals(original, translated)) resources.put(name, translated);
                     }
                     normalize(temporary, mod.output(), resources, source.sealingManifest());
@@ -261,10 +263,14 @@ public final class GamePreparation {
         return fabricRemapper(tree, staticMixins, new FabricRemapAccess(tree));
     }
     static TinyRemapper fabricRemapper(MemoryMappingTree tree, Set<InputTag> staticMixins, FabricRemapAccess access) {
+        return fabricRemapper(tree, staticMixins, access, acceptor -> {});
+    }
+    static TinyRemapper fabricRemapper(MemoryMappingTree tree, Set<InputTag> staticMixins, FabricRemapAccess access, IMappingProvider collisions) {
         // Shadow declarations and their bytecode references belong to the target's
         // namespace even when injection selectors are resolved through a refmap.
         // Keep those selectors intact for legacy JARs; Loom static JARs remap both.
         return TinyRemapper.newRemapper().withMappings(TinyUtils.createMappingProvider(tree, "intermediary", "mojang"))
+                .withMappings(collisions)
                 .extraAnalyzeVisitor(access::analyze)
                 .extension(new MixinExtension(EnumSet.of(MixinExtension.AnnotationTarget.HARD)))
                 .extension(new MixinExtension(EnumSet.of(MixinExtension.AnnotationTarget.SOFT),

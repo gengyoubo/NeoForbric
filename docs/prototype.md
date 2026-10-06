@@ -88,7 +88,7 @@ JVM → org.neoforbric.bootstrap.Main
 
 同名类出现在不同输入 JAR 时，即使字节相同也拒绝；同一真实路径的重复档案输入只索引一次。尚无库版本选择、包重定位或库下载机制。模组所需的其他类必须随已准入档案提供，不能依赖任意父类路径回退。
 
-JAR 在发现时读成内存快照，后续资源和类定义使用同一份字节。模组和游戏档案统一限制为压缩体 64 MiB、单项 16 MiB、展开总量 128 MiB、文件项 100,000 个，以支持 Chipped 等包含大量小资源的模组。超限错误会指出具体限制。资源按游戏 JAR、已解析模组顺序聚合；`META-INF/services` 可以由显式 `ServiceLoader.load(SPI, G)` 枚举，测试验证共享 SPI 身份和多个 provider。内核不会据此自动启动 native loader 或转换服务。
+JAR 在发现时读成内存快照，后续资源和类定义使用同一份字节。模组和游戏档案统一限制为压缩体 256 MiB、单项 32 MiB、展开总量 256 MiB、文件项 100,000 个，以支持 Cobblemon 的资源 / 嵌套语言库及 Chipped 等包含大量小资源的模组。重映射规范化阶段使用相同的单项和展开总量限制。超限错误会指出具体限制。资源按游戏 JAR、已解析模组顺序聚合；`META-INF/services` 可以由显式 `ServiceLoader.load(SPI, G)` 枚举，测试验证共享 SPI 身份和多个 provider。内核不会据此自动启动 native loader 或转换服务。
 
 资源 URL 使用 `neoforbric:` 自定义内存协议，`.class` 资源视图仍是原始字节，转换后的 SHA-256 另记在定义记录里。依赖 `jar:` URL、磁盘展开或改写资源的库尚未支持。`CodeSource` 保留原始文件位置，源字节身份以审计哈希为准。
 

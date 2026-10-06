@@ -83,4 +83,81 @@ class FabricOverrideRemapTest {
             assertEquals(7, base.getField("observed").get(instance)); assertEquals(7, subclass.getMethod("call").invoke(instance));
         }
     }
+
+    @Test void accessibleFinalGameMethodAndDistinctModMethodKeepSeparateDispatch() throws Exception {
+        String parentName = "net/minecraft/class_2", childName = "example/DistinctChild";
+        ClassWriter parentWriter = new ClassWriter(0);
+        parentWriter.visit(V21, ACC_PUBLIC, parentName, null, "java/lang/Object", null);
+        constructor(parentWriter, "java/lang/Object"); integer(parentWriter, ACC_PRIVATE, "method_2", 9);
+        parentWriter.visitEnd(); byte[] parentBytes = parentWriter.toByteArray();
+        ClassWriter childWriter = new ClassWriter(0);
+        childWriter.visit(V21, ACC_PUBLIC, childName, null, parentName, null);
+        constructor(childWriter, parentName); integer(childWriter, ACC_PUBLIC, "privateProbe", 3);
+        var call = childWriter.visitMethod(ACC_PUBLIC, "call", "()I", null, null); call.visitCode();
+        call.visitVarInsn(ALOAD, 0); call.visitMethodInsn(INVOKEVIRTUAL, childName, "method_2", "()I", false);
+        call.visitIntInsn(BIPUSH, 10); call.visitInsn(IMUL);
+        call.visitVarInsn(ALOAD, 0); call.visitMethodInsn(INVOKEVIRTUAL, childName, "privateProbe", "()I", false);
+        call.visitInsn(IADD); call.visitInsn(IRETURN); call.visitMaxs(2, 1); call.visitEnd(); childWriter.visitEnd();
+        byte[] childBytes = childWriter.toByteArray();
+        Path parentJar = jar("collision-game.jar", Map.of(parentName + ".class", parentBytes));
+        Path childJar = jar("collision-mod.jar", Map.of(childName + ".class", childBytes));
+        var tree = new MemoryMappingTree(); tree.visitNamespaces("intermediary", List.of("mojang"));
+        tree.visitClass(parentName); tree.visitDstName(MappedElementKind.CLASS, 0, "example/DistinctParent"); tree.visitElementContent(MappedElementKind.CLASS);
+        tree.visitMethod("method_2", "()I"); tree.visitDstName(MappedElementKind.METHOD, 0, "privateProbe"); tree.visitElementContent(MappedElementKind.METHOD); tree.visitEnd();
+        var access = new FabricRemapAccess(tree);
+        access.read(("accessWidener v1 intermediary\naccessible method " + parentName + " method_2 ()I\n").getBytes(StandardCharsets.UTF_8));
+        var collisionMappings = FabricNameCollisions.mappings(Map.of(childName + ".class", childBytes), parentJar, tree);
+        var remapper = GamePreparation.fabricRemapper(tree, new HashSet<>(), access, collisionMappings);
+        Path mapped = temporary.resolve("collision-mapped.jar"); byte[] runtimeParent;
+        try {
+            remapper.readClassPath(parentJar); remapper.readInputs(childJar);
+            try (var consumer = new OutputConsumerPath.Builder(mapped).build()) { remapper.apply(consumer); }
+            ClassWriter widened = new ClassWriter(0); new ClassReader(parentBytes).accept(access.analyze(0, parentName, widened), 0);
+            ClassWriter named = new ClassWriter(0); new ClassReader(widened.toByteArray()).accept(new org.objectweb.asm.commons.ClassRemapper(named, remapper.getRemapper()), 0);
+            runtimeParent = named.toByteArray();
+        } finally { remapper.finish(); }
+        byte[] runtimeChild;
+        try (JarFile jar = new JarFile(mapped.toFile()); var stream = jar.getInputStream(jar.getJarEntry(childName + ".class"))) { runtimeChild = stream.readAllBytes(); }
+        class Types extends ClassLoader { Class<?> define(byte[] bytes) { return defineClass(null, bytes, 0, bytes.length); } }
+        Types types = new Types(); Class<?> base = types.define(runtimeParent), child = types.define(runtimeChild);
+        Object instance = child.getConstructor().newInstance();
+        assertTrue(java.lang.reflect.Modifier.isFinal(base.getDeclaredMethod("privateProbe").getModifiers()));
+        assertEquals(9, base.getMethod("privateProbe").invoke(instance));
+        assertEquals(3, child.getMethod("neoforbric$distinct$privateProbe").invoke(instance));
+        assertEquals(93, child.getMethod("call").invoke(instance));
+    }
+    private void constructor(ClassWriter writer, String parent) {
+        var method = writer.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null); method.visitCode();
+        method.visitVarInsn(ALOAD, 0); method.visitMethodInsn(INVOKESPECIAL, parent, "<init>", "()V", false);
+        method.visitInsn(RETURN); method.visitMaxs(1, 1); method.visitEnd();
+    }
+    @Test void unchangedInterfaceMethodStillDispatchesToItsModImplementation() throws Exception {
+        ClassWriter contract = new ClassWriter(0);
+        contract.visit(V21, ACC_PUBLIC | ACC_INTERFACE | ACC_ABSTRACT, "net/minecraft/class_3", null, "java/lang/Object", null);
+        contract.visitMethod(ACC_PUBLIC | ACC_ABSTRACT, "size", "()I", null, null).visitEnd(); contract.visitEnd();
+        ClassWriter implementation = new ClassWriter(0);
+        implementation.visit(V21, ACC_PUBLIC, "example/PairList", null, "java/lang/Object", new String[]{"net/minecraft/class_3"});
+        constructor(implementation, "java/lang/Object"); integer(implementation, ACC_PUBLIC, "size", 7); implementation.visitEnd();
+        Path game = jar("interface-game.jar", Map.of("net/minecraft/class_3.class", contract.toByteArray()));
+        Path mod = jar("interface-mod.jar", Map.of("example/PairList.class", implementation.toByteArray()));
+        var tree = new MemoryMappingTree(); tree.visitNamespaces("official", List.of("intermediary", "mojang"));
+        tree.visitClass("a"); tree.visitDstName(MappedElementKind.CLASS, 0, "net/minecraft/class_3");
+        tree.visitDstName(MappedElementKind.CLASS, 1, "example/IndexMerger"); tree.visitElementContent(MappedElementKind.CLASS);
+        tree.visitMethod("size", "()I"); tree.visitDstName(MappedElementKind.METHOD, 1, "size"); tree.visitElementContent(MappedElementKind.METHOD); tree.visitEnd();
+        assertNull(tree.getClass("net/minecraft/class_3", 0).getMethod("size", "()I", -1).getName(0));
+        var collisions = FabricNameCollisions.mappings(Map.of("example/PairList.class", implementation.toByteArray()), game, tree);
+        var remapper = GamePreparation.fabricRemapper(tree, new HashSet<>(), new FabricRemapAccess(tree), collisions);
+        Path mapped = temporary.resolve("mapped-interface.jar"); byte[] runtimeContract;
+        try {
+            remapper.readClassPath(game); remapper.readInputs(mod);
+            try (var consumer = new OutputConsumerPath.Builder(mapped).build()) { remapper.apply(consumer); }
+            ClassWriter named = new ClassWriter(0); new ClassReader(contract.toByteArray()).accept(new org.objectweb.asm.commons.ClassRemapper(named, remapper.getRemapper()), 0);
+            runtimeContract = named.toByteArray();
+        } finally { remapper.finish(); }
+        byte[] runtimeImplementation;
+        try (JarFile jar = new JarFile(mapped.toFile()); var stream = jar.getInputStream(jar.getJarEntry("example/PairList.class"))) { runtimeImplementation = stream.readAllBytes(); }
+        class Types extends ClassLoader { Class<?> define(byte[] bytes) { return defineClass(null, bytes, 0, bytes.length); } }
+        Types types = new Types(); Class<?> api = types.define(runtimeContract), impl = types.define(runtimeImplementation);
+        assertEquals(7, api.getMethod("size").invoke(impl.getConstructor().newInstance()));
+    }
 }

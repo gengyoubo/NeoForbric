@@ -20,7 +20,8 @@ final class FabricRemapCache {
         List<Path> context = new ArrayList<>(List.of(inputs.game(), inputs.intermediaryGame(), inputs.mappings(), inputs.intermediaryMappings()));
         context.addAll(inputs.libraries());
         try {
-            for (Class<?> tool : List.of(TinyRemapper.class, MappingReader.class, ModMetadataParser.class, ClassReader.class))
+            for (Class<?> tool : List.of(TinyRemapper.class, MappingReader.class, ModMetadataParser.class, ClassReader.class,
+                    kotlin.metadata.jvm.KotlinClassMetadata.class, kotlin.Metadata.class))
                 context.add(Path.of(tool.getProtectionDomain().getCodeSource().getLocation().toURI()));
             Path code = Path.of(GamePreparation.class.getProtectionDomain().getCodeSource().getLocation().toURI());
             if (Files.isDirectory(code)) {

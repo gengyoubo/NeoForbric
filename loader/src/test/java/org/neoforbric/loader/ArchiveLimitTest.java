@@ -49,16 +49,16 @@ class ArchiveLimitTest {
     }
 
     @Test void oversizedEntryIsStillRejected() throws Exception {
-        Path path = jar("oversized-entry.jar", 1, new byte[16 * 1024 * 1024 + 1]);
+        Path path = jar("oversized-entry.jar", 1, new byte[32 * 1024 * 1024 + 1]);
         Failure failure = assertThrows(Failure.class, () -> Archive.read(path));
         assertEquals("ARCHIVE_LIMIT", failure.code());
-        assertTrue(failure.getMessage().contains("entry assets/chipped/0.json exceeds 16 MiB"));
+        assertTrue(failure.getMessage().contains("entry assets/chipped/0.json exceeds 32 MiB"));
     }
 
     @Test void expandedTotalIsStillBounded() throws Exception {
-        Path path = jar("oversized-total.jar", 9, new byte[16 * 1024 * 1024]);
+        Path path = jar("oversized-total.jar", 9, new byte[32 * 1024 * 1024]);
         Failure failure = assertThrows(Failure.class, () -> Archive.read(path));
         assertEquals("ARCHIVE_LIMIT", failure.code());
-        assertTrue(failure.getMessage().contains("128 MiB expanded size"));
+        assertTrue(failure.getMessage().contains("256 MiB expanded size"));
     }
 }
