@@ -15,7 +15,7 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
     private final AuditLog audit;
     private final GameResources filesystemResources;
     private final AtomicReference<Failure> poison = new AtomicReference<>();
-    private final ThreadLocal<String> transforming = new ThreadLocal<>();
+    private final ThreadLocal<Deque<String>> transforming = ThreadLocal.withInitial(ArrayDeque::new);
     private volatile boolean ready;
     private volatile boolean closed;
     public record Generated(byte[] bytes, Archive owner, String generator) {}
@@ -52,12 +52,14 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
         try { return ClassLoader.getPlatformClassLoader().loadClass(name); }
         catch (ClassNotFoundException expected) { /* Only the explicit game index may define other types. */ }
         if (!ready) throw new Failure("EARLY_DEFINITION", "Game class requested before definition gate: " + name);
-        if (transforming.get() != null && findLoadedClass(name) == null) {
-            // Mixin configuration plugins must execute in G. They may load their own helpers,
-            // but a metadata callback cannot define an additional Minecraft target class.
-            boolean metadataTool = NativeFabricRuntime.active() && "fabric-runtime-mixin".equals(transforms.activeRule()) && !name.startsWith("net.minecraft.");
-            if (!metadataTool) throw new Failure("REENTRANT_DEFINITION", "Transformer for " + transforming.get() + " requested class " + name + "; use bytecode access");
-            audit.record("PREPARE", "mixin-plugin-class", name, Map.of("requestingTarget", transforming.get(), "loader", "G"));
+        Deque<String> targets = transforming.get();
+        if (!targets.isEmpty() && findLoadedClass(name) == null) {
+            // Native Mixin plugins execute in G and can link Minecraft APIs as well as
+            // their helpers. Each dependency still runs the complete transformation plan;
+            // Mixin enforces its own target preparation rules. Cycles never define twice.
+            boolean metadataTool = NativeFabricRuntime.active() && "fabric-runtime-mixin".equals(transforms.activeRule()) && !targets.contains(name);
+            if (!metadataTool) throw new Failure("REENTRANT_DEFINITION", "Transformer for " + targets.getLast() + " requested class " + name + "; use bytecode access");
+            audit.record("PREPARE", "mixin-plugin-class", name, Map.of("requestingTarget", targets.getLast(), "loader", "G"));
         }
         synchronized (getClassLoadingLock(name)) {
             if (poison.get() != null) throw new Failure("INSTANCE_TAINTED", "An earlier definition failed; restart required", poison.get());
@@ -78,8 +80,8 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
         try {
             byte[] bytes;
             Archive owner = entry == null ? generated.owner() : entry.archive();
-            String previousTarget = transforming.get();
-            transforming.set(name);
+            Deque<String> targets = transforming.get();
+            targets.addLast(name);
             try {
                 if (generated == null) bytes = transforms.apply(name, entry.bytes(), index::original, audit);
                 else {
@@ -88,7 +90,7 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
                     audit.record("GAME", "generated-class-owner", name, Map.of("generator", generated.generator(), "source", owner.path().toString(), "finalSha256", Archive.sha256(bytes)));
                 }
             }
-            finally { if (previousTarget == null) transforming.remove(); else transforming.set(previousTarget); }
+            finally { targets.removeLast(); if (targets.isEmpty()) transforming.remove(); }
             int separator = name.lastIndexOf('.');
             if (separator > 0) definePackage(name.substring(0, separator), owner);
             CodeSource source = new CodeSource(owner.codeSource(), (java.security.cert.Certificate[]) null);
@@ -133,6 +135,11 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
         if (sharedResource(name)) return getParent().getResource(name);
         List<URL> resources = ownedResources(name);
         return resources.isEmpty() ? null : resources.getFirst();
+    }
+    // Module.getResourceAsStream uses this overload, bypassing getResource.
+    // All admitted types belong to this loader's unnamed module.
+    @Override protected URL findResource(String moduleName, String name) {
+        return moduleName == null ? getResource(name) : null;
     }
     @Override public Enumeration<URL> getResources(String name) {
         if (closed) return Collections.emptyEnumeration();

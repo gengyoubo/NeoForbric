@@ -59,10 +59,10 @@ public final class ClassIndex {
                     }
                     throw new Failure("DUPLICATE_CLASS", name + " belongs to both " + previous.archive().path() + " and " + archive.path());
                 }
-                URL contamination = parent.getResource(resource);
                 // Explicit bundled libraries (e.g. game's Gson vs tools' Gson) are isolated in G.
                 // Game/mod types and shared APIs still cannot be duplicated on P.
-                if (contamination != null && !libraries.contains(archive.path())) throw new Failure("PARENT_CONTAMINATION", name + " also exists on bootstrap classpath: " + contamination);
+                URL contamination = libraries.contains(archive.path()) ? null : parent.getResource(resource);
+                if (contamination != null) throw new Failure("PARENT_CONTAMINATION", name + " also exists on bootstrap classpath: " + contamination);
                 audit.record("PREPARE", "class-owner", name, Map.of("loader", "G", "source", archive.path().toString(), "archiveSha256", archive.hash()));
             }
         }

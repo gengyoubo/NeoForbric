@@ -95,10 +95,14 @@ public final class Bootstrap {
                     remapArtifacts.addAll(List.of(source, mapped, mapped.resolveSibling(mapped.getFileName() + ".remapping.jar"), mapped.resolveSibling(mapped.getFileName() + ".part")));
                     Files.write(source, mod.archive().snapshot()); remapInputs.add(new GamePreparation.FabricInput(source, mapped, fabricRuntime.accessRules(mod)));
                 }
-                GamePreparation.remapFabricMods(remapInputs, runtime);
+                GamePreparation.remapFabricMods(remapInputs, runtime, options.runtime().toAbsolutePath().getParent().resolve("fabric-remap-cache"));
                 for (int i = 0; i < mods.size(); i++) {
                     var mod = mods.get(i); Archive mapped = Archive.read(remapInputs.get(i).output()).permitDeclaredNested(fabricRuntime.nestedPaths(mod));
                     preparedMods.add(new Discovery.Candidate(mapped, mod.metadata()));
+                    if (fabricRuntime.bundledLibrary(mod)) {
+                        libraries.add(mapped.path());
+                        audit.record(phase, "bundled-library", mod.metadata().id(), Map.of("source", mapped.path().toString(), "loader", "G"));
+                    }
                     audit.record(phase, "mod-remap", mod.metadata().id(), Map.of("sourceSha256", mod.archive().hash(), "outputSha256", mapped.hash(), "from", "intermediary", "to", "mojang", "mixinReferences", "manifest-static-or-refmap", "accessRules", "mojang"));
                 }
                 fabricRuntime.install(preparedMods, runtime, pipeline);
@@ -135,8 +139,8 @@ public final class Bootstrap {
                 String previousLwjgl = System.getProperty("org.lwjgl.librarypath");
                 try {
                     thread.setContextClassLoader(loader);
-                    if (fabricRuntime != null) fabricRuntime.bindAndPrepare(index, loader, pipeline, inputs);
                     if (options.client()) System.setProperty("org.lwjgl.librarypath", runtime.natives().toString());
+                    if (fabricRuntime != null) fabricRuntime.bindAndPrepare(index, loader, pipeline, inputs);
                     // Check every entrypoint shape before executing any candidate static initializer / constructor.
                     List<Initializer> initializers = new ArrayList<>();
                     if (fabricRuntime == null) for (var mod : preparedMods) {

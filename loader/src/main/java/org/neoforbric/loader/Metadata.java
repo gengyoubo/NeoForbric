@@ -10,6 +10,8 @@ import org.tomlj.*;
 public record Metadata(String id, String version, Ecosystem ecosystem, String environment, String entrypoint,
                        Map<String, String> depends, Map<String, String> optionalDepends, Set<String> after,
                        String name, String description, String iconPath) {
+    private static final List<String> DESCRIPTOR_PRIORITY = List.of(
+            "neoforbric.mod.json", "fabric.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml");
     public Metadata(String id, String version, Ecosystem ecosystem, String environment, String entrypoint,
                     Map<String, String> depends, Map<String, String> optionalDepends, Set<String> after) {
         this(id, version, ecosystem, environment, entrypoint, depends, optionalDepends, after, id, "", null);
@@ -24,12 +26,15 @@ public record Metadata(String id, String version, Ecosystem ecosystem, String en
     }
     public boolean available(String side) { return environment.equals("*") || environment.equals(side); }
 
+    /** A universal JAR uses one ecosystem; invalid selected metadata never falls back to another. */
+    public static String descriptor(Archive archive) {
+        return DESCRIPTOR_PRIORITY.stream().filter(archive.names()::contains).findFirst()
+                .orElseThrow(() -> new Failure("METADATA_DESCRIPTOR", archive.path()
+                        + " has no supported descriptor; expected one of " + DESCRIPTOR_PRIORITY));
+    }
+
     public static List<Metadata> read(Archive archive) {
-        List<String> descriptors = List.of("neoforbric.mod.json", "fabric.mod.json", "META-INF/mods.toml", "META-INF/neoforge.mods.toml")
-                .stream().filter(n -> archive.names().contains(n)).toList();
-        if (descriptors.size() != 1)
-            throw new Failure("METADATA_DESCRIPTOR", archive.path() + " must have one unambiguous descriptor, found " + descriptors);
-        String name = descriptors.getFirst();
+        String name = descriptor(archive);
         try {
             String text = StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
                     .decode(ByteBuffer.wrap(archive.read(name))).toString();

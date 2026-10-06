@@ -54,6 +54,7 @@ public final class NativeFabricRuntime implements AutoCloseable {
     public void prepareClient(Object minecraft) { facade.prepareModInit(provider.getLaunchDirectory(), minecraft); }
     public Set<String> nestedPaths(Discovery.Candidate candidate) { return plan.node(candidate).nestedPaths(); }
     public String accessRules(Discovery.Candidate candidate) { return plan.node(candidate).metadata().getClassTweaker(); }
+    public boolean bundledLibrary(Discovery.Candidate candidate) { return plan.bundledLibrary(candidate); }
     public GameClassLoader.Generated generated(String name, ClassIndex index) { return NeoMixinService.generated(name, index); }
     public void install(List<Discovery.Candidate> prepared, RuntimeInputs inputs, TransformPipeline pipeline) throws IOException {
         Map<String, Discovery.Candidate> byId = new HashMap<>(); prepared.forEach(c -> byId.put(c.metadata().id(), c));
@@ -70,15 +71,15 @@ public final class NativeFabricRuntime implements AutoCloseable {
         var nativeTree = new net.fabricmc.loader.impl.lib.mappingio.tree.MemoryMappingTree();
         net.fabricmc.loader.impl.lib.mappingio.format.tiny.Tiny2FileReader.read(new StringReader(mappingText.toString()), nativeTree);
         mixinRemapper = new net.fabricmc.loader.impl.util.mappings.MixinIntermediaryDevRemapper(nativeTree, "intermediary", "mojang");
-        NativeAccess.call(facade, FabricLoaderImpl.class, "setupLanguageAdapters", new Class<?>[0]);
-        NativeAccess.call(facade, FabricLoaderImpl.class, "setupMods", new Class<?>[0]);
         NativeAccess.set(facade, FabricLoaderImpl.class, "frozen", true);
         facade.loadClassTweakers();
         Set<String> preceding = pipeline.registeredIds();
         pipeline.add(new TransformPipeline.Transformer() {
             @Override public String id() { return "fabric-runtime-access-and-environment"; }
             @Override public Set<String> after() { return preceding; }
-            @Override public byte[] transform(TransformPipeline.Context context, byte[] bytes) { return FabricTransformer.transform(false, EnvType.CLIENT, context.name(), bytes); }
+            @Override public byte[] transform(TransformPipeline.Context context, byte[] bytes) {
+                return FabricLifecycleCompatibility.beforeMixin(context.name(), FabricTransformer.transform(false, EnvType.CLIENT, context.name(), bytes));
+            }
         });
         pipeline.add(new TransformPipeline.Transformer() {
             @Override public String id() { return "fabric-runtime-mixin"; }
@@ -86,7 +87,7 @@ public final class NativeFabricRuntime implements AutoCloseable {
             @Override public byte[] transform(TransformPipeline.Context context, byte[] bytes) {
                 // Fabric API also targets shipped libraries (e.g. DFU TaggedChoice) and
                 // post-processes accessor interfaces in its own modules.
-                return NeoMixinService.transform(context.name(), bytes);
+                return FabricLifecycleCompatibility.afterMixin(context.name(), NeoMixinService.transform(context.name(), bytes));
             }
         });
         audit.record("PREPARE", "fabric-runtime-installed", "plan", Map.of("mods", Integer.toString(prepared.size()), "nativeLoadInvoked", "false", "nativeFreezeInvoked", "false"));
@@ -101,6 +102,10 @@ public final class NativeFabricRuntime implements AutoCloseable {
         org.spongepowered.asm.launch.MixinBootstrap.init();
         if (!(org.spongepowered.asm.service.MixinService.getService() instanceof NeoMixinService))
             throw new Failure("MIXIN_OWNERSHIP", "Mixin did not select the NeoForbric service");
+        // Adapters are mod classes. Instantiate them only after G is bound, open,
+        // and backed by the Mixin transformer, rather than during passive planning.
+        NativeAccess.call(facade, FabricLoaderImpl.class, "setupLanguageAdapters", new Class<?>[0]);
+        NativeAccess.call(facade, FabricLoaderImpl.class, "setupMods", new Class<?>[0]);
         FabricMixinBootstrap.init(EnvType.CLIENT, facade);
         org.spongepowered.asm.mixin.MixinEnvironment.getDefaultEnvironment().getRemappers().add(mixinRemapper);
         MixinExtrasBootstrap.init(); launcher.finishMixin();

@@ -12,7 +12,7 @@ tasks.register('assembleInstaller') {
 
 allprojects {
     group = 'org.neoforbric'
-    version = '0.1.0-SNAPSHOT'
+    version = providers.gradleProperty('NeoForbricVersion').get()
     repositories {
         mavenCentral()
         maven { url = 'https://maven.fabricmc.net/'; content { includeGroup 'net.fabricmc' } }
@@ -102,7 +102,7 @@ tasks.register('runClient', JavaExec) {
     javaLauncher = project(':loader').javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
     classpath = project(':loader').sourceSets.main.runtimeClasspath
     mainClass = 'org.neoforbric.bootstrap.Main'
-    maxHeapSize = '2g'
+    maxHeapSize = providers.gradleProperty('clientHeap').getOrElse('6g')
     workingDir = clientDirectory
     args '--minecraft-client', '--runtime', layout.buildDirectory.file('minecraft-client/runtime.json').get().asFile.absolutePath,
             '--mods', clientModsDirectory.absolutePath, '--client-ui', layout.buildDirectory.file('minecraft-client/client-ui.jar').get().asFile.absolutePath,
@@ -110,6 +110,8 @@ tasks.register('runClient', JavaExec) {
     if (providers.gradleProperty('clientProbeFrames').isPresent() && !providers.gradleProperty('sscRenderProbe').isPresent()) args '--stop-after-frames', providers.gradleProperty('clientProbeFrames').get()
     if (providers.gradleProperty('clientModsProbe').getOrElse('false') == 'true') systemProperty 'neoforbric.probe.mods', 'true'
     if (providers.gradleProperty('fabricPlainProfile').getOrElse('false') == 'true') systemProperty 'neoforbric.fabric.plain', 'true'
+    systemProperty 'neoforbric.debug', providers.gradleProperty('clientDebug').getOrElse('false')
+    jvmArgs '-Dfile.encoding=UTF-8', '-Dstdout.encoding=UTF-8', '-Dstderr.encoding=UTF-8'
     def username = providers.gradleProperty('clientUsername').getOrElse('NeoForbricDev')
     args '--', '--username', username, '--uuid', java.util.UUID.nameUUIDFromBytes(('OfflinePlayer:' + username).getBytes('UTF-8')).toString(),
             '--accessToken', '0', '--userType', 'legacy', '--version', '1.21.1', '--versionType', 'release',

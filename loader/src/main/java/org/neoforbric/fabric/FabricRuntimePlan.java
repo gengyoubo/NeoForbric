@@ -12,6 +12,7 @@ import org.neoforbric.loader.*;
 
 /** Fabric's passive resolver consumes NeoForbric's immutable inputs; it never discovers a mods directory. */
 public final class FabricRuntimePlan {
+    private static final int MAX_CANDIDATES = 1024;
     public record Node(Discovery.Candidate source, LoaderModMetadata metadata, ModCandidateImpl nativeCandidate, Set<String> nestedPaths) {}
     private final Path cache;
     private final AuditLog audit;
@@ -31,12 +32,17 @@ public final class FabricRuntimePlan {
         return nodes.stream().map(Node::source).toList();
     }
     private Node read(Archive archive, String nestedPath, List<String> parents, int depth) throws IOException {
-        if (depth > 8 || nodes.size() >= 256) throw new Failure("NESTED_LIMIT", "Fabric graph exceeds depth / candidate limit");
+        if (depth > 8) throw new Failure("NESTED_LIMIT", archive.path() + " exceeds nested depth 8");
         if (nestedPath != null && nestedByHash.containsKey(archive.hash())) return nestedByHash.get(archive.hash());
+        if (nodes.size() >= MAX_CANDIDATES) throw new Failure("NESTED_LIMIT", archive.path() + " exceeds " + MAX_CANDIDATES + " Fabric candidates");
         LoaderModMetadata metadata;
         try { metadata = ModMetadataParser.parseMetadata(new ByteArrayInputStream(archive.read("fabric.mod.json")), archive.path().toString(), parents, new VersionOverrides(), new DependencyOverrides(cache), false); }
         catch (Exception error) { throw new Failure("FABRIC_SCHEMA", archive.path().toString(), error); }
-        if (!metadata.getLanguageAdapterDefinitions().isEmpty()) throw new Failure("FABRIC_FEATURE_UNSUPPORTED", metadata.getId() + " requires an unverified custom language adapter");
+        for (var adapter : metadata.getLanguageAdapterDefinitions().entrySet()) {
+            if (!adapter.getValue().matches("[A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)+"))
+                throw new Failure("FABRIC_SCHEMA", metadata.getId() + " has an invalid language adapter class " + adapter.getValue());
+            audit.record("DISCOVER", "fabric-language-adapter", metadata.getId(), Map.of("key", adapter.getKey(), "class", adapter.getValue(), "loader", "G"));
+        }
         Set<String> declared = new LinkedHashSet<>(); List<ModCandidateImpl> children = new ArrayList<>();
         for (var jar : metadata.getJars()) {
             String entry = jar.getFile();
@@ -50,7 +56,7 @@ public final class FabricRuntimePlan {
             Node child = read(Archive.read(extracted), entry, chain, depth + 1); children.add(child.nativeCandidate());
             audit.record("DISCOVER", "nested-mod", child.metadata().getId(), Map.of("parent", metadata.getId(), "entry", entry, "sha256", hash));
         }
-        Archive permitted = archive.verifyJarSignatures(audit).permitDeclaredNested(declared); permitted.requireSupportedLayout();
+        Archive permitted = archive.verifyJarSignatures(audit).permitDeclaredNested(declared); permitted.requireFabricLayout();
         ModCandidateImpl nativeCandidate;
         if (nestedPath == null) nativeCandidate = plain(List.of(archive.path()), metadata, children);
         else {
@@ -73,9 +79,13 @@ public final class FabricRuntimePlan {
         builtins.add(plain(paths, wrapper, List.of()));
     }
     public List<Discovery.Candidate> resolve() {
-        List<ModCandidateImpl> inputs = new ArrayList<>(builtins); inputs.addAll(nodes.stream().map(Node::nativeCandidate).toList());
+        Map<String, ModCandidateImpl> provided = new HashMap<>();
+        builtins.forEach(builtin -> provided.put(builtin.getId(), builtin));
+        List<ModCandidateImpl> inputs = new ArrayList<>(builtins);
+        inputs.addAll(nodes.stream().map(Node::nativeCandidate)
+                .filter(candidate -> candidate.isRoot() || !provided.containsKey(candidate.getId())).toList());
         try { selected = ModResolver.resolve(inputs, side, new HashMap<>()); }
-        catch (ModResolutionException error) { throw new Failure("FABRIC_DEPENDENCY", "Fabric dependency resolution failed", error); }
+        catch (ModResolutionException error) { throw new Failure("FABRIC_DEPENDENCY", "Fabric dependency resolution failed: " + error.getMessage(), error); }
         Map<Path, String> reasons = new HashMap<>();
         for (var node : nodes) {
             if (selected.contains(node.nativeCandidate())) continue;
@@ -85,7 +95,9 @@ public final class FabricRuntimePlan {
                             (mod.getId().equals(dependency.getModId()) || mod.getProvides().contains(dependency.getModId()))
                                     && dependency.matches(mod.getVersion())))
                     .map(dependency -> dependency.getModId() + " " + dependency.getVersionRequirements()).sorted().toList();
-            String reason = !node.source().metadata().available(side.name().toLowerCase(Locale.ROOT))
+            String reason = !node.nativeCandidate().isRoot() && provided.containsKey(node.metadata().getId())
+                    ? "Provided by builtin " + node.metadata().getId() + " " + provided.get(node.metadata().getId()).getVersion().getFriendlyString()
+                    : !node.source().metadata().available(side.name().toLowerCase(Locale.ROOT))
                     ? "Excluded on " + side.name().toLowerCase(Locale.ROOT) + ": environment=" + node.source().metadata().environment()
                     : missing.isEmpty() ? "Not selected by Fabric dependency resolution"
                     : "Not selected by Fabric dependency resolution; required dependencies not satisfied: " + String.join(", ", missing);
@@ -100,4 +112,15 @@ public final class FabricRuntimePlan {
     public Map<Path, String> exclusions() { return exclusions; }
     public List<ModCandidateImpl> selectedNative() { return List.copyOf(selected); }
     public Node node(Discovery.Candidate candidate) { return nodes.stream().filter(n -> n.source().archive().path().equals(candidate.archive().path())).findFirst().orElseThrow(); }
+    /** Loom wraps ordinary nested dependency libraries in generated mod metadata. */
+    public boolean bundledLibrary(Discovery.Candidate candidate) {
+        Node node = node(candidate);
+        var metadata = node.metadata();
+        var generated = metadata.getCustomValue("fabric-loom:generated");
+        return !node.nativeCandidate().isRoot() && generated != null
+                && generated.getType() == net.fabricmc.loader.api.metadata.CustomValue.CvType.BOOLEAN && generated.getAsBoolean()
+                && metadata.getEntrypointKeys().isEmpty() && metadata.getOldInitializers().isEmpty()
+                && metadata.getLanguageAdapterDefinitions().isEmpty() && metadata.getClassTweaker() == null
+                && metadata.getMixinConfigs(EnvType.CLIENT).isEmpty() && metadata.getMixinConfigs(EnvType.SERVER).isEmpty();
+    }
 }

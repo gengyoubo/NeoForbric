@@ -5,6 +5,9 @@ import net.fabricmc.accesswidener.*;
 import net.fabricmc.mappingio.tree.MappingTree;
 import org.neoforbric.loader.Failure;
 import org.objectweb.asm.commons.Remapper;
+import net.fabricmc.loader.impl.lib.classtweaker.api.ClassTweakerReader;
+import net.fabricmc.loader.impl.lib.classtweaker.api.ClassTweakerWriter;
+import net.fabricmc.loader.impl.lib.classtweaker.visitors.ClassTweakerRemapperVisitor;
 
 /** Named AWs are accepted only when their actual symbols already match verified Mojang mappings. */
 final class FabricAccessRules {
@@ -12,7 +15,22 @@ final class FabricAccessRules {
     static byte[] remap(byte[] bytes, MappingTree mappings, Remapper intermediaryRemapper) {
         String[] header = new String(bytes, StandardCharsets.UTF_8).lines().findFirst().orElse("").trim().split("\\s+");
         String namespace = header.length == 3 ? header[2] : "intermediary";
-        AccessWidenerWriter writer = new AccessWidenerWriter(AccessWidenerReader.readVersion(bytes));
+        if (header.length == 3 && header[0].equals("classTweaker")) {
+            try {
+                if (!namespace.equals("intermediary") && !namespace.equals("mojang"))
+                    throw new Failure("FABRIC_ACCESS_NAMESPACE", "Unsupported class-tweaker namespace: " + namespace);
+                int version = Integer.parseInt(header[1].substring(1)) + 2;
+                ClassTweakerWriter writer = ClassTweakerWriter.create(version);
+                var visitor = namespace.equals("intermediary")
+                        ? new ClassTweakerRemapperVisitor(writer, intermediaryRemapper, namespace, "mojang") : writer;
+                ClassTweakerReader.create(visitor).read(bytes, namespace);
+                return writer.getOutput();
+            } catch (Failure known) { throw known; }
+            catch (RuntimeException invalid) { throw new Failure("FABRIC_ACCESS_FORMAT", invalid.getMessage(), invalid); }
+        }
+        AccessWidenerWriter writer;
+        try { writer = new AccessWidenerWriter(AccessWidenerReader.readVersion(bytes)); }
+        catch (AccessWidenerFormatException invalid) { throw new Failure("FABRIC_ACCESS_FORMAT", invalid.getMessage(), invalid); }
         AccessWidenerVisitor visitor;
         if (namespace.equals("intermediary")) {
             visitor = new AccessWidenerRemapper(writer, intermediaryRemapper, namespace, "mojang");

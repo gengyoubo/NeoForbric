@@ -15,7 +15,7 @@ public final class GameResources implements AutoCloseable {
         this.audit = audit; root = Files.createTempDirectory("neoforbric-resources-");
     }
     public synchronized URL resource(Archive archive, String name) {
-        if (!archive.names().contains(name)) return null;
+        if (!archive.hasResource(name)) return null;
         try {
             Path path = snapshots.get(archive);
             if (path == null) {
@@ -37,6 +37,16 @@ public final class GameResources implements AutoCloseable {
     }
     @Override public synchronized void close() throws IOException {
         IOException failure = null;
+        // Package scanners reconstruct standard jar URLs and can populate the
+        // JDK JarURLConnection cache despite our resource handler disabling it.
+        // Release those handles for our own snapshots before deleting on Windows.
+        for (Path path : snapshots.values()) {
+            try {
+                var connection = (JarURLConnection) URI.create("jar:" + path.toUri() + "!/").toURL().openConnection();
+                connection.setUseCaches(true);
+                connection.getJarFile().close();
+            } catch (IOException error) { if (failure == null) failure = error; else failure.addSuppressed(error); }
+        }
         for (FileSystem filesystem : filesystems) {
             try { filesystem.close(); } catch (IOException error) { if (failure == null) failure = error; else failure.addSuppressed(error); }
         }

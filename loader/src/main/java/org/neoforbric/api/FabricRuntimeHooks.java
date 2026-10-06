@@ -17,4 +17,5 @@ public final class FabricRuntimeHooks {
         synchronized (FabricRuntimeHooks.class) { callback = client; }
         if (callback != null) callback.accept(instance);
     }
+    public static void startClient(java.io.File directory, Object instance) { clientInit(instance); }
 }

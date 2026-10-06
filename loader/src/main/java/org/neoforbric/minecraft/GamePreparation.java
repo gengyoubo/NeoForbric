@@ -153,7 +153,7 @@ public final class GamePreparation {
         Files.createDirectories(output.toAbsolutePath().getParent());
         entries.putAll(replacements);
         Path temporary = output.resolveSibling(output.getFileName() + ".part");
-        try (JarOutputStream out = new JarOutputStream(Files.newOutputStream(temporary))) {
+        try (JarOutputStream out = new JarOutputStream(new BufferedOutputStream(Files.newOutputStream(temporary)))) {
             entries.put("META-INF/MANIFEST.MF", manifestBytes(sealing));
             for (var entry : entries.entrySet()) {
                 JarEntry next = new JarEntry(entry.getKey()); next.setTime(0); out.putNextEntry(next); out.write(entry.getValue()); out.closeEntry();
@@ -189,22 +189,41 @@ public final class GamePreparation {
     }
 
     public record FabricInput(Path source, Path output, String accessRules) {}
+    public static void remapFabricMods(List<FabricInput> mods, RuntimeInputs inputs, Path cache) throws IOException {
+        FabricRemapCache.remap(mods, inputs, cache);
+    }
     /** A single symbol graph prevents repeated game scans and resolves cross-module inherited references. */
     public static void remapFabricMods(List<FabricInput> mods, RuntimeInputs inputs) throws IOException {
+        MemoryMappingTree tree = mappings(inputs.mappings(), inputs.intermediaryMappings());
+        FabricRemapAccess access = new FabricRemapAccess(tree);
         // TinyRemapper can coalesce duplicate inputs. Reject conflicts in the original
         // snapshots before that merge can hide disagreeing package annotations.
         Map<String, byte[]> originalClasses = new HashMap<>();
         for (FabricInput mod : mods) {
+            // Flatten Java 21 multi-release classes and remove module descriptors
+            // in the per-launch snapshot, retaining its Mixin remapping policy.
+            Manifest directives = sealingOf(mod.source());
+            try (JarFile jar = new JarFile(mod.source().toFile())) {
+                Manifest manifest = jar.getManifest();
+                String mixinType = manifest == null ? null : manifest.getMainAttributes().getValue("Fabric-Loom-Mixin-Remap-Type");
+                if (mixinType != null) directives.getMainAttributes().putValue("Fabric-Loom-Mixin-Remap-Type", mixinType);
+            }
+            normalize(mod.source(), mod.source(), Map.of(), directives);
             Archive original = Archive.read(mod.source());
+            if (mod.accessRules() != null) {
+                byte[] rules = original.read(mod.accessRules());
+                if (rules == null) throw new Failure("FABRIC_ACCESS_RESOURCE", "Declared Fabric access file is missing: " + mod.accessRules() + " in " + mod.source());
+                access.read(rules);
+            }
             for (String resource : original.names()) if (resource.endsWith(".class")) {
                 byte[] bytes = original.read(resource), previous = originalClasses.putIfAbsent(resource, bytes);
                 if (previous != null && !(resource.endsWith("/package-info.class") && Arrays.equals(previous, bytes)))
                     throw new Failure("DUPLICATE_CLASS", "Conflicting Fabric input " + resource + " in " + mod.source());
             }
         }
-        MemoryMappingTree tree = mappings(inputs.mappings(), inputs.intermediaryMappings());
+        FabricRefmaps.SelectorMapper selectors = new FabricRefmaps.SelectorMapper(tree);
         Set<InputTag> staticMixins = new HashSet<>();
-        TinyRemapper remapper = fabricRemapper(tree, staticMixins);
+        TinyRemapper remapper = fabricRemapper(tree, staticMixins, access);
         List<InputTag> tags = new ArrayList<>();
         try {
             List<Path> classpath = new ArrayList<>(inputs.libraries()); classpath.add(inputs.intermediaryGame());
@@ -225,16 +244,27 @@ public final class GamePreparation {
                     }
                     Archive source = Archive.read(mod.source());
                     Map<String, byte[]> resources = fabricResources(source, mod.accessRules(), tree, remapper.getRemapper());
+                    if (staticMixins.contains(tags.get(index))) {
+                        Archive mapped = Archive.read(temporary);
+                        for (String name : mapped.names()) if (name.endsWith(".class"))
+                            resources.put(name, FabricStaticSelectors.remap(mapped.read(name), selectors));
+                    }
                     normalize(temporary, mod.output(), resources, source.sealingManifest());
+                    if ((index + 1) % 50 == 0 || index + 1 == mods.size())
+                        System.out.println("Remapped Fabric inputs: " + (index + 1) + "/" + mods.size());
                 } finally { Files.deleteIfExists(temporary); }
             }
         } finally { remapper.finish(); }
     }
     static TinyRemapper fabricRemapper(MemoryMappingTree tree, Set<InputTag> staticMixins) {
+        return fabricRemapper(tree, staticMixins, new FabricRemapAccess(tree));
+    }
+    static TinyRemapper fabricRemapper(MemoryMappingTree tree, Set<InputTag> staticMixins, FabricRemapAccess access) {
         // Shadow declarations and their bytecode references belong to the target's
         // namespace even when injection selectors are resolved through a refmap.
         // Keep those selectors intact for legacy JARs; Loom static JARs remap both.
         return TinyRemapper.newRemapper().withMappings(TinyUtils.createMappingProvider(tree, "intermediary", "mojang"))
+                .extraAnalyzeVisitor(access::analyze)
                 .extension(new MixinExtension(EnumSet.of(MixinExtension.AnnotationTarget.HARD)))
                 .extension(new MixinExtension(EnumSet.of(MixinExtension.AnnotationTarget.SOFT),
                         net.fabricmc.tinyremapper.extension.mixin.common.Logger.Level.WARN, staticMixins::contains))
@@ -242,7 +272,7 @@ public final class GamePreparation {
     }
     static Map<String, byte[]> fabricResources(Archive source, String accessRules, MemoryMappingTree tree, org.objectweb.asm.commons.Remapper remapper) {
         Map<String, byte[]> resources = new HashMap<>();
-        for (String name : source.names()) if (name.endsWith("refmap.json")) resources.put(name, FabricRefmaps.remap(source.read(name), tree));
+        for (String name : FabricRefmaps.paths(source)) resources.put(name, FabricRefmaps.remap(source.read(name), tree));
         // Fabric enables exactly the access file selected by its metadata parser.
         // A JAR may also contain unused development resources in another namespace.
         if (accessRules != null) {

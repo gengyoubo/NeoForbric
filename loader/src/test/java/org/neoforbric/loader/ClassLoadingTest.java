@@ -61,6 +61,25 @@ class ClassLoadingTest {
         assertEquals("DUPLICATE_CLASS", assertThrows(Failure.class, () -> ClassIndex.prepare(List.of(a, conflict), PARENT, new AuditLog())).code());
     }
 
+    @Test void explicitBundledLibrariesKeepTheirOwnTypesWhileBootstrapUsesItsVersion() throws Exception {
+        String name = "org.antlr.v4.runtime.ANTLRErrorListener";
+        Archive library = typeJar("bundled-antlr.jar", name);
+        Class<?> bootstrapType = Class.forName(name, false, PARENT);
+        assertEquals("PARENT_CONTAMINATION", assertThrows(Failure.class,
+                () -> ClassIndex.prepare(List.of(library), PARENT, new AuditLog())).code());
+        AuditLog audit = new AuditLog(); TransformPipeline pipeline = new TransformPipeline();
+        ClassIndex index = ClassIndex.prepare(List.of(library), PARENT, audit, Set.of(library.path()));
+        try (var loader = new GameClassLoader(index, pipeline, PARENT, audit)) {
+            pipeline.seal(audit); loader.open();
+            Class<?> bundledType = loader.loadClass(name);
+            assertSame(loader, bundledType.getClassLoader());
+            assertNotSame(bootstrapType, bundledType);
+            assertEquals("before", bundledType.getMethod("value").invoke(null));
+            assertTrue(bootstrapType.isInterface());
+            assertSame(bootstrapType, Class.forName(name, false, PARENT));
+        }
+    }
+
     @Test void finalTransformedBytesAreWhatTheVmExecutes() throws Exception {
         AuditLog audit = new AuditLog();
         TransformPipeline pipeline = new TransformPipeline();
@@ -178,6 +197,37 @@ class ClassLoadingTest {
             assertEquals("INSTANCE_TAINTED", assertThrows(Failure.class, () -> loader.loadClass("demo.Target")).code());
             assertFalse(audit.events().stream().anyMatch(e -> e.type().equals("class-defined")));
         }
+    }
+
+    @Test void nativeMixinPluginsLinkGameDependenciesThroughTheCompletePipelineButCannotCycle() throws Exception {
+        var active = NativeFabricRuntime.class.getDeclaredField("active"); active.setAccessible(true);
+        boolean previous = active.getBoolean(null); active.setBoolean(null, true);
+        try {
+            for (boolean cycle : List.of(false, true)) {
+                AuditLog audit = new AuditLog(); TransformPipeline pipeline = new TransformPipeline();
+                GameClassLoader[] targetLoader = new GameClassLoader[1]; Set<String> transformed = new HashSet<>();
+                pipeline.add(new TransformPipeline.Transformer() {
+                    public String id() { return "fabric-runtime-mixin"; }
+                    public byte[] transform(TransformPipeline.Context context, byte[] bytes) throws Exception {
+                        transformed.add(context.name());
+                        if (context.name().equals("demo.Plugin")) targetLoader[0].loadClass("net.minecraft.fixture.Api");
+                        else if (cycle) targetLoader[0].loadClass("demo.Plugin");
+                        return bytes;
+                    }
+                });
+                try (var loader = loader(List.of(typeJar("plugin.jar", "demo.Plugin"), typeJar("api.jar", "net.minecraft.fixture.Api")), pipeline, audit)) {
+                    targetLoader[0] = loader; pipeline.seal(audit); loader.open();
+                    if (cycle) {
+                        assertEquals("TRANSFORM_FAILED", assertThrows(Failure.class, () -> loader.loadClass("demo.Plugin")).code());
+                        assertFalse(loader.hasDefined("demo.Plugin")); assertFalse(loader.hasDefined("net.minecraft.fixture.Api"));
+                    } else {
+                        assertSame(loader, loader.loadClass("demo.Plugin").getClassLoader());
+                        assertSame(loader, loader.loadClass("net.minecraft.fixture.Api").getClassLoader());
+                        assertEquals(Set.of("demo.Plugin", "net.minecraft.fixture.Api"), transformed);
+                    }
+                }
+            }
+        } finally { active.setBoolean(null, previous); }
     }
 
     @Test void transformOrderingRequiresACompleteAcyclicPlan() {

@@ -32,13 +32,51 @@ class DiscoveryResolverTest {
         assertEquals("NATIVE_RUNTIME_UNSUPPORTED", assertThrows(Failure.class, () -> Resolver.resolve(found, "server", new AuditLog())).code());
     }
 
-    @Test void malformedAndAmbiguousMetadataIsRejected() throws Exception {
+    @Test void malformedAndMissingMetadataIsRejected() throws Exception {
         for (String json : List.of("{\"id\":\"first\",\"id\":\"second\"}", "{ /* comment */ \"id\":\"first\" }", "{} {}", "[]")) {
             var archive = Archive.read(TestJars.jar(temporary.resolve("invalid.jar"), Map.of("neoforbric.mod.json", TestJars.text(json))));
             assertThrows(Failure.class, () -> Metadata.read(archive), json);
         }
-        var dual = Archive.read(TestJars.jar(temporary.resolve("dual.jar"), Map.of("fabric.mod.json", TestJars.text("{}"), "neoforbric.mod.json", TestJars.text("{}"))));
-        assertEquals("METADATA_DESCRIPTOR", assertThrows(Failure.class, () -> Metadata.read(dual)).code());
+        var missing = Archive.read(TestJars.jar(temporary.resolve("missing.jar"), Map.of("pack.mcmeta", TestJars.text("{}"))));
+        assertEquals("METADATA_DESCRIPTOR", assertThrows(Failure.class, () -> Metadata.read(missing)).code());
+    }
+
+    @Test void universalJarUsesFabricOnceAndRecordsItsDescriptor() throws Exception {
+        TestJars.jar(temporary.resolve("universal.jar"), Map.of(
+                "fabric.mod.json", TestJars.text("{\"schemaVersion\":1,\"id\":\"explorify\",\"version\":\"1.6.5\"}"),
+                "META-INF/mods.toml", TestJars.text("[[mods]]\nmodId=\"explorify\"\nversion=\"1.6.5\"\n"),
+                "META-INF/neoforge.mods.toml", TestJars.text("[[mods]]\nmodId=\"explorify\"\nversion=\"1.6.5\"\n")));
+        AuditLog audit = new AuditLog();
+        var found = Discovery.discover(temporary, audit);
+        assertEquals(1, found.size());
+        assertEquals("explorify", found.getFirst().metadata().id());
+        assertEquals(Metadata.Ecosystem.FABRIC, found.getFirst().metadata().ecosystem());
+        assertTrue(audit.events().stream().anyMatch(event -> event.type().equals("mod-discovered")
+                && "fabric.mod.json".equals(event.details().get("descriptor"))));
+    }
+
+    @Test void descriptorPriorityIsPrototypeThenFabricThenNeoForgeThenForge() throws Exception {
+        Map<String, byte[]> descriptors = new HashMap<>(Map.of(
+                "neoforbric.mod.json", TestJars.metadata("prototype_sample", "1.0.0", "demo.Sample", Map.of(), "*"),
+                "fabric.mod.json", TestJars.text("{\"id\":\"fabric_sample\",\"version\":\"1.0.0\"}"),
+                "META-INF/neoforge.mods.toml", TestJars.text("[[mods]]\nmodId=\"neo_sample\"\nversion=\"1.0.0\"\n"),
+                "META-INF/mods.toml", TestJars.text("[[mods]]\nmodId=\"forge_sample\"\nversion=\"1.0.0\"\n")));
+        List<String> priority = List.of("neoforbric.mod.json", "fabric.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml");
+        List<Metadata.Ecosystem> ecosystems = List.of(Metadata.Ecosystem.PROTOTYPE, Metadata.Ecosystem.FABRIC, Metadata.Ecosystem.NEOFORGE, Metadata.Ecosystem.FORGE);
+        for (int index = 0; index < priority.size(); index++) {
+            Archive archive = Archive.read(TestJars.jar(temporary.resolve("priority.jar"), descriptors));
+            assertEquals(priority.get(index), Metadata.descriptor(archive));
+            assertEquals(ecosystems.get(index), Metadata.read(archive).getFirst().ecosystem());
+            descriptors.remove(priority.get(index));
+        }
+    }
+
+    @Test void invalidPreferredDescriptorDoesNotFallBackToValidLowerPriorityMetadata() throws Exception {
+        Archive archive = Archive.read(TestJars.jar(temporary.resolve("invalid-preferred.jar"), Map.of(
+                "fabric.mod.json", TestJars.text("{}"),
+                "META-INF/mods.toml", TestJars.text("[[mods]]\nmodId=\"forge_sample\"\nversion=\"1.0.0\"\n"))));
+        assertEquals("fabric.mod.json", Metadata.descriptor(archive));
+        assertEquals("METADATA_INVALID", assertThrows(Failure.class, () -> Metadata.read(archive)).code());
     }
 
     @Test void dependencyOrderDoesNotDependOnDiscoveryOrder() throws Exception {

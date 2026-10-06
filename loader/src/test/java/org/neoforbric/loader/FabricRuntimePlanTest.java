@@ -24,6 +24,63 @@ class FabricRuntimePlanTest {
                 {"schemaVersion":1,"id":"helpermod","version":"1.2.3"}
                 """), "demo/NestedHelper.class", TestJars.type("demo.NestedHelper"))));
     }
+
+    @Test void nestedLibraryCanBeProvidedByTheKernelWithoutOverridingVersionRequirements() throws Exception {
+        var mod = root("{\"helpermod\":\">=1 <2\"}", Map.of("META-INF/jars/helper.jar", helper()));
+        var plan = new FabricRuntimePlan(temporary.resolve("builtin"), EnvType.CLIENT, new AuditLog());
+        var discovered = plan.discover(List.of(mod));
+        plan.builtin("helpermod", "1.5.0", List.of(temporary));
+        assertEquals(List.of("rootmod"), plan.resolve().stream().map(c -> c.metadata().id()).toList());
+        Path nested = discovered.stream().filter(c -> c.metadata().id().equals("helpermod")).findFirst().orElseThrow().archive().path();
+        assertEquals("Provided by builtin helpermod 1.5.0", plan.exclusions().get(nested));
+        var mismatch = new FabricRuntimePlan(temporary.resolve("mismatch"), EnvType.CLIENT, new AuditLog());
+        mismatch.discover(List.of(mod)); mismatch.builtin("helpermod", "2.0.0", List.of(temporary));
+        assertEquals("FABRIC_DEPENDENCY", assertThrows(Failure.class, mismatch::resolve).code());
+        Archive rootHelper = Archive.read(temporary.resolve("helper.jar"));
+        var duplicate = new FabricRuntimePlan(temporary.resolve("duplicate"), EnvType.CLIENT, new AuditLog());
+        duplicate.discover(List.of(new Discovery.Candidate(rootHelper, Metadata.read(rootHelper).getFirst())));
+        duplicate.builtin("helpermod", "1.5.0", List.of(temporary));
+        assertTrue(assertThrows(Failure.class, duplicate::resolve).getMessage().contains("builtin"));
+    }
+
+    @Test void customAdaptersArePlannedWithoutExecutingTheirClasses() throws Exception {
+        String marker = "neoforbric.test.adapter";
+        System.clearProperty(marker);
+        Archive archive = Archive.read(TestJars.jar(temporary.resolve("adapter.jar"), Map.of(
+                "fabric.mod.json", TestJars.text("{\"schemaVersion\":1,\"id\":\"adaptermod\",\"version\":\"1.0.0\",\"languageAdapters\":{\"custom\":\"demo.Adapter\"}}"),
+                "demo/Adapter.class", TestJars.initializer("demo.Adapter", marker, false))));
+        var plan = new FabricRuntimePlan(temporary.resolve("adapter-cache"), EnvType.CLIENT, new AuditLog());
+        plan.discover(List.of(new Discovery.Candidate(archive, Metadata.read(archive).getFirst())));
+        assertEquals("demo.Adapter", plan.nodes().getFirst().metadata().getLanguageAdapterDefinitions().get("custom"));
+        assertNull(System.getProperty(marker));
+    }
+
+    @Test void onlyPassiveGeneratedNestedDependenciesAreBundledLibraries() throws Exception {
+        for (String extra : List.of("", ",\"entrypoints\":{\"main\":[\"demo.Init\"]}")) {
+            Archive library = Archive.read(TestJars.jar(temporary.resolve("generated.jar"), Map.of("fabric.mod.json", TestJars.text(
+                    "{\"schemaVersion\":1,\"id\":\"helpermod\",\"version\":\"1.0.0\",\"custom\":{\"fabric-loom:generated\":true}" + extra + "}"))));
+            var candidate = new Discovery.Candidate(library, Metadata.read(library).getFirst());
+            var rootPlan = new FabricRuntimePlan(temporary.resolve("root-" + extra.length()), EnvType.CLIENT, new AuditLog());
+            rootPlan.discover(List.of(candidate));
+            assertFalse(rootPlan.bundledLibrary(candidate));
+            var nestedPlan = new FabricRuntimePlan(temporary.resolve("nested-" + extra.length()), EnvType.CLIENT, new AuditLog());
+            var discovered = nestedPlan.discover(List.of(root("{}", Map.of("META-INF/jars/helper.jar", Files.readAllBytes(library.path())))));
+            var nested = discovered.stream().filter(c -> c.metadata().id().equals("helpermod")).findFirst().orElseThrow();
+            assertEquals(extra.isEmpty(), nestedPlan.bundledLibrary(nested));
+        }
+    }
+
+    @Test void largePacksAreNotRejectedAtTheOldCandidateLimit() throws Exception {
+        List<Discovery.Candidate> roots = new ArrayList<>();
+        for (int index = 0; index < 300; index++) {
+            Archive archive = Archive.read(TestJars.jar(temporary.resolve("mod" + index + ".jar"), Map.of(
+                    "fabric.mod.json", TestJars.text("{\"schemaVersion\":1,\"id\":\"mod_" + index + "\",\"version\":\"1.0.0\"}"))));
+            roots.add(new Discovery.Candidate(archive, Metadata.read(archive).getFirst()));
+        }
+        var plan = new FabricRuntimePlan(temporary.resolve("large-cache"), EnvType.CLIENT, new AuditLog());
+        assertEquals(300, plan.discover(roots).size());
+        assertEquals(300, plan.resolve().size());
+    }
     @Test void declaredNestedDependencyIsResolvedWithoutASecondDiscoveryOrClassloader() throws Exception {
         AuditLog audit = new AuditLog(); var plan = new FabricRuntimePlan(temporary.resolve("cache"), EnvType.CLIENT, audit);
         var all = plan.discover(List.of(root("{\"helpermod\":[\">=1.0.0 <2.0.0\",\"3.x\"],\"java\":\">=21\"}", Map.of("META-INF/jars/helper.jar", helper()))));

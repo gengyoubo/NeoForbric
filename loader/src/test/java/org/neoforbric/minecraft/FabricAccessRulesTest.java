@@ -45,4 +45,27 @@ class FabricAccessRulesTest {
                     () -> remap("accessWidener v2 named\n" + rule + "\n", identity)).code());
         }
     }
+
+    @Test void classTweakerVersionsRemapMembersAndRemainReadableByTheRuntime() throws Exception {
+        var remapper = new Remapper() {
+            @Override public String map(String name) { return name.equals("net/minecraft/class_1") ? "net/minecraft/world/item/ItemStack" : name; }
+            @Override public String mapFieldName(String owner, String name, String descriptor) { return "count"; }
+            @Override public String mapMethodName(String owner, String name, String descriptor) { return "use"; }
+        };
+        for (String version : new String[]{"v1", "v2"}) {
+            String result = remap("classTweaker " + version + " intermediary\naccessible field net/minecraft/class_1 field_1 I\n"
+                    + "extendable method net/minecraft/class_1 method_1 ()V\n", remapper);
+            assertTrue(result.startsWith("classTweaker\t" + version + "\tmojang"), result);
+            assertTrue(result.contains("net/minecraft/world/item/ItemStack\tcount\tI"), result);
+            var runtime = net.fabricmc.loader.impl.lib.classtweaker.api.ClassTweaker.newInstance();
+            net.fabricmc.loader.impl.lib.classtweaker.api.ClassTweakerReader.create(runtime)
+                    .read(result.getBytes(StandardCharsets.UTF_8), "mojang");
+            assertTrue(runtime.getTargets().contains("net/minecraft/world/item/ItemStack"));
+        }
+    }
+
+    @Test void malformedAccessHeadersHaveStructuredDiagnostics() {
+        assertEquals("FABRIC_ACCESS_FORMAT", assertThrows(Failure.class,
+                () -> remap("invalid header\n", new Remapper() {})).code());
+    }
 }

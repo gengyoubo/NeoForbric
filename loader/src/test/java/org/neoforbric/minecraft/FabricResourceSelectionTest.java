@@ -65,6 +65,18 @@ class FabricResourceSelectionTest {
         Failure failure = assertThrows(Failure.class, () -> GamePreparation.fabricResources(source, path, mappings(), new Remapper() {}));
         assertEquals("FABRIC_ACCESS_RESOURCE", failure.code()); assertTrue(failure.getMessage().contains("missing.rules"));
     }
+    @Test void mixinConfigurationsSelectReferenceMapsWithoutAFilenameConvention() throws Exception {
+        String refmap = "{\"mappings\":{\"demo/Mixin\":{\"count\":\"field_1:I\"}}}";
+        for (String path : List.of("trender.refmap.mixins.json", "mappings/custom.blob")) {
+            Archive source = archive(",\"mixins\":[\"common.mixins.json\",{\"config\":\"client.mixins.json\",\"environment\":\"client\"}]", Map.of(
+                    "common.mixins.json", "{\"refmap\":\"missing.refmap.json\"}",
+                    "client.mixins.json", "{\"refmap\":\"" + path + "\"}", path, refmap));
+            var resources = GamePreparation.fabricResources(source, null, mappings(), new Remapper() {});
+            assertEquals(Set.of(path), resources.keySet());
+            assertTrue(new String(resources.get(path), StandardCharsets.UTF_8).contains("count:I"));
+            assertEquals(refmap, new String(source.read(path), StandardCharsets.UTF_8));
+        }
+    }
     @Test void declaredUnmappedNamedRulesStillFailWithResourceContext() throws Exception {
         Archive source = archive(",\"accessWidener\":\"active.rules\"", Map.of("active.rules", ORPHAN));
         String path = selected(source);

@@ -16,7 +16,7 @@ public final class Discovery {
                 Archive archive = Archive.read(path);
                 for (Metadata metadata : Metadata.read(archive)) {
                     audit.record("DISCOVER", "mod-discovered", metadata.id(), Map.of("source", archive.path().toString(), "sha256", archive.hash(),
-                            "ecosystem", metadata.ecosystem().name(), "version", metadata.version(), "executionSupported", Boolean.toString(metadata.ecosystem() == Metadata.Ecosystem.PROTOTYPE)));
+                            "ecosystem", metadata.ecosystem().name(), "descriptor", Metadata.descriptor(archive), "version", metadata.version(), "executionSupported", Boolean.toString(metadata.ecosystem() == Metadata.Ecosystem.PROTOTYPE)));
                     result.add(new Candidate(archive, metadata));
                 }
             }

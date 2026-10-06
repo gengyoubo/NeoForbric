@@ -9,6 +9,10 @@ $env:JAVA_HOME = 'C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot' # 换成自�
 
 游戏目录为 `run/client`，用户模组放在 `run/client/mods`。准备任务更新演示用 Fabric 客户端探针，不清空用户模组目录。账号是本地离线开发身份 `NeoForbricDev`，可用 `-PclientUsername=名字` 修改；此任务没有 Microsoft 登录流程。
 
+`runClient` 默认最大堆为 6 GiB，可用 `-PclientHeap=4g` 等参数覆盖。完整包重映射缓存位于 `build/minecraft-client/fabric-remap-cache`；命中前逐一校验输入、游戏和映射、转换代码、工具依赖及输出 SHA-256，任何变化都会重建。`-PclientDebug=true` 输出异常原因链，`-PclientProbeFrames=40` 在主菜单探针成功后渲染 40 帧并自动结束。
+
+同一个 JAR 可以包含多平台描述文件，统一按 `neoforbric.mod.json → fabric.mod.json → META-INF/neoforge.mods.toml → META-INF/mods.toml` 选择第一份，只发现和加载一次，不合并各平台入口。Explorify 等同时携带 Fabric / Forge / NeoForge 描述的模组会选择 Fabric。选中描述文件无效时直接报错，不回退到其他平台；审计 `mod-discovered.details.descriptor` 记录选择结果。该优先级决定模组使用哪个适配器，不改变依赖版本检查或让尚不支持的 Forge / NeoForge 入口执行。
+
 Fabric Loader 被动组件已升级到 **0.19.5**；构建依赖与两个 Fabric 探针共用根构建中的版本配置，默认 runtime、plain profile 和启动审计均从实际依赖的 `FabricLoaderImpl.VERSION` 获取内建身份。Mixin 0.17.4+mixin.0.8.7、ASM 9.10.1 和 MixinExtras 0.5.5 对齐 [Loader 0.19.5 的上游配置](https://github.com/FabricMC/fabric-loader/blob/0.19.5/gradle.properties)。默认 runtime 使用新版 `loadClassTweakers()` 读取已转换到 Mojang 的 AW，并通过 GameProvider 声明运行命名空间和转换范围。`fabricloader >=0.17` 不再被旧的 0.16.10 身份阻挡；更高且未满足的版本要求仍由解析器拒绝。
 
 依赖升级同时更新 Gradle 锁文件和 `gradle/verification-metadata.xml`，包括 IDE 使用的 POM、sources 和 Javadoc。可用 `./gradlew.bat :loader:verifyIdeArtifacts :client-ui:verifyIdeArtifacts` 在正常校验模式下复核这些依赖。
@@ -16,6 +20,16 @@ Fabric Loader 被动组件已升级到 **0.19.5**；构建依赖与两个 Fabric
 Mixin 的 `org.spongepowered.asm.synthetic.*` 动态类（例如 `@ModifyArgs` 生成的 `Args$1`）由游戏域 G 的生成类提供器查询 Mixin 注册表后定义；其 Mixin 来源和最终字节码哈希写入审计。该命名空间禁止输入 JAR 直接定义，未注册的动态类仍拒绝加载；Mixin 自身 API 保持父域共享。
 
 已选中的 nested 模组与根模组一起进入 remap 和类归属扫描。Fabric 解析器可能因依赖不满足而不选中可选的 nested 库；审计的 `fabric-runtime-excluded` 和 Mods 状态原因会列出其缺少或版本不满足的必需依赖。`named` / `mojang` AW 只有在所有目标类、成员名和描述符均能通过 Mojang 映射校验时才规范化为 `mojang`；其他命名空间与无法验证的符号继续拒绝。SSC 样本及缺失依赖说明见 [SSC 兼容性](ssc-compatibility.md)。
+
+Loom 标记为 `fabric-loom:generated=true`、没有入口、语言适配器、Mixin 或访问规则的 nested 依赖库在 G 中独立加载，例如模组 ANTLR 4.13.1 与引导层 TOML 解析器所用的 4.11.1。根模组不获得此豁免；共享 API、受保护包和游戏域内部类冲突仍拒绝。Mixin 插件可以在 G 中链接游戏接口与辅助类，这些依赖经过完整转换流程，循环定义仍失败。LWJGL natives 路径在预启动入口执行前就绪。客户端构造器向 Mixin 提供标准 `Hooks.startClient(File,Object)` 注入锚点，Mixin 完成后由内核 API 分发初始化，确保 main/client 入口只执行一次并保留 owo 等模组的初始化后钩子。
+
+Fabric 快照按 Java 21 选择 multi-release 类并移除 module 描述符；外部 manifest `Class-Path` 不会引入新输入。新版 `classTweaker` v1/v2 与传统 AW 都转换到 Mojang 命名。Mixin 引用映射表按配置声明选取，支持 `trender.refmap.mixins.json` 等非标准文件名，并转换 record 的 `comp_*` 成员及 Mojang 包内部类。
+
+Loom `static` 模组的 Mixin 注解中已烘焙的 intermediary 选择器也转换到 Mojang，包括 `remap=false` 第三方目标里的嵌套 `@At`（ImmediatelyFast / Iris）。普通字符串常量与其他注解不改写，传统 refmap 模组保留注解键。游戏资源同时支持包目录扫描和 unnamed module 的 `Module.getResourceAsStream`，供 Framework 扫描及 Kotlin builtins 使用；二者读取同一份不可变快照，仍不回退到父域私有资源。
+
+重映射的继承图先应用所有选中模组声明的 AW / classTweaker，使其与运行时可见性一致。原为 private、经 `extendable` 开放的方法能够向子类传播新名称（例如 Fusion 的 `SpriteContents.createAnimatedTexture`）；未声明开放的 private 方法保留独立关系。分析视图不会改写原始游戏 JAR，也不会提前执行入口。
+
+本地完整包的兼容修复备份保存在 `run/client/mod-backups`：JEI 19.51 更新到 Fabric 1.21.1 的 19.57.0.451 以满足 Polymorph 1.2.0 新 API；Beyond Adventures 三份动画的 20 个三维向量对象修正为数组；trorigins 删除一份名称无效、内容与有效文件完全相同的纹理元数据副本。修复记录包含原始与最终 SHA-256，除记录中的条目外其余 JAR 内容逐项校验不变。
 
 首次运行下载锁定的官方客户端、映射、46 个 Java 库、Windows x64 natives、资源索引及完整资源对象。后续启动复核缓存。游戏、资源与库不提交到 Git。`audit.json` 位于游戏目录。
 
