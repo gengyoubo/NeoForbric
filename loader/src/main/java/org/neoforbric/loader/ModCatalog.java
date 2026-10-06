@@ -39,11 +39,12 @@ public final class ModCatalog implements AutoCloseable {
                 state(candidate, LoadStatus.UNSUPPORTED, (mod.ecosystem() == Metadata.Ecosystem.FORGE ? "Forge" : "NeoForge") + " adapter not implemented"); continue;
             }
             try {
+                var executable = FabricAdmission.admit(candidate);
                 candidate.archive().requireSupportedLayout();
-                active.add(FabricAdmission.admit(candidate)); admitted.add(candidate.archive().path());
+                active.add(executable); admitted.add(candidate.archive().path());
             } catch (Failure failed) {
                 if (!Set.of("FABRIC_FEATURE_UNSUPPORTED", "UNSUPPORTED_LAYOUT").contains(failed.code())) throw failed;
-                state(candidate, LoadStatus.UNSUPPORTED, failed.getMessage());
+                state(candidate, LoadStatus.UNSUPPORTED, failed.getMessage(), failed.diagnostics());
             }
         }
         return List.copyOf(active);
@@ -59,10 +60,13 @@ public final class ModCatalog implements AutoCloseable {
         publisher.publish(entries);
     }
     private void state(Discovery.Candidate candidate, LoadStatus status, String reason) {
+        state(candidate, status, reason, List.of());
+    }
+    private void state(Discovery.Candidate candidate, LoadStatus status, String reason, List<ModDiagnostic> diagnostics) {
         for (int i = 1; i < entries.size(); i++) {
             LoadedModInfo info = entries.get(i);
             if (info.id().equals(candidate.metadata().id()) && info.sourceJar().equals(candidate.archive().path())) {
-                replace(i, info.withStatus(status, reason)); publisher.publish(entries); return;
+                replace(i, info.withDecision(status, reason, diagnostics)); publisher.publish(entries); return;
             }
         }
         throw new Failure("CATALOG_STATE", "Unknown candidate " + candidate.metadata().id());
@@ -70,7 +74,8 @@ public final class ModCatalog implements AutoCloseable {
     private void replace(int index, LoadedModInfo info) {
         entries.set(index, info);
         audit.record("CATALOG", "mod-status", info.id(), Map.of("name", info.name(), "sourceEcosystem", info.ecosystem().name(), "status", info.status().name(),
-                "runtimeAdapter", info.runtimeAdapter(), "namespace", info.namespace(), "reason", info.reason(), "sourceJar", info.sourceJar().toString(), "sourceSha256", info.sourceSha256()));
+                "runtimeAdapter", info.runtimeAdapter(), "namespace", info.namespace(), "reason", info.reason(), "sourceJar", info.sourceJar().toString(), "sourceSha256", info.sourceSha256(),
+                "diagnostics", new com.google.gson.Gson().toJson(info.diagnostics())));
     }
     @Override public void close() { publisher.close(); }
 }

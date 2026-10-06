@@ -29,12 +29,23 @@ public final class TransformPipeline {
     }
 
     public synchronized boolean sealed() { return ordered != null; }
+    public synchronized Set<String> registeredIds() { return Set.copyOf(tools.keySet()); }
 
     // Serializes tooling until parallel-safety contracts exist. ClassLoader locks still enforce one definition per class.
     public synchronized byte[] apply(String name, byte[] original, BytecodeAccess source, AuditLog audit) throws Exception {
+        return applyUntil(name, original, source, audit, null);
+    }
+
+    /** Mixin metadata reads the same preceding stages, without recursively applying Mixin itself. */
+    public synchronized byte[] applyBefore(String name, byte[] original, BytecodeAccess source, AuditLog audit, String boundary) throws Exception {
+        if (!tools.containsKey(boundary)) throw new Failure("TRANSFORM_BOUNDARY", "Unknown boundary " + boundary);
+        return applyUntil(name, original, source, audit, boundary);
+    }
+    private byte[] applyUntil(String name, byte[] original, BytecodeAccess source, AuditLog audit, String boundary) throws Exception {
         if (ordered == null) throw new Failure("TRANSFORM_NOT_READY", "Transformation plan is not sealed");
         byte[] bytes = original.clone();
         for (Transformer tool : ordered) {
+            if (tool.id().equals(boundary)) break;
             String before = Archive.sha256(bytes);
             try {
                 bytes = Objects.requireNonNull(tool.transform(new Context(name, source), bytes.clone()), "transform output").clone();

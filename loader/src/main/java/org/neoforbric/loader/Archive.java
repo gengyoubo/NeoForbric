@@ -18,6 +18,7 @@ public final class Archive {
     private final Map<String, byte[]> entries;
     private final Manifest manifest;
     private final byte[] source;
+    private Set<String> permittedNested = Set.of();
 
     private Archive(Path path, String hash, Map<String, byte[]> entries, Manifest manifest, byte[] source) {
         this.path = path;
@@ -84,6 +85,13 @@ public final class Archive {
         catch (MalformedURLException impossible) { throw new AssertionError(impossible); }
     }
 
+    /** The runtime plan must discover and verify every declared nested input before granting this view. */
+    public Archive permitDeclaredNested(Set<String> names) {
+        for (String name : names) if (!entries.containsKey(name) || !name.endsWith(".jar")) throw new Failure("NESTED_INPUT", path + " missing declared nested JAR " + name);
+        Archive view = new Archive(path, hash, entries, manifest, source);
+        view.permittedNested = Set.copyOf(names); return view;
+    }
+
     public void requireSupportedLayout() {
         var attributes = manifest.getMainAttributes();
         if (attributes.getValue("Class-Path") != null || attributes.getValue("Automatic-Module-Name") != null
@@ -94,7 +102,7 @@ public final class Archive {
         for (String name : names()) {
             String upper = name.toUpperCase(Locale.ROOT);
             if (name.equals("module-info.class") || name.startsWith("META-INF/versions/")
-                    || upper.endsWith(".JAR") || (upper.startsWith("META-INF/")
+                || (upper.endsWith(".JAR") && !permittedNested.contains(name)) || (upper.startsWith("META-INF/")
                     && (upper.matches(".*\\.(SF|RSA|DSA|EC)$") || upper.startsWith("META-INF/SIG-"))))
                 throw new Failure("UNSUPPORTED_LAYOUT", path + " contains unsupported module / nested / signed entry " + name);
         }

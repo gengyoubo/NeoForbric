@@ -56,6 +56,7 @@ public final class NeoForbricClientUi {
         var buttons = minecraft.screen.children().stream().filter(child -> child instanceof ModsButton).map(child -> (ModsButton) child).toList();
         if (buttons.size() != 1) throw new AssertionError("Expected exactly one Mods button");
         buttons.getFirst().onPress();
+        if (Boolean.getBoolean("neoforbric.probe.diagnostics")) ((NeoForbricModsScreen)minecraft.screen).selectDiagnosticProbe();
     }
     static void verifyBack(Minecraft minecraft) {
         if (!(minecraft.screen instanceof TitleScreen) || minecraft.screen.children().stream().filter(child -> child instanceof ModsButton).count() != 1)

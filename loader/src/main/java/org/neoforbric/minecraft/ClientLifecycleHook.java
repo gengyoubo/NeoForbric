@@ -33,6 +33,13 @@ public final class ClientLifecycleHook implements TransformPipeline.Transformer 
                             anchors[2]++; super.visitMethodInsn(Opcodes.INVOKESTATIC, HOOK, "registerShutdownHook", "(Ljava/lang/Runtime;Ljava/lang/Thread;)V", false);
                         } else super.visitMethodInsn(opcode, owner, name, desc, itf);
                     }
+                    @Override public void visitFieldInsn(int opcode, String owner, String field, String desc) {
+                        super.visitFieldInsn(opcode, owner, field, desc);
+                        if (client && name.equals("<init>") && opcode == Opcodes.PUTFIELD && owner.equals(CLIENT.replace('.', '/')) && field.equals("gameDirectory") && desc.equals("Ljava/io/File;")) {
+                            super.visitVarInsn(Opcodes.ALOAD, 0);
+                            super.visitMethodInsn(Opcodes.INVOKESTATIC, "org/neoforbric/api/FabricRuntimeHooks", "clientInit", "(Ljava/lang/Object;)V", false);
+                        }
+                    }
                 };
             }
         }, 0);

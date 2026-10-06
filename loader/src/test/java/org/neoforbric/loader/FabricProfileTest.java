@@ -14,6 +14,32 @@ class FabricProfileTest {
         Archive archive = Archive.read(TestJars.jar(temporary.resolve("native.jar"), Map.of("fabric.mod.json", TestJars.text(json))));
         return new Discovery.Candidate(archive, Metadata.read(archive).getFirst());
     }
+    @Test void diagnosticsCollectEveryBlockerAndKeepDependencyRequirementsSeparate() throws Exception {
+        var mod = candidate("""
+                {"schemaVersion":1,"id":"diagnostic_probe","version":"1.0.0",
+                 "mixins":["probe.mixins.json",{"config":"probe.client.mixins.json","environment":"client"}],
+                 "accessWidener":"probe.aw","jars":[{"file":"META-INF/jars/library.jar"}],
+                 "languageAdapters":{"kotlin":"demo.Adapter"},"breaks":{"other_mod":"*"},"conflicts":{"another_mod":"*"},
+                 "recommends":{"recommended_mod":"*"},"suggests":{"suggested_mod":"*"},
+                 "depends":{"fabric-api":">=0.102.0","alternative_mod":["1.0.0","2.0.0"]},
+                 "entrypoints":{"client":["demo.Client::create",{"adapter":"kotlin","value":"demo.Client"}],"jei_mod_plugin":["demo.Plugin"]}}
+                """);
+        Failure failure = assertThrows(Failure.class, () -> FabricAdmission.admit(mod));
+        assertEquals("FABRIC_FEATURE_UNSUPPORTED", failure.code());
+        var blockers = failure.diagnostics().stream().filter(d -> d.kind() == org.neoforbric.api.ModDiagnostic.Kind.UNSUPPORTED_FEATURE).toList();
+        assertEquals(13, blockers.size());
+        for (String value : List.of("probe.mixins.json", "probe.client.mixins.json", "probe.aw", "META-INF/jars/library.jar", "jei_mod_plugin", "demo.Client::create", "demo.Adapter"))
+            assertTrue(failure.getMessage().contains(value), failure.getMessage());
+        assertTrue(failure.diagnostics().stream().anyMatch(d -> d.kind() == org.neoforbric.api.ModDiagnostic.Kind.REQUIRED_DEPENDENCY && d.subject().equals("fabric-api") && d.value().equals(">=0.102.0")));
+        assertTrue(failure.getMessage().contains("Required dependencies (not evaluated)"));
+        assertThrows(UnsupportedOperationException.class, () -> failure.diagnostics().clear());
+        try (var catalog = new ModCatalog(List.of(mod), new AuditLog())) {
+            assertTrue(catalog.selectClient(List.of(mod)).isEmpty());
+            var info = org.neoforbric.api.LoadedMods.snapshot().get(1);
+            assertEquals(org.neoforbric.api.LoadStatus.UNSUPPORTED, info.status());
+            assertEquals(failure.diagnostics(), info.diagnostics());
+        }
+    }
     @Test void realFabricVersionPredicatesAndEntryGroupsAreUsed() throws Exception {
         var mod = FabricAdmission.admit(candidate("""
                 {"schemaVersion":1,"id":"native_sample","version":"1.0.0","depends":{"java":">=21","minecraft":"~1.21.1","fabricloader":">=0.16.10"},

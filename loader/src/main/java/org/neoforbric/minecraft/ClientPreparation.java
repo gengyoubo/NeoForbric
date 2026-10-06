@@ -84,7 +84,8 @@ public final class ClientPreparation {
                             Path output = root.resolve("natives").resolve(Path.of(entry.getName()).getFileName()); Files.createDirectories(output.getParent());
                             byte[] bytes; try (var stream = jar.getInputStream(entry)) { bytes = stream.readAllBytes(); }
                             if (Files.exists(output) && !Archive.sha256(Files.readAllBytes(output)).equals(Archive.sha256(bytes))) throw new Failure("DUPLICATE_NATIVE", output.toString());
-                            Files.write(output, bytes); GamePreparation.add(files, root, output, "native", original, coordinate + ":" + output.getFileName());
+                            if (!Files.exists(output)) Files.write(output, bytes);
+                            GamePreparation.add(files, root, output, "native", original, coordinate + ":" + output.getFileName());
                         }
                     }
                 } else {

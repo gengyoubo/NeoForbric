@@ -17,6 +17,9 @@ dependencies {
     implementation 'net.fabricmc:tiny-remapper:0.10.4'
     implementation 'net.fabricmc:mapping-io:0.6.1'
     implementation 'net.fabricmc:fabric-loader:0.16.10@jar'
+    implementation 'net.fabricmc:access-widener:2.1.0'
+    implementation 'net.fabricmc:sponge-mixin:0.15.2+mixin.0.8.7'
+    implementation 'io.github.llamalad7:mixinextras-fabric:0.4.1'
     testImplementation platform('org.junit:junit-bom:5.12.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -75,6 +78,11 @@ tasks.register('minecraftClientTest', Test) {
     classpath = sourceSets.minecraftTest.runtimeClasspath
     include '**/MinecraftClientRuntimeTest.class'
     dependsOn ':prepareFabricClientProbe', ':prepareClientUi'
+    // These prepared artifacts are outside the JUnit classpath; task ordering alone
+    // does not invalidate a previous client test result when UI or probe bytes change.
+    inputs.file(rootProject.layout.buildDirectory.file('minecraft-client/runtime.json')).withPropertyName('clientRuntime')
+    inputs.file(rootProject.layout.buildDirectory.file('minecraft-client/client-ui.jar')).withPropertyName('clientUi')
+    inputs.dir(rootProject.layout.buildDirectory.dir('minecraft-client/mods')).withPropertyName('clientMods')
     systemProperty 'minecraft.clientRuntime', rootProject.layout.buildDirectory.file('minecraft-client/runtime.json').get().asFile.absolutePath
     systemProperty 'minecraft.clientUi', rootProject.layout.buildDirectory.file('minecraft-client/client-ui.jar').get().asFile.absolutePath
     systemProperty 'minecraft.clientEvidence', layout.buildDirectory.dir('client-evidence').get().asFile.absolutePath

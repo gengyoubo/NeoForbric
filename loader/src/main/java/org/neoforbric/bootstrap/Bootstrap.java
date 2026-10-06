@@ -30,6 +30,7 @@ public final class Bootstrap {
         CountDownLatch completed = new CountDownLatch(1);
         Thread[] shutdownHook = {null};
         ModCatalog catalog = null;
+        List<Path> remapArtifacts = new ArrayList<>();
         try {
             audit.mode(options.inspect() ? "metadata-inspect" : options.client() ? "minecraft-1.21.1-client" : options.runServer() ? "minecraft-1.21.1-server" : options.minecraft() ? "minecraft-1.21.1-server-settings" : "java-fixture");
             audit.record(phase, "runtime", "JVM", Map.of("javaVersion", Runtime.version().toString(),
@@ -79,7 +80,10 @@ public final class Bootstrap {
                 if (runtime != null && mod.metadata().ecosystem() == Metadata.Ecosystem.FABRIC) {
                     // Remap the immutable discovered snapshot, never a later disk revision of the mod.
                     Path cache = options.runtime().toAbsolutePath().getParent().resolve("remapped-mods").resolve(mod.archive().hash()); Files.createDirectories(cache);
-                    Path source = cache.resolve("input-intermediary.jar"), mapped = cache.resolve("mod-mojang.jar");
+                    String launch = UUID.randomUUID().toString();
+                    Path source = cache.resolve("input-" + launch + ".jar"), mapped = cache.resolve("mod-" + launch + ".jar");
+                    // Parallel client/server launches must never share a remapper's temporary output.
+                    remapArtifacts.addAll(List.of(source, mapped, mapped.resolveSibling(mapped.getFileName() + ".remapping.jar"), mapped.resolveSibling(mapped.getFileName() + ".part")));
                     mod.archive().requireSupportedLayout(); Files.write(source, mod.archive().snapshot());
                     GamePreparation.remap(source, mapped, runtime, "intermediary", "mojang");
                     Archive archive = Archive.read(mapped);
@@ -222,6 +226,10 @@ public final class Bootstrap {
             Failure.rethrowFatal(cause);
             throw failure;
         } finally {
+            for (Path artifact : remapArtifacts) {
+                try { Files.deleteIfExists(artifact); }
+                catch (IOException error) { audit.record("CLEANUP", "remap-cleanup-failed", artifact.toString(), Map.of("message", error.toString(), "severity", "RESOURCE_WARNING")); }
+            }
             try { audit.write(options.audit(), outcome); }
             catch (IOException io) {
                 if (failure != null) failure.addSuppressed(io);

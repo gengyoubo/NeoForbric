@@ -44,6 +44,16 @@ tasks.register('prepareMinecraftClient', JavaExec) {
     args layout.buildDirectory.dir('minecraft-client').get().asFile.absolutePath
 }
 
+tasks.register('prepareJeiInputs', JavaExec) {
+    group = 'verification'
+    description = 'Verify the fixed Fabric JEI / Fabric API compatibility test inputs.'
+    dependsOn ':loader:classes'
+    javaLauncher = project(':loader').javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+    classpath = project(':loader').sourceSets.main.runtimeClasspath
+    mainClass = 'org.neoforbric.minecraft.JeiPreparation'
+    args layout.buildDirectory.dir('jei-compat').get().asFile.absolutePath
+}
+
 tasks.register('prepareFabricClientProbe', Sync) {
     dependsOn ':probes:fabric-client:remapJar'
     from project(':probes:fabric-client').layout.buildDirectory.file('libs/fabric-client-intermediary.jar')

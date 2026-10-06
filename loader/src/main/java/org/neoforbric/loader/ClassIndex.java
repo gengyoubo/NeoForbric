@@ -17,7 +17,8 @@ public final class ClassIndex {
     }
 
     public static boolean shared(String name) {
-        return name.startsWith("org.neoforbric.api.") || name.startsWith("org.objectweb.asm.") || name.startsWith("net.fabricmc.api.");
+        return name.startsWith("org.neoforbric.api.") || name.startsWith("org.objectweb.asm.") || name.startsWith("net.fabricmc.api.")
+                || (Boolean.getBoolean("neoforbric.fabric.runtime") && (name.startsWith("net.fabricmc.loader.") || name.startsWith("org.spongepowered.asm.") || name.startsWith("com.llamalad7.mixinextras.")));
     }
 
     public static ClassIndex prepare(List<Archive> inputs, ClassLoader parent, AuditLog audit) {
