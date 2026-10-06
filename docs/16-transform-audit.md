@@ -102,4 +102,17 @@ MixinExtras 的多阶段与包装链需要扩展这些审计字段。Local print
 
 审计最小闭环应在首个原生态 JAR 实验前实现，而不是到混装崩溃后才补日志。
 
+## 7. 启动与互操作补充记录
+
+[18](18-bootstrap-and-classloading.md) 补充定义屏障和按提交点判断恢复范围；[17](17-cross-ecosystem-interoperability.md) 补充同对象验收。建议在上述记录上增加以下字段，仍未实现：
+
+| 记录 | 新增字段 / 用途 |
+| --- | --- |
+| 类身份与加载请求 | binary name、defining / initiating loader ID、module、CodeSource、TCCL、请求阶段 / 栈、正在执行的 transformer 与准备 / 定义状态；发现提前 define、双份 API 和重入 |
+| archive / 服务选择 | outer archive、nested path、原始哈希、版本约束 / 淘汰原因、最终 owner、provider SPI 与来源、资源枚举顺序；解释 JiJ 与 ServiceLoader 冲突 |
+| 失败与恢复 | severity、phase、commit_point、state_tainted、recoverability、原 / 有效模组集合、required 依赖闭包、禁用 feature / rule、最后成功定义及世界会话；区分静态排除与不可恢复变更 |
+| 跨生态对象 | audit 分配的对象编号、调用前后状态、registry owner / epoch、内容 key、provider / 数据所有者、copy / invalidate / save / sync 操作；不能只凭 identityHashCode 或 key 相等判断身份 |
+
+这些字段用于 B / I 探针关联，不能把仅有记录的操作标成行为通过。必需转换返回成功但内部异常 / 后置条件无法确定时保持 unknown，并按 18 的建议阻止不完整实例启动。
+
 [ml-src]: https://maven.neoforged.net/releases/cpw/mods/modlauncher/11.0.5/modlauncher-11.0.5-sources.jar

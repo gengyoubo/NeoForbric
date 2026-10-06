@@ -2,7 +2,7 @@
 
 调查日期：2026-10-06（日本时间）。目标：Minecraft Java Edition **1.21.1**。
 
-根据 [项目 README](../readme.md) 调查生命周期统一、Minecraft 基础代码与映射统一、Forge / NeoForge Patch 的 Hook 化，随后补充映射与 Mixin，以及第三阶段的 11 个兼容领域。仓库目前只有项目说明、调查文档和 `.gitignore`，没有加载器实现、构建脚本或可运行样例；结果来自官方文档、固定源码与版本化源码包的静态检查和映射文件核对，**尚未进行 Minecraft 启动或模组兼容实测**。
+根据 [项目 README](../readme.md) 调查生命周期统一、Minecraft 基础代码与映射统一、Forge / NeoForge Patch 的 Hook 化，随后补充映射与 Mixin、第三阶段的 11 个兼容领域，以及跨生态互操作 / 自主启动两个最终验证专项。仓库目前只有项目说明、调查文档和 `.gitignore`，没有加载器实现、构建脚本或可运行样例；结果来自官方文档、固定源码与版本化源码包的静态检查和映射文件核对，**尚未进行 Minecraft 启动或模组兼容实测**。
 
 ## 主要结论
 
@@ -14,6 +14,8 @@
 6. **映射与 Mixin 兼容是统一内核的前置工作。** 名称、refmap 和访问规则转换之后，还要处理注入位置、局部变量、取消语义和多模组冲突；注入附着与行为一致分别验收。
 7. **统一注册服务必须保留源 API 的合法窗口。** 直接写入后的可见性、Deferred supplier 绑定、Holder 身份、冻结和世界动态内容分别处理；跨生态立即查询依赖不一定存在可行顺序。
 8. **原生客户端连接需要完整协议与内容兼容。** 通道 optional、payload 注册或 mod list 相同都不是充分条件；Fabric 与 NeoForge 客户端分别列出条件，目前均未连线测试。
+9. **启动接管必须覆盖 main、服务选择、loader 创建和实际 define。** 原 Knot / ModLauncher 都主动创建游戏类加载器；复用内部组件需要明确宿主服务和 module 契约，不能只替换入口名称。
+10. **跨生态互操作要验证同 Item / ItemStack / 世界 Holder 与状态。** Forge / NeoForge 的具体父类、provider 和 config 路径仍有差异；同名 API 或三个入口都执行不是互操作证据。
 
 这些是本次调查形成的建议，尚未作为项目最终架构决策。
 
@@ -37,14 +39,17 @@
 | [14 — 客户端渲染](14-client-rendering.md) | 渲染阶段、模型、shader、GUI、输入、particle 和扩展 |
 | [15 — 数据与资源](15-resources-and-datagen.md) | runtime reload、动态 bootstrap、client resources 与 datagen |
 | [16 — Audit 草案](16-transform-audit.md) | 变换和行为记录字段、冲突分类、失败验收 |
+| [17 — 跨生态对象互操作](17-cross-ecosystem-interoperability.md) | 同对象 / 数据、父类冲突、config、命令权限、worldgen 与 14 项待执行探针 |
+| [18 — Bootstrap 与类加载](18-bootstrap-and-classloading.md) | 启动屏障、类 / module / library / 服务边界、语言、失败与升级策略、15 项待执行探针 |
 | [来源与复现说明](sources.md) | 固定提交、官方文档、统计口径和版本陷阱 |
 | [机器可读调查快照](upstream-snapshot.json) | 提交 SHA、源码样本哈希、Patch 统计；不是构建依赖锁文件 |
 | [映射与 Mixin 专项快照](mapping-mixin-snapshot.json) | 映射文件哈希、核对样本和补充源码快照 |
 | [第三阶段来源索引](stage3-sources.md) | 固定引用、源码包、版本解析缺口与复现方法 |
 | [第三阶段快照](stage3-snapshot.json) | 来源哈希、声明版本差异与 70 项待执行探针 |
+| [最终验证调查快照](bootstrap-interoperability-snapshot.json) | 新增固定来源、源码包哈希、版本缺口与 29 项待执行探针；不是运行锁 |
 
 ## 当前建议
 
-先在 1.21.1 / Java 21 上锁定输入及实际解析的依赖，建立发现图、注册窗口、ABI / 变换顺序和最小 Audit；名称、Mixin / Extras 注入和最终行为分别验收。再用物品注册、服务器 Tick、资源重载及协议探针验证，随后接入低复杂度原生态 JAR。动态注册的定义 / Holder 契约和必需握手检查需要提前纳入，复杂内容覆盖再逐步扩大。
+通用前期调查在 17 / 18 两篇收口，下一步进入原型：先锁定实际解析输入，做 Java 21 的发现 / owner / 定义屏障夹具，再接自主 Minecraft main 与各生态 Java 入口，随后执行同 Item / 同 ItemStack、命令 / 权限的首批三模组互操作。继续扩大 provider、配置、存档、worldgen 和网络；只针对实际失败补局部调查。29 项新增探针均未执行，语言和原生启动组件也没有已验证支持声明。
 
 早期可用三端原生环境验证统一 API 的契约，但它们是实验对照。最终的“统一底层运行模型”仍需要 NeoForbric 自己拥有启动、类定义与调度，详见 [原型路线](04-prototype-roadmap.md)。

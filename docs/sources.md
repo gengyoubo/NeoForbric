@@ -101,3 +101,22 @@ assert len(neo - forge) == 163
 同日补充 [第三阶段总览与 11 个方向](06-stage3-investigation.md)，使用此前固定的上游 SHA，并补查 ModLauncher、FML、AT、Coremods、Bus、AW 和 MixinExtras 的版本化源码。详细引用与复现方法在 [第三阶段来源索引](stage3-sources.md)，哈希、声明版本差异、取样范围和待执行探针在 [stage3-snapshot.json](stage3-snapshot.json)。
 
 Forge 四个精确版本源码包下载返回 HTTP 403，采用对应版本系列的固定 Git 提交作为机制证据，未证明二进制一致性。NeoForge 构建属性与 FML POM 的 Bus / Coremods 等版本有差异，补查了两种声明输入，但未运行完整依赖解析。第三阶段同样没有游戏、转换器、存档或连接实测；所有新探针均为待执行。
+
+## 7. 最终验证专项：互操作与 Bootstrap
+
+同日补充 [17](17-cross-ecosystem-interoperability.md) 与 [18](18-bootstrap-and-classloading.md)。继续使用此前固定的 Fabric Loader / API、Forge、NeoForge 提交与 FML 4.0.45 / ModLauncher 11.0.5 源码样本；新增核对入口、classloader、config、commands / permissions、biome modifier 和对象继承结构。新增来源和 29 项待执行探针记录在 [bootstrap-interoperability-snapshot.json](bootstrap-interoperability-snapshot.json)，不改写前三份调查快照的范围。
+
+| 新增来源 | 固定输入 | 用途与限制 |
+| --- | --- | --- |
+| [BootstrapLauncher](https://maven.neoforged.net/releases/cpw/mods/bootstraplauncher/2.0.2/bootstraplauncher-2.0.2-sources.jar) | `2.0.2` 原始源码包 | bootstrap layer、TCCL、Consumer 服务移交；没有运行原启动链 |
+| [SecureJarHandler](https://maven.neoforged.net/releases/cpw/mods/securejarhandler/3.0.8/securejarhandler-3.0.8-sources.jar) | `3.0.8` 原始源码包 | module、signing、filesystem 机制；不是已构建的 NeoForbric classloader |
+| [Fabric Language Kotlin](https://github.com/FabricMC/fabric-language-kotlin/tree/8e016c8109414898c4b45b9b7ab738da1ee14f5a) | tag `1.12.3+kotlin.2.0.21` 的固定 SHA | object / 成员入口、kotlin-reflect 与调用方类加载视图；未运行语言模组 |
+| [KotlinForForge](https://github.com/thedarkcolour/KotlinForForge/tree/0e8e3b579661acdad6ff76b9620dcc06f8885cab) | `5.x` 固定 SHA | 两套语言 SPI / container / 自动订阅；没有对发布 JAR 与实际依赖组合验收 |
+| [Scala language provider / SLP](https://github.com/Kotori316/SLP/tree/3ae2ac491e94ca66586414e376197676ecd87111) | 2024-08-31 提交，显式目标 `1.21.1 / Forge 52.0.9 / NeoForge 21.1.34` | MODULE$、构造、context / module；后来 1.21.x 分支样本不用于证明 1.21.1 |
+| [GroovyModLoader](https://github.com/GroovyMC/GroovyModLoader/tree/4e9c837937796ca192f1eb8ccbac9dc62e5f0d0f) | tag `6.0.2`；构建声明 `NeoForge 21.0.14-beta / gml-core 7.0.3` | 外层模组不含完整语言实现，需查 core；不能把外层兼容标签当实际 1.21.1 验收 |
+| [gml-core](https://repo.maven.apache.org/maven2/org/groovymc/gml/gml-core/7.0.3/gml-core-7.0.3-sources.jar) | `7.0.3` 原始源码包 | language loader、container、生成订阅及带禁用代码的脚本路径；不是承诺脚本可运行 |
+| [JVMS Java 21](https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-5.html)、[ClassLoader](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ClassLoader.html)、[ServiceLoader](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/ServiceLoader.html)、[JAR 规范](https://docs.oracle.com/en/java/javase/21/docs/specs/jar/jar.html) | 官方 Java 21 规范 / API，检索于调查日 | 类型身份、委派、加载约束、服务与 archive / module 行为；架构决策仍需夹具验证 |
+
+NeoForge 当前 1.21.1 config 文档及固定源码采用实例 config + 已存在世界文件覆盖的 SERVER 路径，与本次 Forge 世界 serverconfig 基路径不同。准确兼容应锁所选 `21.1.x` 修订和 FML 产物；不能依生态名字套用一条路径规则。语言库及构建声明也只是来源样本，不是完整运行依赖锁。
+
+复核方法：快照 `source_files` 按 URL 下载，统一 UTF-8 / LF 后核对 SHA-256；`source_artifacts` 核对原始源码包字节哈希，再检查 `inspected_entries`。来源收集可能包含未逐行审计的文件，取样不能外推为全量审计；没有下载游戏 JAR、构建启动器、运行签名 / 模块夹具或测试语言加载。本轮建议结束通用调查，转入原型；29 项探针状态全部为 pending。
