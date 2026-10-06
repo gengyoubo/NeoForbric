@@ -1,0 +1,11 @@
+{
+  "version": "1.21.1",
+  "versionUrl": "https://piston-meta.mojang.com/v1/packages/22a1966494dfa4eeb5ee778c8e6ed5b774839582/1.21.1.json",
+  "versionSha1": "22a1966494dfa4eeb5ee778c8e6ed5b774839582",
+  "serverUrl": "https://piston-data.mojang.com/v1/objects/59353fb40c36d304f2035d51e7d6e6baa98dc05c/server.jar",
+  "serverSha256": "e3bc55693e93cda0188f2e60aea28113fc647c5e85a15fa3d1b347349231b4bb",
+  "mappingsUrl": "https://piston-data.mojang.com/v1/objects/03f8985492bda0afc0898465341eb0acef35f570/server.txt",
+  "mappingsSha256": "9d0b04bead421c8229aff14b534432bbc927bea642e7c8593d1276b8df8ba53f",
+  "intermediaryUrl": "https://maven.fabricmc.net/net/fabricmc/intermediary/1.21.1/intermediary-1.21.1-v2.jar",
+  "intermediarySha256": "e8bd6a4c39e235ee2dc73063558610775c72a2572fa0c6b32915b149074012a6"
+}

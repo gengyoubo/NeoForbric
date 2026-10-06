@@ -14,13 +14,14 @@ public final class Main {
             System.out.println("NeoForbric Java 21 bootstrap prototype\n"
                     + "  --fixture --game <jar> --mods <directory> --main <class> [--side server|client] [--audit <json>] [-- <args>]\n"
                     + "  --inspect --mods <directory> [--audit <json>]\n"
-                    + "Native metadata can be discovered; native runtime adapters are not implemented.");
+                    + "  --minecraft-server --runtime <runtime.json> --mods <directory> [--verify <class>] [--audit <json>] [-- --initSettings]\n"
+                    + "Minecraft 1.21.1 settings/bootstrap profile supports plain Fabric Java main/server entrypoints.");
             return 0;
         }
         try {
             LaunchOptions options = LaunchOptions.parse(args);
             new Bootstrap().run(options);
-            System.out.println((options.inspect() ? "Inspection" : "Fixture launch") + " completed. Audit: " + options.audit().toAbsolutePath());
+            System.out.println((options.inspect() ? "Inspection" : options.minecraft() ? "Minecraft bootstrap" : "Fixture launch") + " completed. Audit: " + options.audit().toAbsolutePath());
             return 0;
         } catch (Failure failed) {
             System.err.println("[" + failed.code() + "] " + failed.getMessage());

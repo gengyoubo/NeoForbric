@@ -11,6 +11,8 @@ public final class AuditLog {
     public record Event(long sequence, String time, String phase, String type, String subject,
                         Map<String, String> details) {}
     private final List<Event> events = new ArrayList<>();
+    private String mode = "java-fixture";
+    public synchronized void mode(String mode) { this.mode = Objects.requireNonNull(mode); }
 
     public synchronized void record(String phase, String type, String subject, Map<String, String> details) {
         events.add(new Event(events.size() + 1L, Instant.now().toString(), phase, type, subject, Map.copyOf(details)));
@@ -22,7 +24,7 @@ public final class AuditLog {
         Map<String, Object> report = new LinkedHashMap<>();
         report.put("schemaVersion", 1);
         report.put("targetMinecraft", "1.21.1");
-        report.put("mode", "java-fixture");
+        report.put("mode", mode);
         report.put("outcome", outcome);
         report.put("events", events());
         Path absolute = path.toAbsolutePath().normalize();

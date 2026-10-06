@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "neoforbric_item_probe",
+  "version": "1.0.0",
+  "name": "NeoForbric Fabric Item Probe",
+  "environment": "server",
+  "entrypoints": { "main": ["demo.fabricprobe.ItemProbe"], "server": ["demo.fabricprobe.ServerProbe"] },
+  "depends": { "minecraft": "1.21.1", "java": ">=21", "fabricloader": ">=0.16.10" }
+}

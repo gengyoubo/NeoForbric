@@ -11,6 +11,12 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.11.0'
     implementation 'org.tomlj:tomlj:1.1.1'
     implementation 'org.ow2.asm:asm:9.7.1'
+    implementation 'org.ow2.asm:asm-commons:9.7.1'
+    implementation 'org.ow2.asm:asm-tree:9.7.1'
+    implementation 'org.ow2.asm:asm-util:9.7.1'
+    implementation 'net.fabricmc:tiny-remapper:0.10.4'
+    implementation 'net.fabricmc:mapping-io:0.6.1'
+    implementation 'net.fabricmc:fabric-loader:0.16.10@jar'
     testImplementation platform('org.junit:junit-bom:5.12.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -20,6 +26,28 @@ tasks.named('test', Test) {
     dependsOn ':prepareFixture'
     systemProperty 'fixture.game', project(':fixtures:game').tasks.named('jar').get().archiveFile.get().asFile.absolutePath
     systemProperty 'fixture.mods', rootProject.layout.buildDirectory.dir('fixture/mods').get().asFile.absolutePath
+    systemProperty 'loader.runtimeClasspath', sourceSets.main.runtimeClasspath.asPath
+}
+
+sourceSets {
+    minecraftTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+configurations {
+    minecraftTestImplementation.extendsFrom testImplementation
+    minecraftTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+tasks.register('minecraftTest', Test) {
+    description = 'Fork real Minecraft 1.21.1 and exercise Fabric entrypoints and registry identity.'
+    group = 'verification'
+    useJUnitPlatform()
+    testClassesDirs = sourceSets.minecraftTest.output.classesDirs
+    classpath = sourceSets.minecraftTest.runtimeClasspath
+    dependsOn ':prepareFabricProbe'
+    systemProperty 'minecraft.runtime', rootProject.layout.buildDirectory.file('minecraft/runtime.json').get().asFile.absolutePath
+    systemProperty 'minecraft.mods', rootProject.layout.buildDirectory.dir('minecraft/mods').get().asFile.absolutePath
     systemProperty 'loader.runtimeClasspath', sourceSets.main.runtimeClasspath.asPath
 }
 

@@ -17,12 +17,14 @@ public final class Archive {
     private final String hash;
     private final Map<String, byte[]> entries;
     private final Manifest manifest;
+    private final byte[] source;
 
-    private Archive(Path path, String hash, Map<String, byte[]> entries, Manifest manifest) {
+    private Archive(Path path, String hash, Map<String, byte[]> entries, Manifest manifest, byte[] source) {
         this.path = path;
         this.hash = hash;
         this.entries = Collections.unmodifiableMap(new LinkedHashMap<>(entries));
         this.manifest = manifest;
+        this.source = source;
     }
 
     public static Archive read(Path path) throws IOException {
@@ -52,7 +54,7 @@ public final class Archive {
         if (entries.isEmpty()) throw new Failure("INVALID_ARCHIVE", actual + " has no ZIP entries");
         byte[] manifestBytes = entries.get("META-INF/MANIFEST.MF");
         Manifest manifest = manifestBytes == null ? new Manifest() : new Manifest(new ByteArrayInputStream(manifestBytes));
-        return new Archive(actual, sha256(source), entries, manifest);
+        return new Archive(actual, sha256(source), entries, manifest, source);
     }
 
     public static String sha256(byte[] bytes) {
@@ -65,6 +67,7 @@ public final class Archive {
 
     public Path path() { return path; }
     public String hash() { return hash; }
+    public byte[] snapshot() { return source.clone(); }
     public Set<String> names() { return entries.keySet(); }
     public byte[] read(String name) {
         byte[] bytes = entries.get(name);

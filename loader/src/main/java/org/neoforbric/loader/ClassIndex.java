@@ -17,10 +17,13 @@ public final class ClassIndex {
     }
 
     public static boolean shared(String name) {
-        return name.startsWith("org.neoforbric.api.") || name.startsWith("org.objectweb.asm.");
+        return name.startsWith("org.neoforbric.api.") || name.startsWith("org.objectweb.asm.") || name.startsWith("net.fabricmc.api.");
     }
 
     public static ClassIndex prepare(List<Archive> inputs, ClassLoader parent, AuditLog audit) {
+        return prepare(inputs, parent, audit, Set.of());
+    }
+    public static ClassIndex prepare(List<Archive> inputs, ClassLoader parent, AuditLog audit, Set<java.nio.file.Path> libraries) {
         Map<String, Entry> classes = new TreeMap<>();
         Set<String> seenArchives = new HashSet<>();
         List<Archive> unique = new ArrayList<>();
@@ -38,7 +41,9 @@ public final class ClassIndex {
                 Entry previous = classes.putIfAbsent(name, new Entry(archive, resource));
                 if (previous != null) throw new Failure("DUPLICATE_CLASS", name + " belongs to both " + previous.archive().path() + " and " + archive.path());
                 URL contamination = parent.getResource(resource);
-                if (contamination != null) throw new Failure("PARENT_CONTAMINATION", name + " also exists on bootstrap classpath: " + contamination);
+                // Explicit bundled libraries (e.g. game's Gson vs tools' Gson) are isolated in G.
+                // Game/mod types and shared APIs still cannot be duplicated on P.
+                if (contamination != null && !libraries.contains(archive.path())) throw new Failure("PARENT_CONTAMINATION", name + " also exists on bootstrap classpath: " + contamination);
                 audit.record("PREPARE", "class-owner", name, Map.of("loader", "G", "source", archive.path().toString(), "archiveSha256", archive.hash()));
             }
         }

@@ -101,7 +101,7 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
         return Collections.enumeration(index.resources(name));
     }
     private static boolean sharedResource(String name) {
-        return name.startsWith("org/neoforbric/api/") || name.startsWith("org/objectweb/asm/");
+        return name.startsWith("org/neoforbric/api/") || name.startsWith("org/objectweb/asm/") || name.startsWith("net/fabricmc/api/");
     }
     @Override public void close() { closed = true; }
 }

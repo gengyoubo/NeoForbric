@@ -1,0 +1,5 @@
+# This is a Gradle generated file for dependency locking.
+# Manual edits can break the build and are not advised.
+# This file is expected to be part of source control.
+net.fabricmc:fabric-loader:0.16.10=compileClasspath
+empty=annotationProcessor,runtimeClasspath,testAnnotationProcessor,testCompileClasspath,testRuntimeClasspath

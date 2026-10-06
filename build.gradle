@@ -1,11 +1,14 @@
 allprojects {
     group = 'org.neoforbric'
     version = '0.1.0-SNAPSHOT'
-    repositories { mavenCentral() }
+    repositories {
+        mavenCentral()
+        maven { url = 'https://maven.fabricmc.net/'; content { includeGroup 'net.fabricmc' } }
+    }
 }
 
 subprojects {
-    if (name != 'fixtures') {
+    if (name != 'fixtures' && name != 'probes') {
         apply plugin: 'java-library'
         java {
             toolchain { languageVersion = JavaLanguageVersion.of(21) }
@@ -21,6 +24,35 @@ subprojects {
         }
         dependencyLocking { lockAllConfigurations() }
     }
+}
+
+tasks.register('prepareMinecraft', JavaExec) {
+    dependsOn ':loader:classes'
+    javaLauncher = project(':loader').javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+    classpath = project(':loader').sourceSets.main.runtimeClasspath
+    mainClass = 'org.neoforbric.minecraft.GamePreparation'
+    maxHeapSize = '2g'
+    args 'prepare', layout.buildDirectory.dir('minecraft').get().asFile.absolutePath
+}
+
+tasks.register('prepareFabricProbe', Sync) {
+    dependsOn ':probes:fabric-item:remapJar'
+    from project(':probes:fabric-item').layout.buildDirectory.file('libs/fabric-item-intermediary.jar')
+    into layout.buildDirectory.dir('minecraft/mods')
+}
+
+tasks.register('runMinecraftProbe', JavaExec) {
+    dependsOn 'prepareFabricProbe', ':loader:classes'
+    javaLauncher = project(':loader').javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+    classpath = project(':loader').sourceSets.main.runtimeClasspath
+    mainClass = 'org.neoforbric.bootstrap.Main'
+    maxHeapSize = '2g'
+    workingDir = layout.buildDirectory.dir('minecraft/run').get().asFile
+    doFirst { workingDir.mkdirs() }
+    args '--minecraft-server', '--runtime', layout.buildDirectory.file('minecraft/runtime.json').get().asFile.absolutePath,
+            '--mods', layout.buildDirectory.dir('minecraft/mods').get().asFile.absolutePath,
+            '--verify', 'demo.fabricprobe.ItemProbe', '--audit', layout.buildDirectory.file('minecraft/audit.json').get().asFile.absolutePath,
+            '--', '--initSettings'
 }
 
 def fixtureMods = [project(':fixtures:mod-a'), project(':fixtures:mod-b'), project(':fixtures:mod-c')]
