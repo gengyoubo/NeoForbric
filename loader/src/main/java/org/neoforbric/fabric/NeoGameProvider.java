@@ -25,7 +25,12 @@ final class NeoGameProvider implements GameProvider {
     @Override public Collection<BuiltinMod> getBuiltinMods() { return List.of(); }
     @Override public String getEntrypoint() { return options.mainClass(); }
     @Override public Path getLaunchDirectory() { return directory; }
-    @Override public boolean isObfuscated() { return false; }
+    @Override public Set<BuiltinTransform> getBuiltinTransforms(String className) {
+        if (className.startsWith("net.minecraft.")) return Set.of(BuiltinTransform.WIDEN_ALL_PACKAGE_ACCESS, BuiltinTransform.CLASS_TWEAKS);
+        return Set.of(BuiltinTransform.STRIP_ENVIRONMENT);
+    }
+    @Override public String getRuntimeNamespace(String defaultNamespace) { return "mojang"; }
+    @Override public String getDefaultModDistributionNamespace(String defaultNamespace) { return "intermediary"; }
     @Override public boolean requiresUrlClassLoader() { return false; }
     @Override public boolean isEnabled() { return true; }
     private Failure forbidden(String action) { return new Failure("NATIVE_BOOTSTRAP_FORBIDDEN", "NeoForbric owns " + action); }

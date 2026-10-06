@@ -1,6 +1,7 @@
 package org.neoforbric.loader;
 
 import java.util.*;
+import net.fabricmc.loader.impl.FabricLoaderImpl;
 import org.neoforbric.minecraft.FabricAdmission;
 
 public final class Resolver {
@@ -12,7 +13,7 @@ public final class Resolver {
     }
     public static List<Discovery.Candidate> resolve(List<Discovery.Candidate> candidates, String side, AuditLog audit, boolean fabric) {
         Map<String, String> builtins = new HashMap<>(BUILTINS);
-        if (fabric) builtins.put("fabricloader", "0.16.10"); // SPI contract version, not the native loader lifecycle.
+        if (fabric) builtins.put("fabricloader", FabricLoaderImpl.VERSION); // SPI contract version, not the native loader lifecycle.
         Map<String, Discovery.Candidate> selected = new TreeMap<>();
         for (var candidate : candidates) {
             Metadata mod = candidate.metadata();

@@ -54,4 +54,4 @@ $env:JAVA_HOME = 'C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot' # 换成自�
 ./gradlew.bat :loader:test
 ```
 
-已接入真实 Minecraft 1.21.1 JAR、映射转换和有限的 Fabric Java 入口 profile，实测 Item / ItemStack / Holder / ResourceKey 身份与注册表冻结。`runServer` 启动世界、Tick 并保存退出；Windows x64 的 `runClient` 启动真实窗口和主菜单，新增 Mods 列表与图形图标，区分来源生态、运行适配器和 Loader 最终状态。Mixin / AW 与 Forge / NeoForge 原生入口仍待接入；发现它们的 JAR 会显示 Unsupported。运行与边界见 [客户端与 Mods](docs/minecraft-client.md)、[持续服务端](docs/minecraft-server.md)、[初始 bootstrap 探针](docs/minecraft-bootstrap.md)，原有夹具见 [原型说明](docs/prototype.md)，前期调查见 [docs 索引](docs/README.md)。
+已接入真实 Minecraft 1.21.1 JAR、映射转换和 NeoForbric Fabric runtime（Mixin、AW、nested JAR、依赖图、Fabric Loader API / Fabric API 模块），实测 Item / ItemStack / Holder / ResourceKey 身份与注册表冻结。`runServer` 启动世界、Tick 并保存退出；Windows x64 的 `runClient` 在 `mods` 含 Fabric 模组时默认走该 runtime（`-PfabricPlainProfile` 可回退 plain 准入），启动真实窗口和主菜单，新增 Mods 列表与图形图标，区分来源生态、运行适配器和 Loader 最终状态。Forge / NeoForge 原生入口仍待接入；发现它们的 JAR 会显示 Unsupported。运行与边界见 [客户端与 Mods](docs/minecraft-client.md)、[持续服务端](docs/minecraft-server.md)、[初始 bootstrap 探针](docs/minecraft-bootstrap.md)，原有夹具见 [原型说明](docs/prototype.md)，前期调查见 [docs 索引](docs/README.md)。

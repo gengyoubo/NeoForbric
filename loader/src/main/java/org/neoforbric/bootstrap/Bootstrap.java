@@ -65,7 +65,7 @@ public final class Bootstrap {
             if (options.client() && fabricRuntime == null) candidates = catalog.selectClient(candidates);
             else if (options.minecraft() && fabricRuntime == null) candidates = candidates.stream().map(c -> c.metadata().available(options.side()) ? FabricAdmission.admit(c) : c).toList();
             var mods = fabricRuntime == null ? Resolver.resolve(candidates, options.side(), audit, options.minecraft()) : fabricRuntime.resolve();
-            if (fabricRuntime != null) catalog.selectFabricRuntime(candidates, mods);
+            if (fabricRuntime != null) catalog.selectFabricRuntime(candidates, mods, fabricRuntime.exclusions());
             phase("PREPARE");
             if (runtime == null) runtime = options.minecraft() ? RuntimeInputs.read(options.runtime(), audit) : null;
             if (runtime != null && !runtime.side().equals(options.side())) throw new Failure("GAME_SIDE", "Runtime inputs belong to " + runtime.side() + ", requested " + options.side());

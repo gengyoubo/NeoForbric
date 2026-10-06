@@ -32,7 +32,7 @@ public final class NativeFabricRuntime implements AutoCloseable {
         this.audit = audit; provider = new NeoGameProvider(options);
         launcher = new NeoFabricLauncher(EnvType.CLIENT, options.mainClass(), audit);
         facade = FabricLoaderImpl.INSTANCE; facade.setGameProvider(provider);
-        audit.record("BOOTSTRAP", "fabric-runtime-owner", "NeoForbric", Map.of("fabricVersion", "0.16.10", "nativeLauncher", "false", "namespace", "mojang"));
+        audit.record("BOOTSTRAP", "fabric-runtime-owner", "NeoForbric", Map.of("fabricVersion", FabricLoaderImpl.VERSION, "nativeLauncher", "false", "namespace", "mojang"));
     }
     private static Path codeSource(Class<?> type) {
         try { return Path.of(type.getProtectionDomain().getCodeSource().getLocation().toURI()); }
@@ -43,12 +43,13 @@ public final class NativeFabricRuntime implements AutoCloseable {
         List<Discovery.Candidate> all = plan.discover(roots);
         plan.builtin("minecraft", "1.21.1", List.of(inputs.game()));
         plan.builtin("java", "21", List.of(Path.of(System.getProperty("java.home"))));
-        plan.builtin("fabricloader", "0.16.10", List.of(codeSource(FabricLoaderImpl.class)));
-        plan.builtin("mixinextras", "0.4.1", List.of(codeSource(MixinExtrasBootstrap.class)));
+        plan.builtin("fabricloader", FabricLoaderImpl.VERSION, List.of(codeSource(FabricLoaderImpl.class)));
+        plan.builtin("mixinextras", "0.5.5", List.of(codeSource(MixinExtrasBootstrap.class)));
         plan.builtin("neoforbric", "0.1.0", List.of(codeSource(NativeFabricRuntime.class)));
         return all;
     }
     public List<Discovery.Candidate> resolve() { return plan.resolve(); }
+    public Map<Path, String> exclusions() { return plan.exclusions(); }
     public boolean defersRegistries() { return plan.selectedNative().stream().anyMatch(mod -> mod.getId().equals("fabric-registry-sync-v0")); }
     public void prepareClient(Object minecraft) { facade.prepareModInit(provider.getLaunchDirectory(), minecraft); }
     public Set<String> nestedPaths(Discovery.Candidate candidate) { return plan.node(candidate).nestedPaths(); }
@@ -71,7 +72,7 @@ public final class NativeFabricRuntime implements AutoCloseable {
         NativeAccess.call(facade, FabricLoaderImpl.class, "setupLanguageAdapters", new Class<?>[0]);
         NativeAccess.call(facade, FabricLoaderImpl.class, "setupMods", new Class<?>[0]);
         NativeAccess.set(facade, FabricLoaderImpl.class, "frozen", true);
-        facade.loadAccessWideners();
+        facade.loadClassTweakers();
         Set<String> preceding = pipeline.registeredIds();
         pipeline.add(new TransformPipeline.Transformer() {
             @Override public String id() { return "fabric-runtime-access-and-environment"; }

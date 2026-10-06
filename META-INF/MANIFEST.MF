@@ -1,22 +1,43 @@
 Manifest-Version: 1.0
-Build-Timestamp: 2023-07-01T17:59:41.721590900Z
-Build-Revision: e035c96ca278f53bf20f8ce38422b1f0243a31ef
-Build-Jvm: 17.0.7 (Eclipse Adoptium 17.0.7+7)
-Built-By: Gradle 8.2
-Implementation-Title: reach-entity-attributes
-Implementation-Version: 2.4.0
-Implementation-Vendor: com.jamieswhiteshirt
-Specification-Title: FabricMod
-Specification-Version: 1.0.0
-Specification-Vendor: dev.sapphic
-Sealed: true
-Fabric-Gradle-Version: 8.2
-Fabric-Loom-Version: 1.3.2
-Fabric-Mixin-Compile-Extensions-Version: 0.6.0
-Fabric-Minecraft-Version: 1.20
-Fabric-Tiny-Remapper-Version: 0.8.7
-Fabric-Loader-Version: 0.14.21
-Fabric-Mixin-Version: 0.12.5+mixin.0.8.5
-Fabric-Mixin-Group: net.fabricmc
-Fabric-Mapping-Namespace: intermediary
+Automatic-Module-Name: org.javassist
+Bnd-LastModified: 1703435456811
+Build-Jdk-Spec: 21
+Bundle-Description: Javassist (JAVA programming ASSISTant) makes Java 
+ bytecode manipulation    simple. It is a class library for editing by
+ tecodes in Java.
+Bundle-License: https://www.mozilla.org/en-US/MPL/1.1/, https://www.gn
+ u.org/licenses/lgpl-2.1.html, https://www.apache.org/licenses/LICENSE
+ -2.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Javassist
+Bundle-SymbolicName: javassist
+Bundle-Vendor: Shigeru Chiba, www.javassist.org
+Bundle-Version: 3.30.2.GA
+Created-By: Apache Maven Bundle Plugin 5.1.9
+Export-Package: javassist;version="3.30.2.GA";uses:="javassist.bytecod
+ e,javassist.compiler,javassist.compiler.ast,javassist.convert,javassi
+ st.expr",javassist.bytecode;version="3.30.2.GA";uses:="javassist,java
+ ssist.bytecode.annotation",javassist.bytecode.analysis;version="3.30.
+ 2.GA";uses:="javassist,javassist.bytecode,javassist.bytecode.stackmap
+ ",javassist.bytecode.annotation;version="3.30.2.GA";uses:="javassist,
+ javassist.bytecode",javassist.bytecode.stackmap;version="3.30.2.GA";u
+ ses:="javassist,javassist.bytecode",javassist.compiler;version="3.30.
+ 2.GA";uses:="javassist,javassist.bytecode,javassist.compiler.ast",jav
+ assist.compiler.ast;version="3.30.2.GA";uses:="javassist,javassist.co
+ mpiler",javassist.convert;version="3.30.2.GA";uses:="javassist,javass
+ ist.bytecode",javassist.expr;version="3.30.2.GA";uses:="javassist,jav
+ assist.bytecode",javassist.runtime;version="3.30.2.GA",javassist.scop
+ edpool;version="3.30.2.GA";uses:=javassist,javassist.tools;version="3
+ .30.2.GA";uses:=javassist,javassist.tools.reflect;version="3.30.2.GA"
+ ;uses:="javassist,javassist.bytecode",javassist.tools.rmi;version="3.
+ 30.2.GA";uses:="javassist,javassist.tools.web",javassist.tools.web;ve
+ rsion="3.30.2.GA";uses:=javassist,javassist.util;version="3.30.2.GA";
+ uses:=javassist,javassist.util.proxy;version="3.30.2.GA";uses:="javas
+ sist,javassist.bytecode"
+Main-Class: javassist.CtClass
+Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.8))"
+Specification-Title: Javassist
+Specification-Vendor: Shigeru Chiba, www.javassist.org
+Specification-Version: 3.30
+Tool: Bnd-6.3.1.202206071316
 

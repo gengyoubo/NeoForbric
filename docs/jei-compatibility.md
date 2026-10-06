@@ -10,9 +10,9 @@
 | JEI | 19.57.0.451，Fabric | [发布版本](https://modrinth.com/mod/jei/version/Mpn2EPaS) |
 | Fabric API | 0.116.17+1.21.1 | [发布版本](https://modrinth.com/mod/fabric-api/version/Mys3P7lK) |
 | MezzConfig | 0.5.12 | JEI 声明的 nested JAR |
-| Fabric Loader 被动组件 | 0.16.10 | Gradle 锁定依赖；不运行 Knot 的发现 / 启动 |
-| Fabric Mixin | 0.15.2+mixin.0.8.7 | Gradle 锁定依赖 |
-| Access Widener / MixinExtras | 2.1.0 / 0.4.1 | Gradle 锁定依赖 |
+| Fabric Loader 被动组件 | 0.19.5 | Gradle 锁定依赖；不运行 Knot 的发现 / 启动 |
+| Fabric Mixin / ASM | 0.17.4+mixin.0.8.7 / 9.10.1 | 对齐 Loader 0.19.5 的运行库 |
+| Access Widener / MixinExtras | 2.1.0 / 0.5.5 | AW 重映射使用 2.1.0；加载与转换使用 Loader 内置 Class Tweaker |
 
 `loader/src/main/resources/org/neoforbric/minecraft/jei-inputs.json` 固定两份根 JAR 的下载 URL、SHA-512 与 SHA-256。`prepareJeiInputs` 校验下载和本地缓存，将输入放入 `build/jei-compat/mods`。MezzConfig 来自 JEI 的已校验快照，不额外下载另一个版本。
 
@@ -42,4 +42,4 @@ $env:JAVA_HOME = '自己的 JDK 21 路径'
 
 ## 支持边界
 
-这是面向固定 Fabric JEI 依赖链的实验性客户端 profile。默认 `runClient` 仍采用有限的 plain Java 准入，不能因为另一个 profile 加入能力，就把所有未知模组标记为 Loaded。自定义 languageAdapters 暂未准入；Forge / NeoForge 原生入口、外部客户端协议兼容和三生态对象互操作仍未完成。此验收也不等于整个 Fabric API 的每项契约、任意 Mixin 冲突组合、JEI 所有插件和网络场景已通过。
+这是面向固定 Fabric JEI 依赖链的实验性客户端 profile。默认 `runClient` 现在同样进入 NeoForbric Fabric runtime，不能因为 runtime 加入能力就把所有未知模组标记为 Loaded；有限的 plain Java 准入仅通过 `-PfabricPlainProfile` 保留用于回归。自定义 languageAdapters 暂未准入；Forge / NeoForge 原生入口、外部客户端协议兼容和三生态对象互操作仍未完成。此验收也不等于整个 Fabric API 的每项契约、任意 Mixin 冲突组合、JEI 所有插件和网络场景已通过。

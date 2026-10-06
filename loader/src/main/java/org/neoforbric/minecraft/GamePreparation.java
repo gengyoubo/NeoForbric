@@ -13,7 +13,6 @@ import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.*;
 import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
-import net.fabricmc.accesswidener.*;
 import org.neoforbric.loader.*;
 
 /** Offline preparation tools. Never runs Mojang's bundler or loads a Minecraft Class. */
@@ -234,9 +233,7 @@ public final class GamePreparation {
                         }
                         if (name.endsWith(".class")) continue; byte[] bytes = source.read(name);
                         if (bytes.length < header.length || !Arrays.equals(bytes, 0, header.length, header, 0, header.length)) continue;
-                        AccessWidenerWriter writer = new AccessWidenerWriter(AccessWidenerReader.readVersion(bytes));
-                        new AccessWidenerReader(new AccessWidenerRemapper(writer, remapper.getRemapper(), "intermediary", "mojang")).read(bytes, "intermediary");
-                        resources.put(name, writer.write());
+                        resources.put(name, FabricAccessRules.remap(bytes, tree, remapper.getRemapper()));
                     }
                     normalize(temporary, mod.output(), resources, source.sealingManifest());
                 } finally { Files.deleteIfExists(temporary); }

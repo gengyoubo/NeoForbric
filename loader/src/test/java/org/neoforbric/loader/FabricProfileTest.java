@@ -52,6 +52,19 @@ class FabricProfileTest {
         assertFalse(FabricAdmission.matches("~1.21.1", "1.22.0"));
         assertEquals("NATIVE_RUNTIME_UNSUPPORTED", assertThrows(Failure.class, () -> Resolver.resolve(List.of(mod), "server", new AuditLog())).code());
     }
+    @Test void loaderVersionFloorUsesTheUpgradedSpiAndStillRejectsFutureVersions() throws Exception {
+        for (String floor : List.of(">=0.17", ">=0.19.5", ">=0.20")) {
+            var mod = FabricAdmission.admit(candidate("""
+                    {"schemaVersion":1,"id":"loader_floor","version":"1.0.0","depends":{"fabricloader":"%s"}}
+                    """.formatted(floor)));
+            if (floor.equals(">=0.20")) {
+                assertEquals("DEPENDENCY_VERSION", assertThrows(Failure.class,
+                        () -> Resolver.resolve(List.of(mod), "client", new AuditLog(), true)).code());
+            } else {
+                assertEquals(List.of(mod), Resolver.resolve(List.of(mod), "client", new AuditLog(), true));
+            }
+        }
+    }
     @Test void unsupportedFabricFeaturesFailBeforeOpeningTheGamePlan() throws Exception {
         for (String feature : List.of("\"mixins\":[\"sample.mixins.json\"]", "\"accessWidener\":\"sample.aw\"", "\"jars\":[{\"file\":\"nested.jar\"}]",
                 "\"languageAdapters\":{\"kotlin\":\"demo.KotlinAdapter\"}")) {

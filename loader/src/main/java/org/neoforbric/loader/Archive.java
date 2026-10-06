@@ -109,7 +109,7 @@ public final class Archive {
 
     public void requireSupportedLayout() {
         var attributes = manifest.getMainAttributes();
-        if (attributes.getValue("Class-Path") != null || attributes.getValue("Automatic-Module-Name") != null
+        if (attributes.getValue("Class-Path") != null
                 || "true".equalsIgnoreCase(attributes.getValue("Multi-Release")))
             throw new Failure("UNSUPPORTED_LAYOUT", path + " requires manifest classpath, modules or multi-release support");
         for (String name : names()) {

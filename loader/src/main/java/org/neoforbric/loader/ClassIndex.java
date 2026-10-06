@@ -19,8 +19,12 @@ public final class ClassIndex {
 
     public static boolean shared(String name) {
         return name.startsWith("org.neoforbric.api.") || name.startsWith("org.objectweb.asm.") || name.startsWith("net.fabricmc.api.")
-                || (NativeFabricRuntime.active() && (name.startsWith("net.fabricmc.loader.") || name.startsWith("org.spongepowered.asm.") || name.startsWith("com.llamalad7.mixinextras.")));
+                || (NativeFabricRuntime.active() && (name.startsWith("net.fabricmc.loader.")
+                || (name.startsWith("org.spongepowered.asm.") && !mixinSynthetic(name)) || name.startsWith("com.llamalad7.mixinextras.")));
     }
+
+    // This namespace belongs to Mixin's registered generators in G, never to input JARs or P.
+    public static boolean mixinSynthetic(String name) { return name.startsWith("org.spongepowered.asm.synthetic."); }
 
     public static ClassIndex prepare(List<Archive> inputs, ClassLoader parent, AuditLog audit) {
         return prepare(inputs, parent, audit, Set.of());
@@ -42,7 +46,7 @@ public final class ClassIndex {
                 boolean ownedUi = clientUi.contains(archive.path()) && name.startsWith("org.neoforbric.client.");
                 if (clientUi.contains(archive.path()) && !ownedUi) throw new Failure("CLIENT_UI_PACKAGE", "First-party UI JAR contains an unexpected class " + name);
                 if (name.startsWith("java.") || name.startsWith("jdk.") || name.startsWith("sun.")
-                        || (name.startsWith("org.neoforbric.") && !ownedUi) || shared(name))
+                        || (name.startsWith("org.neoforbric.") && !ownedUi) || shared(name) || mixinSynthetic(name))
                     throw new Failure("PROTECTED_PACKAGE", archive.path() + " attempts to define kernel / shared class " + name);
                 validateName(name, archive.read(resource));
                 Entry previous = classes.putIfAbsent(name, new Entry(archive, resource));

@@ -56,8 +56,6 @@ public final class NeoFabricLauncher extends FabricLauncherBase {
         try (var jar = new java.util.jar.JarFile(path.toFile())) { return jar.getManifest(); }
         catch (IOException error) { throw new Failure("MANIFEST_READ", path.toString(), error); }
     }
-    @Override public boolean isDevelopment() { return false; }
     @Override public String getEntrypoint() { return entrypoint; }
-    @Override public String getTargetNamespace() { return "mojang"; }
     @Override public List<Path> getClassPath() { return classpath; }
 }

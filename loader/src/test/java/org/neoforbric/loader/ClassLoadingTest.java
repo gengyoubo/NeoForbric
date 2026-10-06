@@ -9,6 +9,7 @@ import java.util.jar.Manifest;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.neoforbric.api.*;
+import org.neoforbric.fabric.NativeFabricRuntime;
 import org.objectweb.asm.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -130,6 +131,33 @@ class ClassLoadingTest {
         }
     }
 
+    @Test void mixinSyntheticArgsUseTheGameGeneratorWhileMixinApiStaysShared() throws Exception {
+        var active = NativeFabricRuntime.class.getDeclaredField("active"); active.setAccessible(true);
+        boolean previous = active.getBoolean(null);
+        active.setBoolean(null, true);
+        try {
+            String name = "org.spongepowered.asm.synthetic.args.Args$1";
+            Archive owner = typeJar("mixin-owner.jar", "demo.MixinOwner");
+            AuditLog audit = new AuditLog(); TransformPipeline pipeline = new TransformPipeline();
+            try (var loader = loader(List.of(owner), pipeline, audit)) {
+                loader.generatedClasses(requested -> requested.equals(name)
+                        ? new GameClassLoader.Generated(TestJars.type(name), owner, "Mixin:demo.MixinOwner") : null);
+                assertEquals("EARLY_DEFINITION", assertThrows(Failure.class, () -> loader.loadClass(name)).code());
+                pipeline.seal(audit); loader.open();
+                Class<?> generated = loader.loadClass(name);
+                assertSame(loader, generated.getClassLoader());
+                assertSame(generated, loader.loadClass(name));
+                assertSame(org.spongepowered.asm.mixin.injection.invoke.arg.Args.class,
+                        loader.loadClass("org.spongepowered.asm.mixin.injection.invoke.arg.Args"));
+                assertThrows(ClassNotFoundException.class, () -> loader.loadClass("org.spongepowered.asm.synthetic.args.Args$2"));
+                assertEquals(1, audit.events().stream().filter(event -> event.type().equals("generated-class-owner")).count());
+            }
+            Archive spoofed = typeJar("spoofed-synthetic.jar", name);
+            assertEquals("PROTECTED_PACKAGE", assertThrows(Failure.class,
+                    () -> ClassIndex.prepare(List.of(spoofed), PARENT, new AuditLog())).code());
+        } finally { active.setBoolean(null, previous); }
+    }
+
     @Test void failedOrReentrantTransformationPoisonsTheDomain() throws Exception {
         AuditLog audit = new AuditLog();
         TransformPipeline pipeline = new TransformPipeline();
@@ -211,15 +239,30 @@ class ClassLoadingTest {
     }
 
     @Test void unsupportedJarLayoutsAreRejectedInsteadOfSilentlyFlattened() throws Exception {
-        for (String attribute : List.of("Class-Path", "Automatic-Module-Name", "Multi-Release")) {
+        for (String attribute : List.of("Class-Path", "Multi-Release")) {
             Manifest manifest = new Manifest(); manifest.getMainAttributes().putValue("Manifest-Version", "1.0");
-            manifest.getMainAttributes().putValue(attribute, attribute.equals("Class-Path") ? "other.jar" : attribute.equals("Automatic-Module-Name") ? "example" : "true");
+            manifest.getMainAttributes().putValue(attribute, attribute.equals("Class-Path") ? "other.jar" : "true");
             Archive archive = Archive.read(TestJars.jar(temporary.resolve("unsupported.jar"), Map.of("demo/Target.class", TestJars.type("demo.Target")), manifest));
             assertEquals("UNSUPPORTED_LAYOUT", assertThrows(Failure.class, archive::requireSupportedLayout).code());
         }
         for (String entry : List.of("META-INF/SAMPLE.SF", "META-INF/SIG-CUSTOM", "lib/nested.jar", "lib/nested.JAR", "module-info.class", "META-INF/versions/21/demo/Target.class")) {
             Archive archive = Archive.read(TestJars.jar(temporary.resolve("entry.jar"), Map.of(entry, TestJars.text("unsupported"))));
             assertEquals("UNSUPPORTED_LAYOUT", assertThrows(Failure.class, archive::requireSupportedLayout).code());
+        }
+    }
+
+    @Test void automaticModuleNameIsAllowedInTheUnnamedGameDomain() throws Exception {
+        Manifest manifest = new Manifest(); manifest.getMainAttributes().putValue("Manifest-Version", "1.0");
+        manifest.getMainAttributes().putValue("Automatic-Module-Name", "example");
+        Archive archive = Archive.read(TestJars.jar(temporary.resolve("automatic-module.jar"),
+                Map.of("demo/Target.class", TestJars.type("demo.Target")), manifest));
+        archive.requireSupportedLayout();
+        AuditLog audit = new AuditLog(); TransformPipeline pipeline = new TransformPipeline();
+        try (var loader = loader(List.of(archive), pipeline, audit)) {
+            pipeline.seal(audit); loader.open();
+            Class<?> type = loader.loadClass("demo.Target");
+            assertSame(loader, type.getClassLoader());
+            assertFalse(type.getModule().isNamed());
         }
     }
 

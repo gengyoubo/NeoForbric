@@ -1,5 +1,5 @@
 dependencies {
-    compileOnly 'net.fabricmc:fabric-loader:0.16.10@jar'
+    compileOnly "net.fabricmc:fabric-loader:${rootProject.fabricLoaderVersion}@jar"
     compileOnly files(rootProject.layout.buildDirectory.file('minecraft-client/client-mojang.jar'))
     compileOnly fileTree(rootProject.layout.buildDirectory.dir('minecraft-client/libraries')) { include '*.jar' }
 }

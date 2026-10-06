@@ -92,7 +92,7 @@ JAR 在发现时读成内存快照，后续资源和类定义使用同一份字�
 
 资源 URL 使用 `neoforbric:` 自定义内存协议，`.class` 资源视图仍是原始字节，转换后的 SHA-256 另记在定义记录里。依赖 `jar:` URL、磁盘展开或改写资源的库尚未支持。`CodeSource` 保留原始文件位置，源字节身份以审计哈希为准。
 
-执行准入会明确拒绝 nested JAR、签名段、manifest `Class-Path`、`Automatic-Module-Name`、sealed package、multi-release JAR 和 `module-info.class`。这些功能仍待实现；拒绝行为只证明边界有效。`--inspect` 不做执行准入检查。
+执行准入会明确拒绝 nested JAR、签名段、manifest `Class-Path`、`Automatic-Module-Name`、multi-release JAR 和 `module-info.class`。manifest package sealing 在重映射时保留，并由游戏类加载器按 JVM 语义执行（sealed package 拒绝其他 archive 的类）。其余拒绝项仍待实现，拒绝行为只证明边界有效。`--inspect` 不做执行准入检查。
 
 ## 自有原型入口与元数据
 

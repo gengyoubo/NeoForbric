@@ -52,11 +52,11 @@ public final class ModCatalog implements AutoCloseable {
     public void loaded(List<Discovery.Candidate> originalMods) {
         for (var candidate : originalMods) state(candidate, LoadStatus.LOADED, "");
     }
-    public void selectFabricRuntime(List<Discovery.Candidate> candidates, List<Discovery.Candidate> selected) {
+    public void selectFabricRuntime(List<Discovery.Candidate> candidates, List<Discovery.Candidate> selected, Map<Path, String> exclusions) {
         Set<Path> paths = new HashSet<>(); selected.forEach(c -> paths.add(c.archive().path()));
         for (var candidate : candidates) {
             if (paths.contains(candidate.archive().path())) admitted.add(candidate.archive().path());
-            else state(candidate, LoadStatus.DISABLED, candidate.metadata().available("client") ? "Not selected by Fabric dependency resolution" : "Excluded on client: environment=" + candidate.metadata().environment());
+            else state(candidate, LoadStatus.DISABLED, exclusions.getOrDefault(candidate.archive().path(), "Not selected by Fabric dependency resolution"));
         }
     }
     public void failed(String reason) {

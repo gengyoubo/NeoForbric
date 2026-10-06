@@ -80,7 +80,7 @@ Mapping IO 0.6.1 合并官方 ProGuard 映射和 Fabric Tiny v2 映射，Tiny Re
 
 ## 类与库的边界
 
-父加载器持有内核、映射工具与共享 Fabric SPI；游戏、官方库和模组只由 `NeoForbric-Game` 定义。Fabric Loader 0.16.10 JAR 提供 SPI 和版本谓词实现，不启动 Knot，也不调用原生 Loader 的游戏引导。
+父加载器持有内核、映射工具与共享 Fabric SPI；游戏、官方库和模组只由 `NeoForbric-Game` 定义。Fabric Loader 0.19.5 JAR 提供 SPI 和版本谓词实现，不启动 Knot，也不调用原生 Loader 的游戏引导。
 
 已实测游戏库 Gson 2.10.1 与内核工具 Gson 2.11.0 分别属于游戏和父加载器；共享 SPI 仍保持一个定义。重复游戏 / 模组类以及未经允许的父类路径污染继续在定义前失败。
 
@@ -90,7 +90,7 @@ Mapping IO 0.6.1 合并官方 ProGuard 映射和 Fabric Tiny v2 映射，Tiny Re
 
 支持 schema 1、当前侧别、Fabric 版本谓词和字符串依赖；支持默认 Java adapter 的类入口，执行 `main` 与 `server`，不执行 `client`。原生入口实例和方法在调用前检查。
 
-`fabricloader=0.16.10` 表示此 profile 使用的 SPI / 版本实现来源，不意味着完整 Loader runtime API 已实现。非空 Mixin、Access Widener、nested jars、自定义语言 adapter，以及暂未实现的冲突 / 建议依赖字段会明确拒绝；依赖数组等未实现形式也不静默接受。Forge、NeoForge Java 入口仍待接入。
+`fabricloader=0.19.5` 取自实际依赖的 `FabricLoaderImpl.VERSION`，表示此 profile 使用的 SPI / 版本实现来源，不意味着完整 Loader runtime API 已实现。非空 Mixin、Access Widener、nested jars、自定义语言 adapter，以及暂未实现的冲突 / 建议依赖字段会明确拒绝；依赖数组等未实现形式也不静默接受。Forge、NeoForge Java 入口仍待接入。
 
 ## 已执行的验收
 

@@ -7,6 +7,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.impl.discovery.*;
 import net.fabricmc.loader.impl.metadata.*;
 import net.fabricmc.loader.api.metadata.ModMetadata;
+import net.fabricmc.loader.api.metadata.ModDependency;
 import org.neoforbric.loader.*;
 
 /** Fabric's passive resolver consumes NeoForbric's immutable inputs; it never discovers a mods directory. */
@@ -19,6 +20,7 @@ public final class FabricRuntimePlan {
     private final Map<String, Node> nestedByHash = new HashMap<>();
     private final Set<ModCandidateImpl> builtins = new HashSet<>();
     private List<ModCandidateImpl> selected;
+    private Map<Path, String> exclusions = Map.of();
     public FabricRuntimePlan(Path cache, EnvType side, AuditLog audit) { this.cache = cache; this.side = side; this.audit = audit; }
     public List<Discovery.Candidate> discover(List<Discovery.Candidate> roots) throws IOException {
         Files.createDirectories(cache);
@@ -74,10 +76,28 @@ public final class FabricRuntimePlan {
         List<ModCandidateImpl> inputs = new ArrayList<>(builtins); inputs.addAll(nodes.stream().map(Node::nativeCandidate).toList());
         try { selected = ModResolver.resolve(inputs, side, new HashMap<>()); }
         catch (ModResolutionException error) { throw new Failure("FABRIC_DEPENDENCY", "Fabric dependency resolution failed", error); }
+        Map<Path, String> reasons = new HashMap<>();
+        for (var node : nodes) {
+            if (selected.contains(node.nativeCandidate())) continue;
+            List<String> missing = node.metadata().getDependencies().stream()
+                    .filter(dependency -> dependency.getKind() == ModDependency.Kind.DEPENDS)
+                    .filter(dependency -> selected.stream().noneMatch(mod ->
+                            (mod.getId().equals(dependency.getModId()) || mod.getProvides().contains(dependency.getModId()))
+                                    && dependency.matches(mod.getVersion())))
+                    .map(dependency -> dependency.getModId() + " " + dependency.getVersionRequirements()).sorted().toList();
+            String reason = !node.source().metadata().available(side.name().toLowerCase(Locale.ROOT))
+                    ? "Excluded on " + side.name().toLowerCase(Locale.ROOT) + ": environment=" + node.source().metadata().environment()
+                    : missing.isEmpty() ? "Not selected by Fabric dependency resolution"
+                    : "Not selected by Fabric dependency resolution; required dependencies not satisfied: " + String.join(", ", missing);
+            reasons.put(node.source().archive().path(), reason);
+            audit.record("RESOLVE", "fabric-runtime-excluded", node.metadata().getId(), Map.of("reason", reason, "source", node.source().archive().path().toString()));
+        }
+        exclusions = Map.copyOf(reasons);
         audit.record("RESOLVE", "fabric-runtime-order", "plan", Map.of("ids", selected.stream().map(ModCandidateImpl::getId).toList().toString(), "owner", "NeoForbric", "nativeDiscovery", "false"));
         return selected.stream().filter(c -> !builtins.contains(c)).map(c -> nodes.stream().filter(n -> n.nativeCandidate() == c).findFirst().orElseThrow().source()).toList();
     }
     public List<Node> nodes() { return List.copyOf(nodes); }
+    public Map<Path, String> exclusions() { return exclusions; }
     public List<ModCandidateImpl> selectedNative() { return List.copyOf(selected); }
     public Node node(Discovery.Candidate candidate) { return nodes.stream().filter(n -> n.source().archive().path().equals(candidate.archive().path())).findFirst().orElseThrow(); }
 }
