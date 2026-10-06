@@ -35,7 +35,8 @@ NeoForbric 不计划简单复制这些 Patch，而是分析 Patch 的实际功�
 将必要的行为转换为统一 Hook / API，再由 NeoForbric 实现。
 
 目标结构：
-
+```
 Fabric ─────┐
 Forge ──────┼─> NeoForbric Lifecycle / Hooks ─> Common Mod
 NeoForge ───┘
+```
