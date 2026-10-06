@@ -32,3 +32,24 @@ SSC 参考包从 [作者发布的 Modrinth 版本](https://modrinth.com/mod/shap
 2026-10-06 19:02（日本时间）实际启动通过：49 项单元测试全通过；Apoli 1.10.0.30 和 SSC 完成初始化，客户端输出 `CLIENT_PROBE_OK main=1 client=1 menu=TitleScreen resourcesLoaded=true itemIdentity=true gameLoader=NeoForbric-Game`，在主菜单渲染 5 帧后正常退出，Gradle 为 `BUILD SUCCESSFUL`，审计结果为 `SUCCESS`。审计同时包含 `PowerHolderComponent` 的 `class-owner` 和 `class-defined`（loader=G），以及 `Args$1` 的生成类归属。截图位于 `run/client/screenshots/neoforbric-main-menu.png`。
 
 这次验证范围为客户端初始化与主菜单；未验证世界内变身、模型动画和完整玩法。资源加载仍报告部分 SSC geometry 版本与 GeckoLib 支持版本不一致的警告。
+
+## GeckoLib 世界渲染访问权限
+
+进入世界后的 `GeoRenderer.checkAndRefreshBuffer` 抛出 `IllegalAccessError`，因为 NF 的 `NeoGameProvider.getBuiltinTransforms` 只把 `net.minecraft.*` 识别为游戏类。`VertexMultiConsumer$Double` 和 `BufferBuilder` 属于 `com.mojang.blaze3d.*`；GeckoLib 的 AW 虽已完成 remap / 注册，定义这些类时却没有执行 `CLASS_TWEAKS`。
+
+现在游戏包范围与 [Fabric Loader 0.19.5 的 MinecraftGameProvider](https://github.com/FabricMC/fabric-loader/blob/0.19.5/minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/MinecraftGameProvider.java) 对齐，包括 `com.mojang.blaze3d.*`、`math.*`、`realmsclient.*` 等游戏包。GeckoLib 指定的内部类、`first` / `second` 字段及 `BufferBuilder.building` 在类定义前由 Fabric ClassTweaker 放宽。
+
+新增回归在独立 JVM 中使用实际 `FabricTransformer`，验证其他包的调用者能读取内部类字段，并验证未声明 AW 的类保留原有访问权限。该检查在修复前失败，修复后通过。
+
+```powershell
+./gradlew.bat :loader:test
+./gradlew.bat runClient -PsscRenderProbe
+```
+
+`sscRenderProbe` 调用真实 GeckoLib `checkAndRefreshBuffer`：先检查两个正在构建的缓冲区，然后结束构建、检查两个缓冲区被重新获取。随后创建单独的 `neoforbric-ssc-probe-<UUID>` 世界，检查第一人称渲染 100 tick、保存截图并退出。结果写入 `run/client/ssc-render-probe.txt`，截图为 `run/client/screenshots/neoforbric-ssc-world.png`。
+
+19:15 新增到用户 mods 目录的 `shape-shifter-curse-addon-8.0.0-dev.1+1.21.1.jar` 带有 Yarn `named` 的 AW（例如 `net/minecraft/item/ItemStack`），当前 PREPARE 在 `FABRIC_ACCESS_NAMESPACE` 校验时拒绝。为验证本次 GeckoLib 修复，将此前的 13 个模组 JAR 复制到 `build/ssc-compat/render-mods`，使用以下命令；新增 addon 保留在用户目录。
+
+```powershell
+./gradlew.bat runClient -PsscRenderProbe -PclientModsDir=build/ssc-compat/render-mods
+```

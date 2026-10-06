@@ -44,6 +44,12 @@ public final class ClientPreparation {
     }
     static Path artifact(Path target, JsonObject artifact) throws Exception {
         Files.createDirectories(target.getParent());
+        String cache = System.getProperty("neoforbric.minecraftCache");
+        if (!Files.exists(target) && cache != null && artifact.has("path")) {
+            Path existing = Path.of(cache).resolve("libraries").resolve(artifact.get("path").getAsString());
+            if (Files.isRegularFile(existing) && GamePreparation.hash(Files.readAllBytes(existing), "SHA-1").equals(artifact.get("sha1").getAsString()))
+                Files.copy(existing, target);
+        }
         return GamePreparation.fetch(target, artifact.get("url").getAsString(), artifact.get("sha1").getAsString(), "SHA-1");
     }
     public static void prepare(Path directory) throws Exception {
@@ -100,7 +106,8 @@ public final class ClientPreparation {
             JsonObject objects = JsonParser.parseString(Files.readString(indexFile)).getAsJsonObject().getAsJsonObject("objects");
             Set<String> hashes = new TreeSet<>(); objects.entrySet().forEach(entry -> hashes.add(entry.getValue().getAsJsonObject().get("hash").getAsString()));
             jobs.clear(); AtomicInteger downloaded = new AtomicInteger();
-            String appData = System.getenv("APPDATA"); Path existing = appData == null ? null : Path.of(appData, ".minecraft/assets/objects");
+            String appData = System.getenv("APPDATA"), minecraftCache = System.getProperty("neoforbric.minecraftCache");
+            Path existing = minecraftCache != null ? Path.of(minecraftCache).resolve("assets/objects") : appData == null ? null : Path.of(appData, ".minecraft/assets/objects");
             for (String hash : hashes) jobs.add(() -> {
                 String relative = hash.substring(0, 2) + "/" + hash; Path target = assets.resolve("objects").resolve(relative); Files.createDirectories(target.getParent());
                 if (!Files.exists(target) && existing != null && Files.isRegularFile(existing.resolve(relative))

@@ -1,5 +1,15 @@
 ext.fabricLoaderVersion = '0.19.5'
 
+tasks.register('assembleInstaller') {
+    group = 'distribution'
+    description = 'Build the standalone neoforbric-installer.jar in the project root.'
+    dependsOn ':installer:jar'
+    doLast {
+        java.nio.file.Files.copy(project(':installer').tasks.named('jar').get().archiveFile.get().asFile.toPath(),
+                layout.projectDirectory.file('neoforbric-installer.jar').asFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+    }
+}
+
 allprojects {
     group = 'org.neoforbric'
     version = '0.1.0-SNAPSHOT'
@@ -62,6 +72,8 @@ tasks.register('prepareFabricClientProbe', Sync) {
     into layout.buildDirectory.dir('minecraft-client/mods')
 }
 def clientDirectory = layout.projectDirectory.dir('run/client').asFile
+def clientModsDirectory = providers.gradleProperty('clientModsDir').isPresent()
+        ? file(providers.gradleProperty('clientModsDir').get()) : new File(clientDirectory, 'mods')
 tasks.register('prepareClientUi') {
     dependsOn ':client-ui:jar'
     def uiJar = project(':client-ui').tasks.named('jar').flatMap { it.archiveFile }
@@ -93,9 +105,9 @@ tasks.register('runClient', JavaExec) {
     maxHeapSize = '2g'
     workingDir = clientDirectory
     args '--minecraft-client', '--runtime', layout.buildDirectory.file('minecraft-client/runtime.json').get().asFile.absolutePath,
-            '--mods', new File(clientDirectory, 'mods').absolutePath, '--client-ui', layout.buildDirectory.file('minecraft-client/client-ui.jar').get().asFile.absolutePath,
-            '--verify', 'demo.clientprobe.ClientProbe', '--audit', new File(clientDirectory, 'audit.json').absolutePath
-    if (providers.gradleProperty('clientProbeFrames').isPresent()) args '--stop-after-frames', providers.gradleProperty('clientProbeFrames').get()
+            '--mods', clientModsDirectory.absolutePath, '--client-ui', layout.buildDirectory.file('minecraft-client/client-ui.jar').get().asFile.absolutePath,
+            '--verify', providers.gradleProperty('sscRenderProbe').isPresent() ? 'org.neoforbric.client.SscRenderProbe' : 'demo.clientprobe.ClientProbe', '--audit', new File(clientDirectory, 'audit.json').absolutePath
+    if (providers.gradleProperty('clientProbeFrames').isPresent() && !providers.gradleProperty('sscRenderProbe').isPresent()) args '--stop-after-frames', providers.gradleProperty('clientProbeFrames').get()
     if (providers.gradleProperty('clientModsProbe').getOrElse('false') == 'true') systemProperty 'neoforbric.probe.mods', 'true'
     if (providers.gradleProperty('fabricPlainProfile').getOrElse('false') == 'true') systemProperty 'neoforbric.fabric.plain', 'true'
     def username = providers.gradleProperty('clientUsername').getOrElse('NeoForbricDev')

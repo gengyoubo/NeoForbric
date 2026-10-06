@@ -3,3 +3,4 @@ include 'loader', 'fixtures:game', 'fixtures:mod-a', 'fixtures:mod-b', 'fixtures
 include 'probes:fabric-item'
 include 'probes:fabric-client'
 include 'client-ui'
+include 'installer'

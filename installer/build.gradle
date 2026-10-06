@@ -1,0 +1,66 @@
+import groovy.json.JsonOutput
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import java.security.MessageDigest
+
+configurations {
+    payload { canBeConsumed = false }
+    uiPayload { canBeConsumed = false }
+}
+dependencies {
+    implementation 'com.google.code.gson:gson:2.11.0'
+    payload project(':loader')
+    uiPayload project(':client-ui')
+    testImplementation platform('org.junit:junit-bom:5.12.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+def payloadResources = layout.buildDirectory.dir('generated/payload-resources')
+tasks.register('preparePayload') {
+    dependsOn configurations.payload, configurations.uiPayload
+    inputs.files configurations.payload, configurations.uiPayload
+    outputs.dir payloadResources
+    doLast {
+        def root = payloadResources.get().asFile
+        if (!root.canonicalFile.toPath().startsWith(layout.buildDirectory.get().asFile.canonicalFile.toPath()))
+            throw new GradleException('Payload output escaped the installer build directory')
+        delete(root)
+        def digest = { File file, String algorithm -> MessageDigest.getInstance(algorithm).digest(file.bytes).encodeHex().toString() }
+        def libraries = []
+        configurations.payload.resolvedConfiguration.resolvedArtifacts.sort { it.file.name }.each { artifact ->
+            def component = artifact.id.componentIdentifier
+            def group, module, version
+            if (component instanceof ModuleComponentIdentifier) {
+                group = component.group; module = component.module; version = component.version
+            } else {
+                group = 'org.neoforbric'; module = 'loader'
+                version = "${project.version}-${digest(artifact.file, 'SHA-256').take(12)}"
+            }
+            def classifier = artifact.classifier ? "-${artifact.classifier}" : ''
+            def name = "${module}-${version}${classifier}.jar"
+            def path = "${group.replace('.', '/')}/${module}/${version}/${name}"
+            def resource = "payload/libraries/${path}"
+            def target = new File(root, resource); target.parentFile.mkdirs()
+            java.nio.file.Files.copy(artifact.file.toPath(), target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            libraries.add([name: "${group}:${module}:${version}" + (artifact.classifier ? ":${artifact.classifier}" : ''),
+                    path: path, resource: resource, sha256: digest(artifact.file, 'SHA-256'), sha1: digest(artifact.file, 'SHA-1'), size: artifact.file.length()])
+        }
+        def ui = configurations.uiPayload.singleFile
+        new File(root, 'payload').mkdirs()
+        java.nio.file.Files.copy(ui.toPath(), new File(root, 'payload/client-ui.jar').toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        def catalog = [schemaVersion: 1, minecraft: '1.21.1', java: 21, fabricLoader: rootProject.fabricLoaderVersion,
+                versionId: 'NeoForbric-1.21.1', libraries: libraries,
+                ui: [resource: 'payload/client-ui.jar', sha256: digest(ui, 'SHA-256')]]
+        new File(root, 'payload/catalog.json').setText(JsonOutput.prettyPrint(JsonOutput.toJson(catalog)) + '\n', 'UTF-8')
+    }
+}
+sourceSets.main.resources.srcDir(files(payloadResources).builtBy('preparePayload'))
+tasks.named('processResources') { dependsOn 'preparePayload' }
+tasks.named('jar') {
+    archiveFileName = 'neoforbric-installer.jar'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest { attributes 'Main-Class': 'org.neoforbric.installer.Main', 'Implementation-Version': project.version }
+    from({ configurations.runtimeClasspath.collect { zipTree(it) } }) {
+        exclude 'META-INF/MANIFEST.MF', 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA', 'module-info.class', 'META-INF/versions/**/module-info.class'
+    }
+}
+tasks.named('test') { useJUnitPlatform() }

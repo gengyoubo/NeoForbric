@@ -11,6 +11,11 @@ import org.neoforbric.loader.Failure;
 
 /** Runtime information only. All native discovery, launch and classpath mutation entry points are forbidden. */
 final class NeoGameProvider implements GameProvider {
+    // Minecraft also ships game classes under Mojang packages. Match Fabric's game
+    // package scope so their access wideners run before any class is defined in G.
+    private static final List<String> GAME_PACKAGES = List.of("net.minecraft.", "com.mojang.minecraft.",
+            "com.mojang.rubydung.", "com.mojang.blaze3d.", "com.mojang.renderpearl.",
+            "com.mojang.math.", "com.mojang.realmsclient.");
     private final LaunchOptions options;
     private final Path directory;
     private final Arguments arguments = new Arguments();
@@ -26,7 +31,7 @@ final class NeoGameProvider implements GameProvider {
     @Override public String getEntrypoint() { return options.mainClass(); }
     @Override public Path getLaunchDirectory() { return directory; }
     @Override public Set<BuiltinTransform> getBuiltinTransforms(String className) {
-        if (className.startsWith("net.minecraft.")) return Set.of(BuiltinTransform.WIDEN_ALL_PACKAGE_ACCESS, BuiltinTransform.CLASS_TWEAKS);
+        if (GAME_PACKAGES.stream().anyMatch(className::startsWith)) return Set.of(BuiltinTransform.WIDEN_ALL_PACKAGE_ACCESS, BuiltinTransform.CLASS_TWEAKS);
         return Set.of(BuiltinTransform.STRIP_ENVIRONMENT);
     }
     @Override public String getRuntimeNamespace(String defaultNamespace) { return "mojang"; }
