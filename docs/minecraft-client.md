@@ -29,6 +29,8 @@ Loom `static` 模组的 Mixin 注解中已烘焙的 intermediary 选择器也转
 
 重映射的继承图先应用所有选中模组声明的 AW / classTweaker，使其与运行时可见性一致。原为 private、经 `extendable` 开放的方法能够向子类传播新名称（例如 Fusion 的 `SpriteContents.createAnimatedTexture`）；未声明开放的 private 方法保留独立关系。分析视图不会改写原始游戏 JAR，也不会提前执行入口。
 
+传统 refmap 模组中显式 `remap=false` 的 intermediary 选择器同样按运行命名空间翻译（例如 YUNG’s API 的结构池权重钩子）；默认启用 remap 的注解仍保留 refmap 查询键。资源关闭时释放经资源 URL 打开的流、JarFile 与目录扫描遗留的 JDK 缓存句柄，再关闭 ZIP 文件系统，避免 Windows 上退出后仍锁住快照 JAR。
+
 本地完整包的兼容修复备份保存在 `run/client/mod-backups`：JEI 19.51 更新到 Fabric 1.21.1 的 19.57.0.451 以满足 Polymorph 1.2.0 新 API；Beyond Adventures 三份动画的 20 个三维向量对象修正为数组；trorigins 删除一份名称无效、内容与有效文件完全相同的纹理元数据副本。修复记录包含原始与最终 SHA-256，除记录中的条目外其余 JAR 内容逐项校验不变。
 
 首次运行下载锁定的官方客户端、映射、46 个 Java 库、Windows x64 natives、资源索引及完整资源对象。后续启动复核缓存。游戏、资源与库不提交到 Git。`audit.json` 位于游戏目录。

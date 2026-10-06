@@ -7,7 +7,9 @@ public final class Main {
     private Main() {}
     public static void main(String[] args) {
         int status = execute(args);
-        if (status != 0) System.exit(status);
+        // execute completes game shutdown, domain cleanup and audit writing.
+        // Standalone launches must then exit even if mods retain worker threads.
+        System.exit(status);
     }
     public static int execute(String[] args) {
         if (args.length == 0 || args[0].equals("--help")) {

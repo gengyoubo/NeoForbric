@@ -43,6 +43,42 @@ class BootstrapIntegrationTest {
         } finally { if (process.isAlive()) process.destroyForcibly(); }
     }
 
+    public static final class RetainedWorkerProbe {
+        public static void main(String[] args) throws Exception {
+            Thread retained = new Thread(() -> {
+                try { new java.util.concurrent.CountDownLatch(1).await(); }
+                catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); }
+            }, "retained-mod-worker");
+            retained.setDaemon(false); retained.start();
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    Path report = Path.of(System.getProperty("probe.audit"));
+                    if (!JsonParser.parseString(Files.readString(report)).getAsJsonObject().get("outcome").getAsString().equals("SUCCESS"))
+                        throw new AssertionError("Process exited before successful audit");
+                    Files.writeString(Path.of(System.getProperty("probe.marker")), "audit-complete-before-exit");
+                } catch (Exception failed) { throw new AssertionError(failed); }
+            }));
+            Main.main(args);
+            throw new AssertionError("Standalone main returned with retained workers");
+        }
+    }
+
+    @Test void standaloneSuccessExitsAfterCleanupAndAuditDespiteRetainedModWorkers() throws Exception {
+        Path report = directory.resolve("retained-worker.json"), marker = directory.resolve("exit-marker.txt"), output = directory.resolve("retained-worker-output.txt");
+        Path java = Path.of(System.getProperty("java.home"), "bin", System.getProperty("os.name").startsWith("Windows") ? "java.exe" : "java");
+        String classpath = System.getProperty("loader.runtimeClasspath") + java.io.File.pathSeparator
+                + Path.of(BootstrapIntegrationTest.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+        Process process = new ProcessBuilder(java.toString(), "-Dprobe.audit=" + report, "-Dprobe.marker=" + marker, "-cp", classpath,
+                RetainedWorkerProbe.class.getName(), "--fixture", "--game", System.getProperty("fixture.game"),
+                "--mods", System.getProperty("fixture.mods"), "--main", "demo.game.GameMain", "--audit", report.toString())
+                .redirectErrorStream(true).redirectOutput(output.toFile()).start();
+        try {
+            assertTrue(process.waitFor(20, TimeUnit.SECONDS), "Successful launch stayed alive on a mod worker");
+            assertEquals(0, process.exitValue(), Files.readString(output));
+            assertEquals("audit-complete-before-exit", Files.readString(marker));
+        } finally { if (process.isAlive()) process.destroyForcibly(); }
+    }
+
     @Test void failedEntrypointStopsLaterInitializationAndMainWithFatalAudit() throws Exception {
         String marker = "neoforbric.test." + UUID.randomUUID();
         Path mods = Files.createDirectory(directory.resolve("mods"));

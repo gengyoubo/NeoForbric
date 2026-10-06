@@ -49,6 +49,15 @@ class GameResourcesTest {
             var cached = (JarURLConnection) reconstructed.openConnection();
             assertTrue(cached.getUseCaches());
             try (var stream = cached.getInputStream()) { assertEquals("original", new String(stream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)); }
+            // Mods can retain an uncached stream or JarFile until process exit;
+            // the game resource owner must release them on domain shutdown.
+            var retained = (JarURLConnection) url.openConnection(); retained.getJarFile(); retained.getInputStream();
+            assertEquals(8, url.openConnection().getContentLength());
+            // Connecting to an implicit directory opens the JAR even if reading
+            // the absent physical ZIP directory entry subsequently fails.
+            var directory = resources.resource(archive, "data/").openConnection();
+            assertThrows(java.io.FileNotFoundException.class, directory::connect);
+            assertThrows(java.io.FileNotFoundException.class, directory::getInputStream);
         }
         assertFalse(Files.exists(snapshot));
     }

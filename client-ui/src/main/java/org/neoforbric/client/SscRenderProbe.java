@@ -25,6 +25,7 @@ public final class SscRenderProbe {
         Minecraft client = (Minecraft) instance;
         ClassLoader game = client.getClass().getClassLoader();
         game.loadClass("demo.clientprobe.ClientProbe").getMethod("verifyClient", Object.class).invoke(null, client);
+        client.getWindow().setTitle("NeoForbric - Automated world verification");
         checkGeckoBuffer(game);
         started = System.nanoTime();
         Class<?> listener = game.loadClass("net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents$EndTick");

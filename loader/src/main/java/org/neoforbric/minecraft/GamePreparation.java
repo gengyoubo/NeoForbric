@@ -244,10 +244,11 @@ public final class GamePreparation {
                     }
                     Archive source = Archive.read(mod.source());
                     Map<String, byte[]> resources = fabricResources(source, mod.accessRules(), tree, remapper.getRemapper());
-                    if (staticMixins.contains(tags.get(index))) {
-                        Archive mapped = Archive.read(temporary);
-                        for (String name : mapped.names()) if (name.endsWith(".class"))
-                            resources.put(name, FabricStaticSelectors.remap(mapped.read(name), selectors));
+                    Archive mapped = Archive.read(temporary);
+                    boolean staticMixin = staticMixins.contains(tags.get(index));
+                    for (String name : mapped.names()) if (name.endsWith(".class")) {
+                        byte[] original = mapped.read(name), translated = FabricStaticSelectors.remap(original, selectors, staticMixin);
+                        if (!Arrays.equals(original, translated)) resources.put(name, translated);
                     }
                     normalize(temporary, mod.output(), resources, source.sealingManifest());
                     if ((index + 1) % 50 == 0 || index + 1 == mods.size())
