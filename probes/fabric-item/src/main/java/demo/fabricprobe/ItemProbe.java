@@ -45,4 +45,15 @@ public final class ItemProbe implements ModInitializer {
         }
         net.minecraft.server.Bootstrap.realStdoutPrintln("MINECRAFT_PROBE_OK version=1.21.1 main=1 server=1 itemIdentity=true stackIdentity=true holderIdentity=true keyIdentity=true frozen=true lateRejected=true libraryIsolation=true gameLoader=" + Item.class.getClassLoader().getName());
     }
+    public static void verifyServer(Object instance) throws Exception {
+        verify();
+        if (Boolean.getBoolean("neoforbric.probe.server.fail")) throw new IllegalStateException("intentional server tick failure");
+        net.minecraft.server.MinecraftServer server = (net.minecraft.server.MinecraftServer) instance;
+        if (Thread.currentThread() != server.getRunningThread() || server.overworld() == null || server.getTickCount() < 1)
+            throw new AssertionError("World / tick / server thread is unavailable");
+        var data = server.overworld().getDataStorage().computeIfAbsent(ProbeData.FACTORY, "neoforbric_item_probe");
+        if (data.stack.getItem() != ITEM || data.stack.getCount() != 3) throw new AssertionError("Saved ItemStack identity differs");
+        int previous = data.launches++; data.setDirty();
+        net.minecraft.server.Bootstrap.realStdoutPrintln("SERVER_PROBE_OK world=true thread=Server_thread savedStackIdentity=true previousLaunches=" + previous);
+    }
 }

@@ -67,4 +67,7 @@ public final class ClassIndex {
     public List<URL> resources(String name) {
         return archives.stream().map(a -> a.resource(name)).filter(Objects::nonNull).toList();
     }
+    public List<URL> resources(String name, GameResources resources) {
+        return archives.stream().map(a -> resources.resource(a, name)).filter(Objects::nonNull).toList();
+    }
 }

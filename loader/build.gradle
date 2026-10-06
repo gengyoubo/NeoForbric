@@ -45,10 +45,25 @@ tasks.register('minecraftTest', Test) {
     useJUnitPlatform()
     testClassesDirs = sourceSets.minecraftTest.output.classesDirs
     classpath = sourceSets.minecraftTest.runtimeClasspath
+    exclude '**/MinecraftServerRuntimeTest.class'
     dependsOn ':prepareFabricProbe'
     systemProperty 'minecraft.runtime', rootProject.layout.buildDirectory.file('minecraft/runtime.json').get().asFile.absolutePath
     systemProperty 'minecraft.mods', rootProject.layout.buildDirectory.dir('minecraft/mods').get().asFile.absolutePath
     systemProperty 'loader.runtimeClasspath', sourceSets.main.runtimeClasspath.asPath
+}
+
+tasks.register('minecraftServerTest', Test) {
+    description = 'Fork dedicated servers to verify ticks, console stop, crash handling and world save/reload.'
+    group = 'verification'
+    useJUnitPlatform()
+    testClassesDirs = sourceSets.minecraftTest.output.classesDirs
+    classpath = sourceSets.minecraftTest.runtimeClasspath
+    include '**/MinecraftServerRuntimeTest.class'
+    dependsOn ':prepareFabricProbe'
+    systemProperty 'minecraft.runtime', rootProject.layout.buildDirectory.file('minecraft/runtime.json').get().asFile.absolutePath
+    systemProperty 'minecraft.mods', rootProject.layout.buildDirectory.dir('minecraft/mods').get().asFile.absolutePath
+    systemProperty 'loader.runtimeClasspath', sourceSets.main.runtimeClasspath.asPath
+    systemProperty 'minecraft.acceptEula', providers.gradleProperty('acceptEula').getOrElse('false')
 }
 
 // IDE imports resolve auxiliary artifacts that ordinary compilation never requests.

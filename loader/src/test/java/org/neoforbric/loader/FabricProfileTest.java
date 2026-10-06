@@ -42,4 +42,12 @@ class FabricProfileTest {
         assertEquals("ARGUMENTS", assertThrows(Failure.class, () -> LaunchOptions.parse(new String[]{"--minecraft-server", "--runtime", "runtime.json", "--mods", "mods", "--", "nogui"})).code());
         assertEquals("ARGUMENTS", assertThrows(Failure.class, () -> LaunchOptions.parse(new String[]{"--minecraft-server", "--runtime", "runtime.json", "--mods", "mods", "--main", "other.Main"})).code());
     }
+    @Test void persistentServerRequiresExplicitModeAndValidProbeBounds() {
+        var options = LaunchOptions.parse(new String[]{"--minecraft-server", "--run-server", "--runtime", "runtime.json", "--mods", "mods", "--stop-after-ticks", "5"});
+        assertTrue(options.runServer()); assertEquals(5, options.stopAfterTicks()); assertEquals(List.of("nogui"), options.gameArguments());
+        assertEquals("ARGUMENTS", assertThrows(Failure.class, () -> LaunchOptions.parse(new String[]{"--minecraft-server", "--run-server", "--runtime", "runtime.json", "--mods", "mods", "--", "--initSettings"})).code());
+        for (String value : List.of("0", "20001", "invalid")) {
+            assertEquals("ARGUMENTS", assertThrows(Failure.class, () -> LaunchOptions.parse(new String[]{"--minecraft-server", "--run-server", "--runtime", "runtime.json", "--mods", "mods", "--stop-after-ticks", value})).code());
+        }
+    }
 }

@@ -48,7 +48,8 @@ NeoForge ───┘
 ```powershell
 $env:JAVA_HOME = 'C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot' # 换成自己的 JDK 21 路径
 ./gradlew.bat runFixture
+./gradlew.bat runMinecraftProbe
 ./gradlew.bat :loader:test
 ```
 
-Minecraft 与 Fabric / Forge / NeoForge 原生入口尚未接入；当前对原生模组只做元数据识别，执行时明确拒绝。详细运行方法、支持范围、测试与后续接入顺序见 [原型说明](docs/prototype.md)，前期调查见 [docs 索引](docs/README.md)。
+已接入真实 Minecraft 1.21.1 服务端 JAR、映射转换和有限的 Fabric Java 入口 profile，实测 Item / ItemStack / Holder / ResourceKey 身份与注册表冻结。目前执行 `--initSettings` 后退出，尚未启动世界、网络或客户端；Mixin / AW 与 Forge / NeoForge 原生入口仍待接入。运行与边界见 [Minecraft 实测说明](docs/minecraft-bootstrap.md)，原有夹具见 [原型说明](docs/prototype.md)，前期调查见 [docs 索引](docs/README.md)。

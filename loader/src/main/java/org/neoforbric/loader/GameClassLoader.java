@@ -12,16 +12,21 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
     private final ClassIndex index;
     private final TransformPipeline transforms;
     private final AuditLog audit;
+    private final GameResources filesystemResources;
     private final AtomicReference<Failure> poison = new AtomicReference<>();
     private final ThreadLocal<String> transforming = new ThreadLocal<>();
     private volatile boolean ready;
     private volatile boolean closed;
 
     public GameClassLoader(ClassIndex index, TransformPipeline transforms, ClassLoader parent, AuditLog audit) {
+        this(index, transforms, parent, audit, null);
+    }
+    public GameClassLoader(ClassIndex index, TransformPipeline transforms, ClassLoader parent, AuditLog audit, GameResources filesystemResources) {
         super("NeoForbric-Game", parent);
         this.index = index;
         this.transforms = transforms;
         this.audit = audit;
+        this.filesystemResources = filesystemResources;
         audit.record("PREPARE", "loader-created", "G", Map.of("definitionGate", "closed", "parent", parent.getName() == null ? "unnamed" : parent.getName()));
     }
 
@@ -89,7 +94,7 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
     @Override public URL getResource(String name) {
         if (closed) return null;
         if (sharedResource(name)) return getParent().getResource(name);
-        List<URL> resources = index.resources(name);
+        List<URL> resources = ownedResources(name);
         return resources.isEmpty() ? null : resources.getFirst();
     }
     @Override public Enumeration<URL> getResources(String name) {
@@ -98,8 +103,9 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
             try { return getParent().getResources(name); }
             catch (java.io.IOException failed) { throw new Failure("RESOURCE_IO", "Cannot enumerate " + name, failed); }
         }
-        return Collections.enumeration(index.resources(name));
+        return Collections.enumeration(ownedResources(name));
     }
+    private List<URL> ownedResources(String name) { return filesystemResources == null ? index.resources(name) : index.resources(name, filesystemResources); }
     private static boolean sharedResource(String name) {
         return name.startsWith("org/neoforbric/api/") || name.startsWith("org/objectweb/asm/") || name.startsWith("net/fabricmc/api/");
     }

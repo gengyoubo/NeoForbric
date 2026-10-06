@@ -55,6 +55,37 @@ tasks.register('runMinecraftProbe', JavaExec) {
             '--', '--initSettings'
 }
 
+def serverDirectory = layout.projectDirectory.dir('run/server').asFile
+def acceptedEula = providers.gradleProperty('acceptEula').map { it == 'true' }.orElse(false)
+tasks.register('prepareServer') {
+    dependsOn 'prepareFabricProbe'
+    doLast {
+        serverDirectory.mkdirs()
+        def eula = new File(serverDirectory, 'eula.txt')
+        if (acceptedEula.get()) eula.setText('# Accepted explicitly with -PacceptEula=true\neula=true\n', 'UTF-8')
+        else if (!eula.exists()) eula.setText('eula=false\n', 'UTF-8')
+        def properties = new File(serverDirectory, 'server.properties')
+        if (!properties.exists()) properties.setText('server-ip=127.0.0.1\nserver-port=25565\nmax-players=20\nview-distance=6\nsimulation-distance=6\n', 'UTF-8')
+    }
+}
+tasks.register('runServer', JavaExec) {
+    description = 'Run a persistent Minecraft 1.21.1 dedicated server with the Fabric item probe.'
+    group = 'application'
+    dependsOn 'prepareServer', ':loader:classes'
+    javaLauncher = project(':loader').javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+    classpath = project(':loader').sourceSets.main.runtimeClasspath
+    mainClass = 'org.neoforbric.bootstrap.Main'
+    maxHeapSize = '2g'
+    workingDir = serverDirectory
+    standardInput = System.in
+    args '--minecraft-server', '--run-server', '--runtime', layout.buildDirectory.file('minecraft/runtime.json').get().asFile.absolutePath,
+            '--mods', layout.buildDirectory.dir('minecraft/mods').get().asFile.absolutePath,
+            '--verify', 'demo.fabricprobe.ItemProbe', '--audit', new File(serverDirectory, 'audit.json').absolutePath
+    if (providers.gradleProperty('serverProbeTicks').isPresent()) args '--stop-after-ticks', providers.gradleProperty('serverProbeTicks').get()
+    args '--', 'nogui'
+    if (providers.gradleProperty('serverPort').isPresent()) args '--port', providers.gradleProperty('serverPort').get()
+}
+
 def fixtureMods = [project(':fixtures:mod-a'), project(':fixtures:mod-b'), project(':fixtures:mod-c')]
 tasks.register('prepareFixture', Sync) {
     dependsOn fixtureMods.collect { it.tasks.named('jar') }, project(':fixtures:game').tasks.named('jar')

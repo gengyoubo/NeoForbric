@@ -6,6 +6,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.neoforbric.api.ModInitializer;
 import org.neoforbric.api.GameHooks;
+import org.neoforbric.api.ServerHooks;
+import java.util.concurrent.CountDownLatch;
 import org.neoforbric.loader.*;
 import org.neoforbric.minecraft.*;
 import java.nio.file.*;
@@ -24,11 +26,20 @@ public final class Bootstrap {
         Failure failure = null;
         String outcome = "FAILED";
         List<String> initialized = new ArrayList<>();
+        CountDownLatch completed = new CountDownLatch(1);
+        Thread[] shutdownHook = {null};
         try {
-            audit.mode(options.inspect() ? "metadata-inspect" : options.minecraft() ? "minecraft-1.21.1-server-settings" : "java-fixture");
+            audit.mode(options.inspect() ? "metadata-inspect" : options.runServer() ? "minecraft-1.21.1-server" : options.minecraft() ? "minecraft-1.21.1-server-settings" : "java-fixture");
             audit.record(phase, "runtime", "JVM", Map.of("javaVersion", Runtime.version().toString(),
                     "javaVendor", System.getProperty("java.vendor"), "targetMinecraft", "1.21.1", "inspect", Boolean.toString(options.inspect())));
             if (Runtime.version().feature() != 21) throw new Failure("JAVA_VERSION", "Prototype requires Java 21, got " + Runtime.version());
+            if (options.runServer()) {
+                Properties eula = new Properties(); Path path = Path.of("eula.txt").toAbsolutePath();
+                if (Files.exists(path)) try (var stream = Files.newInputStream(path)) { eula.load(stream); }
+                if (!Boolean.parseBoolean(eula.getProperty("eula", "false").trim()))
+                    throw new Failure("EULA_REQUIRED", "Read https://aka.ms/MinecraftEULA and set eula=true in " + path + " before running a world");
+                audit.record(phase, "eula", path.toString(), Map.of("accepted", "true"));
+            }
             phase("DISCOVER");
             var candidates = Discovery.discover(options.mods(), audit);
             if (options.inspect()) {
@@ -49,6 +60,7 @@ public final class Bootstrap {
             if (runtime != null) {
                 for (Path library : runtime.libraries()) { Archive archive = Archive.read(library); inputs.add(archive); libraries.add(archive.path()); }
                 pipeline.add(new RegistryWindowHook(runtime.registryClassSha256()));
+                if (options.runServer()) pipeline.add(new ServerLifecycleHook(Archive.sha256(game.read("net/minecraft/server/MinecraftServer.class")), Archive.sha256(game.read("net/minecraft/server/Main.class"))));
             }
             List<Discovery.Candidate> preparedMods = new ArrayList<>();
             for (var mod : mods) {
@@ -66,7 +78,8 @@ public final class Bootstrap {
             preparedMods.forEach(m -> inputs.add(m.archive()));
             ClassLoader parent = Bootstrap.class.getClassLoader();
             ClassIndex index = ClassIndex.prepare(inputs, parent, audit, libraries);
-            try (GameClassLoader loader = new GameClassLoader(index, pipeline, parent, audit)) {
+            try (GameResources resources = options.minecraft() ? new GameResources(audit) : null;
+                 GameClassLoader loader = new GameClassLoader(index, pipeline, parent, audit, resources)) {
                 pipeline.seal(audit);
                 phase("SEALED");
                 loader.open();
@@ -88,7 +101,11 @@ public final class Bootstrap {
                         throw new Failure("MAIN_TYPE", options.mainClass() + " requires public static void main(String[])");
                     Method verifier = null;
                     if (options.verifier() != null) {
-                        Class<?> verifyType = Class.forName(options.verifier(), false, loader); verifier = verifyType.getMethod("verify");
+                        Class<?> verifyType = Class.forName(options.verifier(), false, loader);
+                        if (options.runServer()) {
+                            try { verifier = verifyType.getMethod("verifyServer", Object.class); }
+                            catch (NoSuchMethodException ordinaryVerifier) { verifier = verifyType.getMethod("verify"); }
+                        } else verifier = verifyType.getMethod("verify");
                         if (!Modifier.isPublic(verifyType.getModifiers()) || !Modifier.isStatic(verifier.getModifiers()) || verifier.getReturnType() != void.class)
                             throw new Failure("VERIFIER_TYPE", "Verifier requires public static void verify()");
                     }
@@ -102,8 +119,38 @@ public final class Bootstrap {
                             phase("REGISTRY_FROZEN"); audit.record(phase, "registry-window", "builtin", Map.of("state", "frozen", "freeze", "vanilla"));
                             initialize(initializers.stream().filter(i -> i.group().equals("server")).toList(), initialized);
                         })) {
-                            invokeMain(main, options); hooks.verifyComplete();
-                            if (verifier != null) {
+                            if (options.runServer()) {
+                                Method firstTickVerifier = verifier;
+                                try (ServerHooks.Session server = ServerHooks.attach(state -> {
+                                    audit.record("SERVER", "server-lifecycle", state, Map.of("thread", Thread.currentThread().getName()));
+                                    if (state.equals("first-tick")) {
+                                        try { audit.write(options.audit(), "RUNNING"); }
+                                        catch (IOException error) { throw new Failure("AUDIT_IO", "Could not write running server audit", error); }
+                                    }
+                                }, instance -> {
+                                    if (firstTickVerifier != null) {
+                                        try { firstTickVerifier.invoke(null, firstTickVerifier.getParameterCount() == 0 ? new Object[0] : new Object[]{instance}); }
+                                        catch (ReflectiveOperationException error) { throw new Failure("SERVER_VERIFY", "First tick verifier failed", error instanceof InvocationTargetException wrapper ? wrapper.getCause() : error); }
+                                        audit.record("SERVER", "verification-complete", options.verifier(), Map.of("loader", "G", "thread", Thread.currentThread().getName()));
+                                    }
+                                }, options.stopAfterTicks())) {
+                                    shutdownHook[0] = new Thread(() -> {
+                                        server.requestStop();
+                                        boolean interrupted = false;
+                                        for (;;) {
+                                            try { completed.await(); break; }
+                                            catch (InterruptedException ignored) { interrupted = true; }
+                                        }
+                                        if (interrupted) Thread.currentThread().interrupt();
+                                    }, "NeoForbric shutdown");
+                                    shutdownHook[0].setContextClassLoader(parent);
+                                    Runtime.getRuntime().addShutdownHook(shutdownHook[0]);
+                                    invokeMain(main, options); hooks.verifyComplete();
+                                    phase("SERVER_RUNNING"); server.await();
+                                    audit.record("SERVER", "server-complete", "Minecraft", Map.of("ticks", Integer.toString(server.ticks()), "loaderClosedAfterThread", "true"));
+                                }
+                            } else { invokeMain(main, options); hooks.verifyComplete(); }
+                            if (!options.runServer() && verifier != null) {
                                 phase("VERIFY"); verifier.invoke(null);
                                 audit.record(phase, "verification-complete", options.verifier(), Map.of("loader", "G"));
                             }
@@ -134,6 +181,12 @@ public final class Bootstrap {
             catch (IOException io) {
                 if (failure != null) failure.addSuppressed(io);
                 else throw new Failure("AUDIT_IO", "Could not write audit " + options.audit(), io);
+            } finally {
+                completed.countDown();
+                if (shutdownHook[0] != null) {
+                    try { Runtime.getRuntime().removeShutdownHook(shutdownHook[0]); }
+                    catch (IllegalStateException shutdownInProgress) { /* Shutdown hook waits for this final report. */ }
+                }
             }
         }
     }

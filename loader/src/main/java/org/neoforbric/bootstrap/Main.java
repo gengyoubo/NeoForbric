@@ -15,7 +15,8 @@ public final class Main {
                     + "  --fixture --game <jar> --mods <directory> --main <class> [--side server|client] [--audit <json>] [-- <args>]\n"
                     + "  --inspect --mods <directory> [--audit <json>]\n"
                     + "  --minecraft-server --runtime <runtime.json> --mods <directory> [--verify <class>] [--audit <json>] [-- --initSettings]\n"
-                    + "Minecraft 1.21.1 settings/bootstrap profile supports plain Fabric Java main/server entrypoints.");
+                    + "  --minecraft-server --run-server --runtime <runtime.json> --mods <directory> [--verify <class>] [--stop-after-ticks <1..20000>] [--audit <json>] [-- nogui <args>]\n"
+                    + "Minecraft 1.21.1 supports plain Fabric Java main/server entrypoints; persistent servers require eula=true.");
             return 0;
         }
         try {

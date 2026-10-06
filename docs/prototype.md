@@ -1,5 +1,7 @@
 # 首个可运行原型
 
+本文记录首个 Java 夹具阶段；其 `--fixture` 模式与原生模组拒绝策略仍保留。新增真实 Minecraft / 有限 Fabric Java profile 的运行、验收和限制见 [Minecraft 实测说明](minecraft-bootstrap.md)。
+
 仓库已从调查进入实现。本次交付的是 **Java 21 启动与类加载机制原型**，目标游戏版本仍为 Minecraft 1.21.1。它运行三个独立的自有样例 JAR 和一个游戏夹具 JAR；Minecraft、Fabric / Forge / NeoForge 原生入口尚未接入。
 
 ## 运行
@@ -43,7 +45,7 @@ CLI 的成功退出码为 0，启动失败为 1，参数错误为 2。启动成�
 
 ## IDE 导入与依赖校验
 
-IntelliJ IDEA 导入 Gradle 时还会解析依赖的源码与 Javadoc。它们是独立于编译 JAR 的产物，也需要登记 SHA-256；仅运行 `build` 不会覆盖这条解析路径。当前校验文件已覆盖主依赖、测试依赖及其传递依赖的 30 个 sources / Javadoc 产物。
+IntelliJ IDEA 导入 Gradle 时还会解析依赖的源码与 Javadoc。它们是独立于编译 JAR 的产物，也需要登记 SHA-256；仅运行 `build` 不会覆盖这条解析路径。当前校验文件已覆盖主依赖、测试依赖及其传递依赖的 43 个 sources / Javadoc 产物（22 个锁定依赖）。
 
 可以在保持严格校验的情况下单独验证 IDE 使用的产物：
 

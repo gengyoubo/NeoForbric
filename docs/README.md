@@ -2,7 +2,7 @@
 
 调查日期：2026-10-06（日本时间）。目标：Minecraft Java Edition **1.21.1**。
 
-根据 [项目 README](../readme.md) 调查生命周期统一、Minecraft 基础代码与映射统一、Forge / NeoForge Patch 的 Hook 化，随后补充映射与 Mixin、第三阶段的 11 个兼容领域，以及跨生态互操作 / 自主启动两个最终验证专项。调查结果来自官方文档、固定源码与版本化源码包的静态检查和映射文件核对。调查已收口，仓库现有构建脚本、Java 21 启动内核和可运行夹具，详见 [原型说明](prototype.md)；**尚未进行 Minecraft 启动或原生态模组兼容实测**。
+根据 [项目 README](../readme.md) 调查生命周期统一、Minecraft 基础代码与映射统一、Forge / NeoForge Patch 的 Hook 化，随后补充映射与 Mixin、第三阶段的 11 个兼容领域，以及跨生态互操作 / 自主启动两个最终验证专项。调查结果来自官方文档、固定源码与版本化源码包的静态检查和映射文件核对。调查已收口，仓库已有 Java 21 启动内核、夹具，以及真实 Minecraft 1.21.1 的有限 Fabric Java 入口 / 静态物品注册实测；运行边界见 [Minecraft 实测说明](minecraft-bootstrap.md)。完整原生态整合包兼容尚未验证。
 
 ## 主要结论
 
@@ -24,6 +24,7 @@
 | 文档 | 内容 |
 | --- | --- |
 | [当前原型与运行](prototype.md) | 已实现的启动 / 类加载机制、运行命令、25 项测试、准入边界与下一步 |
+| [Minecraft 启动与物品注册实测](minecraft-bootstrap.md) | 真实 1.21.1 JAR、映射、Fabric Java 入口、注册窗口、31 项测试与运行边界 |
 | [01 — 可行性与参考项目](01-feasibility.md) | README 三个方向的判断；Forbric、Connector、Architectury 的边界 |
 | [02 — 生命周期、类加载与映射](02-runtime-model.md) | 三端差异、统一模型草案、注册与网络约束 |
 | [03 — Patch 审计](03-patch-audit.md) | 全量文件计数、七个 Patch 样本、Hook 化边界 |
@@ -51,6 +52,6 @@
 
 ## 当前建议
 
-通用前期调查在 17 / 18 两篇收口。[首个原型](prototype.md) 已固定工具依赖并执行 Java 21 发现 / owner / 定义屏障与同对象夹具。接下来接自主 Minecraft main 与各生态 Java 入口，随后执行同 Item / 同 ItemStack、命令 / 权限的首批三模组互操作。继续扩大 provider、配置、存档、worldgen 和网络；只针对实际失败补局部调查。29 项研究探针的完整验收仍待执行，语言和原生启动组件也没有已验证支持声明。
+通用前期调查在 17 / 18 两篇收口。[首个原型](prototype.md) 已执行 Java 21 发现 / owner / 定义屏障与同对象夹具，[Minecraft 实测](minecraft-bootstrap.md) 已接自主 main、有限 Fabric Java 入口和原版 Item 注册。接下来闭环 Mixin / AW，再扩展 Forge / NeoForge 入口、服务端生命周期与三模组互操作；只针对实际失败补局部调查。29 项研究探针的完整验收仍待执行，语言 provider 和完整原生启动组件没有已验证支持声明。
 
 早期可用三端原生环境验证统一 API 的契约，但它们是实验对照。最终的“统一底层运行模型”仍需要 NeoForbric 自己拥有启动、类定义与调度，详见 [原型路线](04-prototype-roadmap.md)。
