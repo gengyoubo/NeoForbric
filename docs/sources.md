@@ -95,3 +95,9 @@ assert len(neo - forge) == 163
 复核映射样本的方法：按专项快照中的 URL 下载输入并核对 SHA-256；从两个 Fabric JAR 读取 `mappings/mappings.tiny`，从 MCP ZIP 读取 `config/joined.tsrg`；通过同版本原始混淆类 / 方法与完整描述符连接三份映射，Mojang ProGuard 文件用于核对可读名称。已检查三个类及 `ItemStack#getCount()I`，没有声称完成全量合成。
 
 专项快照区分发布映射 / 工具源码包的原始下载字节哈希和 GitHub 源码的 UTF-8 / LF 哈希。补充源码检查仍以相关片段为单位；没有下载游戏 JAR、运行安装器、编译夹具或测试真实 Mixin。
+
+## 6. 第三阶段：运行契约调查
+
+同日补充 [第三阶段总览与 11 个方向](06-stage3-investigation.md)，使用此前固定的上游 SHA，并补查 ModLauncher、FML、AT、Coremods、Bus、AW 和 MixinExtras 的版本化源码。详细引用与复现方法在 [第三阶段来源索引](stage3-sources.md)，哈希、声明版本差异、取样范围和待执行探针在 [stage3-snapshot.json](stage3-snapshot.json)。
+
+Forge 四个精确版本源码包下载返回 HTTP 403，采用对应版本系列的固定 Git 提交作为机制证据，未证明二进制一致性。NeoForge 构建属性与 FML POM 的 Bus / Coremods 等版本有差异，补查了两种声明输入，但未运行完整依赖解析。第三阶段同样没有游戏、转换器、存档或连接实测；所有新探针均为待执行。

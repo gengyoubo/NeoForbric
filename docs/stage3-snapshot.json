@@ -1,0 +1,2676 @@
+{
+  "schema_version": 1,
+  "investigation_date": "2026-10-06",
+  "timezone": "Asia/Tokyo",
+  "target_minecraft": "1.21.1",
+  "method": "pinned Git source excerpts, versioned source artifacts and official documentation",
+  "is_build_dependency_lock": false,
+  "scope": {
+    "minecraft_started": false,
+    "mod_jar_transformed": false,
+    "native_client_connection_tested": false,
+    "storage_roundtrip_tested": false,
+    "native_dependency_graph_resolved": false,
+    "all_source_files_fully_audited": false,
+    "probe_count": 70,
+    "probes_run": 0
+  },
+  "repositories": [
+    {
+      "repo": "MinecraftForge/MinecraftForge",
+      "sha": "a11d1936c53f1f93787f239ff42cb8e93a1d037a",
+      "id": "forge"
+    },
+    {
+      "repo": "neoforged/NeoForge",
+      "sha": "a2d6402a3c1eec093aef7e7d10ac5145906c199e",
+      "id": "neo"
+    },
+    {
+      "repo": "FabricMC/fabric",
+      "sha": "83c07162d88a703d15c8dae50cbbc12f4e9e63c3",
+      "id": "fabric"
+    },
+    {
+      "repo": "FabricMC/fabric-loader",
+      "sha": "fda9a7b84f0898f57b46fbbfda58795e7fa31cef",
+      "id": "loader"
+    },
+    {
+      "repo": "SpongePowered/Mixin",
+      "sha": "4053421aa10aaac6127d969028a29c94fe3054f6",
+      "id": "mixin"
+    },
+    {
+      "repo": "MinecraftForge/ModLauncher",
+      "sha": "ffce32c1bfa79f443baba9ee58030c2aea5c26b0",
+      "ref": "10.2",
+      "role": "version-family source; binary equivalence unverified",
+      "id": "forge_ml_series"
+    },
+    {
+      "repo": "MinecraftForge/AccessTransformers",
+      "sha": "c89aba52660fb341e7e4ba663ff78df240611f0c",
+      "ref": "8.2",
+      "role": "version-family source; binary equivalence unverified",
+      "id": "forge_at_series"
+    },
+    {
+      "repo": "MinecraftForge/CoreMods",
+      "sha": "e7503dd0cdd2607a2244ece31174d5c8e01bf306",
+      "ref": "5.2",
+      "role": "version-family source; binary equivalence unverified",
+      "id": "forge_core_series"
+    },
+    {
+      "repo": "MinecraftForge/EventBus",
+      "sha": "d125933aa2577e194e5b9d8c305b445ace07baf9",
+      "ref": "6.2",
+      "role": "version-family source; binary equivalence unverified",
+      "id": "forge_bus_series"
+    }
+  ],
+  "source_samples": [
+    {
+      "repository_id": "forge",
+      "path": "build.gradle",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/build.gradle",
+      "sha256_utf8_lf": "c42437faaecf7828d9a0809f43bd1ad5d4df60ad52d2e1c5bb3f294967803e78",
+      "lines": 55,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "build_forge.gradle",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/build_forge.gradle",
+      "sha256_utf8_lf": "5caafbbbd33177869514cd4fe89ac62874ee334ae9eb4a89cfae8eaaa7197da0",
+      "lines": 1073,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "fmlloader/src/main/java/net/minecraftforge/fml/loading/FMLLoader.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlloader/src/main/java/net/minecraftforge/fml/loading/FMLLoader.java",
+      "sha256_utf8_lf": "d8f639007faede9998ec56c7319b0132b8eb2f23ecd3ded4b9bb968a6128ca19",
+      "lines": 244,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "fmlloader/src/main/java/net/minecraftforge/fml/loading/ModSorter.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlloader/src/main/java/net/minecraftforge/fml/loading/ModSorter.java",
+      "sha256_utf8_lf": "b331c22244961e7043780c2114df2a38f276ff8689bf680638b53461bcf1de94",
+      "lines": 254,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "fmlloader/src/main/java/net/minecraftforge/fml/loading/moddiscovery/JarInJarDependencyLocator.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlloader/src/main/java/net/minecraftforge/fml/loading/moddiscovery/JarInJarDependencyLocator.java",
+      "sha256_utf8_lf": "6c78491b9b45f8df250866c2b3bf8a93398ab92e2d124cad7ffb3bb5b3b6f7c8",
+      "lines": 173,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "fmlloader/src/main/java/net/minecraftforge/fml/loading/moddiscovery/ModFileParser.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlloader/src/main/java/net/minecraftforge/fml/loading/moddiscovery/ModFileParser.java",
+      "sha256_utf8_lf": "6ea04d9eb28b45fbb1cc7689929a18b8bb246d6c3a759bd8412b3a2e77777c00",
+      "lines": 78,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "fmlloader/src/main/java/net/minecraftforge/fml/loading/moddiscovery/ModInfo.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlloader/src/main/java/net/minecraftforge/fml/loading/moddiscovery/ModInfo.java",
+      "sha256_utf8_lf": "cc95efa34f5b3226cbeff041f3ff57ff9373ef755ce360c8f9fa46ad7d404efd",
+      "lines": 251,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/common/capabilities/CapabilityDispatcher.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/common/capabilities/CapabilityDispatcher.java",
+      "sha256_utf8_lf": "93a03d0b3f29c58d9a292b5b3be929b9c6eb2f101c020a9de8ebc05f9633e8cd",
+      "lines": 119,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/common/capabilities/CapabilityProvider.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/common/capabilities/CapabilityProvider.java",
+      "sha256_utf8_lf": "6c681bce1c56176d18d600542dedf67b1917081fdc4e5b2538d8d31dd37a1331",
+      "lines": 180,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/network/ChannelBuilder.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/network/ChannelBuilder.java",
+      "sha256_utf8_lf": "db64891359475f1bdffdb4288857fd8fb128b6b91d276d0cfa8300ab79edb514",
+      "lines": 232,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/network/NetworkInitialization.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/network/NetworkInitialization.java",
+      "sha256_utf8_lf": "5bd4518176b76c58b8487961bb321642be23245bf5a1244a6ab6e3df94904f39",
+      "lines": 83,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/network/NetworkRegistry.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/network/NetworkRegistry.java",
+      "sha256_utf8_lf": "901e202c1ed7a20bfb5f3a6b1ae4ff6d6a20a6f35771cf626a263bfb7a2161b0",
+      "lines": 224,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/registries/DataPackRegistryEvent.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/registries/DataPackRegistryEvent.java",
+      "sha256_utf8_lf": "53b19b26e999970ce74d239b9140382d035ba177694b99beb24dad9702d2d994",
+      "lines": 94,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/registries/DeferredRegister.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/registries/DeferredRegister.java",
+      "sha256_utf8_lf": "acd85ee15f668b79e3db257b789f4397fe0823ef6e2a4226e13d702e24c6f5a3",
+      "lines": 400,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/registries/GameData.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/registries/GameData.java",
+      "sha256_utf8_lf": "5bb31a70a8ee3f5b9b83652526611ee0c835d3cd8f38b37b59552f47313c1e83",
+      "lines": 779,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/registries/RegisterEvent.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/registries/RegisterEvent.java",
+      "sha256_utf8_lf": "a4db4036cc980b18cc4b93c0b2e4b905313a21254eb292c5e07da387ce5b0c48",
+      "lines": 150,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/registries/RegistryManager.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/registries/RegistryManager.java",
+      "sha256_utf8_lf": "de47061757b8320f827c9550ddf604fe6ed27111320aa28456a80af2e055ab23",
+      "lines": 172,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "build.gradle",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/build.gradle",
+      "sha256_utf8_lf": "416b3c1d1acaf8d62d0a1e77decc883bfb0880423fe3d0a6bf11d79269361128",
+      "lines": 162,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/attachment/AttachmentHolder.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/attachment/AttachmentHolder.java",
+      "sha256_utf8_lf": "8a39c4a4cd669c60fc1a4666a4d4a4728af8724ad7aae48e1bafacb66bef1abe",
+      "lines": 200,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/attachment/AttachmentInternals.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/attachment/AttachmentInternals.java",
+      "sha256_utf8_lf": "e898130118ed9d2a150c79220d497a9be5cae927a1b59d79f7ffa5c2151e0bda",
+      "lines": 67,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/attachment/AttachmentSync.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/attachment/AttachmentSync.java",
+      "sha256_utf8_lf": "db1c64f6fd884d05c8599d8035f41851190b9e4f8b1c88f41e09f9733d10d569",
+      "lines": 267,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/attachment/AttachmentType.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/attachment/AttachmentType.java",
+      "sha256_utf8_lf": "6523656f878551c36b54297df3e7e5f0da7d111920f983b0c4c3079313de4984",
+      "lines": 298,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/capabilities/BlockCapabilityCache.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/capabilities/BlockCapabilityCache.java",
+      "sha256_utf8_lf": "58571ebdbf5f11fff15c5361a1573f0e5cc7feff2fa4a9a389796010a6eda482",
+      "lines": 154,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/capabilities/CapabilityHooks.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/capabilities/CapabilityHooks.java",
+      "sha256_utf8_lf": "1ff33f165335fb9679295297a038bf67364f59d92df6b0d50edf79f0f50acdb1",
+      "lines": 177,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/internal/CommonModLoader.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/internal/CommonModLoader.java",
+      "sha256_utf8_lf": "913e2309fb9fc404cc32fbb2249bdb88d150a9c1aca7d5c50a6cde8e67a34db0",
+      "lines": 88,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/network/registration/NetworkRegistry.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/network/registration/NetworkRegistry.java",
+      "sha256_utf8_lf": "9bd813102262dfad3efa26436f200d34c824d0eb14f6321dec798ad2f0b35e29",
+      "lines": 841,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/network/registration/PayloadRegistrar.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/network/registration/PayloadRegistrar.java",
+      "sha256_utf8_lf": "13cb3618443703abdc3d4daf63a174ea599ee125ef2ee3fdeade636ff1fdab84",
+      "lines": 171,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/registries/DataPackRegistryEvent.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/registries/DataPackRegistryEvent.java",
+      "sha256_utf8_lf": "a6af30f0d49f295b925a4b30f110533261e1c07fd16c973fad7ba0e4d3f41e6b",
+      "lines": 109,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/registries/DeferredHolder.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/registries/DeferredHolder.java",
+      "sha256_utf8_lf": "fcf213851ff116181dae65facee465f922db6804d843635741b5c5fb3149559c",
+      "lines": 305,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/registries/DeferredRegister.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/registries/DeferredRegister.java",
+      "sha256_utf8_lf": "725f5b09cd0b356c8371358a78d0ed2457cb2f14a0586d7179bf42ab02dd6163",
+      "lines": 690,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/registries/RegisterEvent.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/registries/RegisterEvent.java",
+      "sha256_utf8_lf": "1bfad86e21a378b2bd46e8b9691b23fb38aa6912f577e5706946ab943541b0b1",
+      "lines": 111,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/registries/RegistryManager.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/registries/RegistryManager.java",
+      "sha256_utf8_lf": "b0052fa5f541d03f82b62127c6fae5123799c3d1fee5615ec4d7205313232653",
+      "lines": 276,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/resources/META-INF/injected-interfaces.json",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/resources/META-INF/injected-interfaces.json",
+      "sha256_utf8_lf": "79eba04a4d9edc9afdae0f7dc939334cc3a69193615ceda49c1dc6f03b5ffd23",
+      "lines": 274,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "build.gradle",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/build.gradle",
+      "sha256_utf8_lf": "07255ee8aadfff68291bd161cb12d19805ae7489c2185129144299c3a906ec18",
+      "lines": 812,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-api-base/src/main/java/net/fabricmc/fabric/api/event/EventFactory.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-api-base/src/main/java/net/fabricmc/fabric/api/event/EventFactory.java",
+      "sha256_utf8_lf": "bd9ae661beb0ff5f4b8ee285ae353d3776e47bafa835b88f3d16aead1923a989",
+      "lines": 139,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-api-base/src/main/java/net/fabricmc/fabric/impl/base/event/ArrayBackedEvent.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-api-base/src/main/java/net/fabricmc/fabric/impl/base/event/ArrayBackedEvent.java",
+      "sha256_utf8_lf": "f800c508638998b1261ff90c58bad379ff84876b11dce4936cc1ddea975f8bf3",
+      "lines": 126,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/api/attachment/v1/AttachmentRegistry.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/api/attachment/v1/AttachmentRegistry.java",
+      "sha256_utf8_lf": "de1c074048f6665067415fc755468fc19c3069c151e419da27bf2a258f2316dd",
+      "lines": 170,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/api/attachment/v1/AttachmentTarget.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/api/attachment/v1/AttachmentTarget.java",
+      "sha256_utf8_lf": "7e2a4530e553b310f6e475c988ea4d9837146eed5bdf2243483798bea246c256",
+      "lines": 236,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/impl/attachment/AttachmentRegistryImpl.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/impl/attachment/AttachmentRegistryImpl.java",
+      "sha256_utf8_lf": "8f21c4e2c7aa5ff6ac0868fd3837c883bacc6db0e8a4afa1503b07ac08cd5245",
+      "lines": 145,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/impl/attachment/AttachmentSerializingImpl.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/impl/attachment/AttachmentSerializingImpl.java",
+      "sha256_utf8_lf": "ab9dcce2be3e719398bfd45fa4f4ea0fe762edaf714c71f1c257fc9cd0d6ee38",
+      "lines": 118,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/impl/attachment/sync/AttachmentSync.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/impl/attachment/sync/AttachmentSync.java",
+      "sha256_utf8_lf": "7cdb33e92122695f1cb4aa91db52fe2bcfb90c90920dcf5dcd98b2e1a6559e59",
+      "lines": 148,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/mixin/attachment/AttachmentTargetsMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/mixin/attachment/AttachmentTargetsMixin.java",
+      "sha256_utf8_lf": "e9812cf666b9eb087b9b69df3beea1f070732e3ab79b396edf657a9da2c6e238",
+      "lines": 155,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-data-generation-api-v1/src/main/java/net/fabricmc/fabric/api/datagen/v1/DataGeneratorEntrypoint.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-generation-api-v1/src/main/java/net/fabricmc/fabric/api/datagen/v1/DataGeneratorEntrypoint.java",
+      "sha256_utf8_lf": "1401de57b2566c69cd5aed8e0d3ae44a7bdbdaf6e4a99c56f81ab3dcff812138",
+      "lines": 70,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-model-loading-api-v1/src/client/java/net/fabricmc/fabric/api/client/model/loading/v1/ModelLoadingPlugin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-model-loading-api-v1/src/client/java/net/fabricmc/fabric/api/client/model/loading/v1/ModelLoadingPlugin.java",
+      "sha256_utf8_lf": "a2d2c0845ce17676d120aa62ce6c8bb5e2c20575745f7860770f92ef176051fa",
+      "lines": 98,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/api/networking/v1/PayloadTypeRegistry.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/api/networking/v1/PayloadTypeRegistry.java",
+      "sha256_utf8_lf": "1f5ee004e8933bbd1bff60313196360d43e94f7e3326ec333de4dc0cdcf34130",
+      "lines": 73,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/mixin/networking/ServerConfigurationNetworkHandlerMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/mixin/networking/ServerConfigurationNetworkHandlerMixin.java",
+      "sha256_utf8_lf": "8976a30455bd37c20ec4caed992657a22d5d475f0a5f06d67d419e5b714d13d4",
+      "lines": 166,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/mixin/networking/ServerLoginNetworkHandlerMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/mixin/networking/ServerLoginNetworkHandlerMixin.java",
+      "sha256_utf8_lf": "3af1840cd28afdd219408f749c9641a787265c88b810fe61761fcf434107e45e",
+      "lines": 90,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/api/event/registry/DynamicRegistries.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/api/event/registry/DynamicRegistries.java",
+      "sha256_utf8_lf": "309231d9b167b6cfbf3a0c50db6f078ed9e91329147b957d5811b76a8ae1cbd4",
+      "lines": 158,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/impl/registry/sync/DynamicRegistriesImpl.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/impl/registry/sync/DynamicRegistriesImpl.java",
+      "sha256_utf8_lf": "1824bd343afd92fe3ff645e972a94d545d3cf9d0f1815898ef8b51be964f88c6",
+      "lines": 91,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/impl/registry/sync/RegistrySyncManager.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/impl/registry/sync/RegistrySyncManager.java",
+      "sha256_utf8_lf": "934e54308f8776c140e1180e3af2e494e18e8b0b3b1672f34c50c8d1977a56d1",
+      "lines": 375,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-rendering-v1/src/client/java/net/fabricmc/fabric/api/client/rendering/v1/WorldRenderEvents.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-rendering-v1/src/client/java/net/fabricmc/fabric/api/client/rendering/v1/WorldRenderEvents.java",
+      "sha256_utf8_lf": "c3e714667c4f56f3bf7c4372a28c05c5f307bc55309e34c701b7d70bcec0d863",
+      "lines": 315,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-resource-loader-v0/src/main/java/net/fabricmc/fabric/impl/resource/loader/ResourceManagerHelperImpl.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-resource-loader-v0/src/main/java/net/fabricmc/fabric/impl/resource/loader/ResourceManagerHelperImpl.java",
+      "sha256_utf8_lf": "7265e5d523fe3221627680562f73603ece855b07d2c159e9368acac3449533f8",
+      "lines": 311,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-resource-loader-v0/src/main/java/net/fabricmc/fabric/mixin/resource/loader/ServerConfigurationNetworkHandlerMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-resource-loader-v0/src/main/java/net/fabricmc/fabric/mixin/resource/loader/ServerConfigurationNetworkHandlerMixin.java",
+      "sha256_utf8_lf": "20f61e0ed24aa5d7bfbe03d668f1911818bda14cf3a850237640e7c6504c8af2",
+      "lines": 49,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "loader",
+      "path": "build.gradle",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/build.gradle",
+      "sha256_utf8_lf": "516bbc411c1142020e72313450416fcdc72f024bc77450957216bce646aea3e1",
+      "lines": 452,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "loader",
+      "path": "minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/Hooks.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/Hooks.java",
+      "sha256_utf8_lf": "df597ba3cb1360526976cd77e9d0ce3d51de72d531de2c1324c3339be02d4d0c",
+      "lines": 70,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/discovery/ModDiscoverer.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/discovery/ModDiscoverer.java",
+      "sha256_utf8_lf": "f7b5cfa9577675e799e00df3f0725d0a906c1dac4bb54b04f54f5093cf54c24c",
+      "lines": 602,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/discovery/ModResolver.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/discovery/ModResolver.java",
+      "sha256_utf8_lf": "8a2b1aa407563b629d15a7a48b3abf0f42c6f7bb5380cf984bdada40406b0941",
+      "lines": 221,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/launch/knot/KnotClassDelegate.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/launch/knot/KnotClassDelegate.java",
+      "sha256_utf8_lf": "4a3a5985e34fbbaf7d53f44dfc3952de90fd76ae223236c3d340234653667f01",
+      "lines": 543,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/metadata/V1ModMetadataParser.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/metadata/V1ModMetadataParser.java",
+      "sha256_utf8_lf": "e9d722aa75d939b7dcecbc22164a81e4adfa280032980cf1a5605d24a3ba1fc8",
+      "lines": 667,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/transformer/FabricTransformer.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/transformer/FabricTransformer.java",
+      "sha256_utf8_lf": "25014f0c41310a2596e750cee2dbd2a801ae7c5b8740d0eb77efe124c6ba6490",
+      "lines": 75,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/core/MappedRegistry.java.patch",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/core/MappedRegistry.java.patch",
+      "sha256_utf8_lf": "55b703d01078e37da7d5077a6e878cd618c8ab46d6607fea0b046da700c90572",
+      "lines": 200,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/core/registries/BuiltInRegistries.java.patch",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/core/registries/BuiltInRegistries.java.patch",
+      "sha256_utf8_lf": "b48a00ddd36b94ec317f57afa135a1adae846c3183ec1ad118470f9dc50e0db0",
+      "lines": 13,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/world/entity/Entity.java.patch",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/world/entity/Entity.java.patch",
+      "sha256_utf8_lf": "6390380526748cd991cdece8535909292bf212e73ba4544478c4239b80a81288",
+      "lines": 588,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/world/item/ItemStack.java.patch",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/world/item/ItemStack.java.patch",
+      "sha256_utf8_lf": "c669d86ee854e43e57fe3110297135ca4786dc60d2c82387b684c60b8bef2f7a",
+      "lines": 255,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java.patch",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java.patch",
+      "sha256_utf8_lf": "9698769f95d242d9cfcd2ec392fa13da5ea92981821b346ec4d8a233fab65263",
+      "lines": 85,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/core/MappedRegistry.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/core/MappedRegistry.java.patch",
+      "sha256_utf8_lf": "41b7d66d8689693b49e2dca6a630babd2b0b310458be6a6475bce44ce5fdc2ee",
+      "lines": 62,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/core/registries/BuiltInRegistries.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/core/registries/BuiltInRegistries.java.patch",
+      "sha256_utf8_lf": "1e71d4900437d6a3e9b33d8d01e5c526e6d38d68e41c98db06cbb1646e8e45bd",
+      "lines": 22,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/resources/RegistryDataLoader.java.patch",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/resources/RegistryDataLoader.java.patch",
+      "sha256_utf8_lf": "c673ba1510429c9e79dd90a9ad6948ff2f14bc4defb422d4bc1eadd6471a4190",
+      "lines": 71,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/server/level/ServerPlayer.java.patch",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/server/level/ServerPlayer.java.patch",
+      "sha256_utf8_lf": "4d35d50b12daac0b3d75a1b6e5740cc59abba97493d8a5afd08b87a6f59d9aa1",
+      "lines": 343,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "projects/neoforge/build.gradle",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/projects/neoforge/build.gradle",
+      "sha256_utf8_lf": "f92f6871d18dba8aa6ce03ec773d56870ae3fee3d6bb7f90ac159df13d21ea63",
+      "lines": 397,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/client/event/EntityRenderersEvent.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/client/event/EntityRenderersEvent.java",
+      "sha256_utf8_lf": "a81aa6d91b6cde4dc0969b3d0a74fa8cfb29bdf8390f538ea8ce1d4ccbdd31f5",
+      "lines": 237,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/client/event/ModelEvent.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/client/event/ModelEvent.java",
+      "sha256_utf8_lf": "fc2f78080da4d82d1ae906b3e450869e377e9eb53127a540459272347186d318",
+      "lines": 186,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/client/event/RenderLevelStageEvent.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/client/event/RenderLevelStageEvent.java",
+      "sha256_utf8_lf": "77d49b2bd5c62ae8c5a3a350e06c6ee7808ec63f188e54a5bf1ac6cfcc655946",
+      "lines": 239,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/common/extensions/IEntityExtension.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/common/extensions/IEntityExtension.java",
+      "sha256_utf8_lf": "3bd43e7effddda10ce86ff09d2c9b10a47233679a07d0543cca6876390ecd079",
+      "lines": 414,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/common/extensions/IItemStackExtension.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/common/extensions/IItemStackExtension.java",
+      "sha256_utf8_lf": "a10a653804d14f37b42c95fdcfb28d43c75d75fc8e5283e852387847908bc7ec",
+      "lines": 526,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/data/event/GatherDataEvent.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/data/event/GatherDataEvent.java",
+      "sha256_utf8_lf": "97536c84a0db90c209bb20b00ad7f47abc4555c1ac7bccf297a52a90b81b18b1",
+      "lines": 299,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/event/AddReloadListenerEvent.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/event/AddReloadListenerEvent.java",
+      "sha256_utf8_lf": "b310ab89f217ca9070b0006da7b9cfbd482d8e8c32c226e8459380a265d1d03a",
+      "lines": 100,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "fmlcore/src/main/java/net/minecraftforge/fml/DeferredWorkQueue.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlcore/src/main/java/net/minecraftforge/fml/DeferredWorkQueue.java",
+      "sha256_utf8_lf": "57d45d5ca2cff489b11ed0792de06b3e531f08cd59697ec992440eb22d943812",
+      "lines": 128,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "fmlloader/src/main/java/net/minecraftforge/fml/loading/FMLServiceProvider.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlloader/src/main/java/net/minecraftforge/fml/loading/FMLServiceProvider.java",
+      "sha256_utf8_lf": "4ef927766dbdade3cf850dca3e35771a0d1fb138cd648178a6c93c4206b17cb0",
+      "lines": 76,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "fmlloader/src/main/java/net/minecraftforge/fml/loading/moddiscovery/CoreModFile.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlloader/src/main/java/net/minecraftforge/fml/loading/moddiscovery/CoreModFile.java",
+      "sha256_utf8_lf": "50199c96f127c0b946639dde73f2886e76271a4de7076f1206c338804f624cd0",
+      "lines": 53,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "fmlloader/src/main/java/net/minecraftforge/fml/loading/moddiscovery/ModFile.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlloader/src/main/java/net/minecraftforge/fml/loading/moddiscovery/ModFile.java",
+      "sha256_utf8_lf": "d9f1fc906c89ef1bce0a65014c18e8f0cd3affbcd550b8e99c7bf50a069c0a48",
+      "lines": 246,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/client/player/AbstractClientPlayer.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/client/player/AbstractClientPlayer.java.patch",
+      "sha256_utf8_lf": "53f08af45274e3282b7c3905e66b911d3a00223b660c61a33eca0dd58cee2caf",
+      "lines": 10,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/client/player/LocalPlayer.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/client/player/LocalPlayer.java.patch",
+      "sha256_utf8_lf": "3d7bbf207b5794500320eb1280575acbb480ff7727fddc0b751f2966ab374f1b",
+      "lines": 112,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/client/player/RemotePlayer.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/client/player/RemotePlayer.java.patch",
+      "sha256_utf8_lf": "4348533fcf913ea82c2eba42c7371203480ef1e7c95196e46cafb5a4e3d411ee",
+      "lines": 10,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/server/level/ServerEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/server/level/ServerEntity.java.patch",
+      "sha256_utf8_lf": "e7d2fa1e56ef4825d684ad843578df0b89581064503ecfca95a4ef403d504e74",
+      "lines": 18,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/server/level/ServerPlayer.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/server/level/ServerPlayer.java.patch",
+      "sha256_utf8_lf": "eba2dfb2be4b3ea59632b171eaa2d2dc889e0a0acae6a82f0f548d830c05bafc",
+      "lines": 245,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/entity/Entity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/entity/Entity.java.patch",
+      "sha256_utf8_lf": "868c7afdbf4e7d1928bd3eb9463a15a3bec959c87edf3d7209c4bae424f6ec6f",
+      "lines": 579,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/entity/LivingEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/entity/LivingEntity.java.patch",
+      "sha256_utf8_lf": "d8356959151ffdbd9da021a20cb2b35cd35d1006b5cc35f69b85261cc2f8a5d4",
+      "lines": 683,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/entity/decoration/HangingEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/entity/decoration/HangingEntity.java.patch",
+      "sha256_utf8_lf": "15d0ef5c92153f45227ce1ab62947213bade8636af67af3895c6dff3f394c2ce",
+      "lines": 11,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/entity/item/FallingBlockEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/entity/item/FallingBlockEntity.java.patch",
+      "sha256_utf8_lf": "d5c87e069a56d09b6d9633ea7b4f7620440c599f65f947bc65c2bfdbfee733ff",
+      "lines": 20,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/entity/item/ItemEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/entity/item/ItemEntity.java.patch",
+      "sha256_utf8_lf": "d3b318c3505b9e3facf35e500ff49e935ded9419ac01f57e1624a3cdd631bcbc",
+      "lines": 132,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/entity/player/Player.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/entity/player/Player.java.patch",
+      "sha256_utf8_lf": "c434e88ef1aaa235d2efcdc07f9f3b4d59cffce68da243944c66dbd960c95d5f",
+      "lines": 447,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/entity/projectile/FireworkRocketEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/entity/projectile/FireworkRocketEntity.java.patch",
+      "sha256_utf8_lf": "785453931e241c55158d910e681c8c783aa104b6dbc30bb8728ac696255c68f6",
+      "lines": 16,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/entity/vehicle/ContainerEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/entity/vehicle/ContainerEntity.java.patch",
+      "sha256_utf8_lf": "7e2b7f539ba4e06d7d66c7ebdb4df6db565a44d91affd2652dcfdc2e3e6a5b48",
+      "lines": 12,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/item/ItemStack.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/item/ItemStack.java.patch",
+      "sha256_utf8_lf": "903a9d51601bd6262c0650e52817d20de57a01b5d9c945b62510da803155bb5d",
+      "lines": 111,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java.patch",
+      "sha256_utf8_lf": "8cf3fd00830948e849ad3ae3c3da7c5eebbcbb67e52c0ae931b588f0e6440b01",
+      "lines": 193,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/level/block/entity/BaseContainerBlockEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/level/block/entity/BaseContainerBlockEntity.java.patch",
+      "sha256_utf8_lf": "2e13d33434b773a5ef15a00be5fe78df1aa5abf2faf580eeaa956305e7bf2c02",
+      "lines": 30,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/level/block/entity/BeaconBlockEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/level/block/entity/BeaconBlockEntity.java.patch",
+      "sha256_utf8_lf": "1e0533c63ab17903e5b37afae4900ea18c951f195bde6813b27485dd216b9ea5",
+      "lines": 13,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/level/block/entity/BlockEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/level/block/entity/BlockEntity.java.patch",
+      "sha256_utf8_lf": "454ca0eb4a2826042439f5a37cae270cb8ae6c91a80748fe8be510245357aa8e",
+      "lines": 63,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java.patch",
+      "sha256_utf8_lf": "6b5e6e5e9de9046fd1e8ecf68df5ff6ecdc54c670263c9e7b2ad6449fd3a2e03",
+      "lines": 69,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/level/block/entity/ChestBlockEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/level/block/entity/ChestBlockEntity.java.patch",
+      "sha256_utf8_lf": "d9f53fe128ffd64b28373fb5e85d59305841c256a6a3b3d6538ffbc56806b729",
+      "lines": 46,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/level/block/entity/ChiseledBookShelfBlockEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/level/block/entity/ChiseledBookShelfBlockEntity.java.patch",
+      "sha256_utf8_lf": "989638d401d06b77835bc5a064b0f88c92e0955d269e816e478bbb1900544649",
+      "lines": 31,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/level/block/entity/ConduitBlockEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/level/block/entity/ConduitBlockEntity.java.patch",
+      "sha256_utf8_lf": "de5c59b841d2471c7c8f9e8c1e66a21eb2b0dbf659a6d07a31c3a3c7098e6afd",
+      "lines": 13,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/level/block/entity/HangingSignBlockEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/level/block/entity/HangingSignBlockEntity.java.patch",
+      "sha256_utf8_lf": "2ad133d9e8c18f4df4094d152c2a915dc1d7c0faf214bfd72f81191785ccd586",
+      "lines": 13,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/level/block/entity/HopperBlockEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/level/block/entity/HopperBlockEntity.java.patch",
+      "sha256_utf8_lf": "6cd1a09f4ef30c76d45b2f08d886040815563124537d67d6aa99cb33df823832",
+      "lines": 34,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/level/block/entity/ShulkerBoxBlockEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/level/block/entity/ShulkerBoxBlockEntity.java.patch",
+      "sha256_utf8_lf": "d88fbcb8354390d519e32cc0a5ddaca4eb2c80515b14dd4a598d47aefd911ce0",
+      "lines": 23,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/level/block/entity/SignBlockEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/level/block/entity/SignBlockEntity.java.patch",
+      "sha256_utf8_lf": "f010482842d1186824ef4df0112b04b0167f5b7f0863b5a7a977b6eda4058e02",
+      "lines": 14,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/level/block/entity/SpawnerBlockEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/level/block/entity/SpawnerBlockEntity.java.patch",
+      "sha256_utf8_lf": "918100e2b6e147d615f7beaec4b378cf5f2d29a37c2e47a83c7f655b8e76cbc6",
+      "lines": 16,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/level/block/piston/PistonMovingBlockEntity.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/level/block/piston/PistonMovingBlockEntity.java.patch",
+      "sha256_utf8_lf": "34ea8c7cf873089730fb59d688da5777d02608c5db97268760eac6afedfe8949",
+      "lines": 11,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/common/ForgeHooks.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/common/ForgeHooks.java",
+      "sha256_utf8_lf": "a692edef5c723dcc85953d68691d2da39363ec3812ff8eaba5011860f973993b",
+      "lines": 1281,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/fml/event/lifecycle/ParallelDispatchEvent.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/fml/event/lifecycle/ParallelDispatchEvent.java",
+      "sha256_utf8_lf": "f1e4cae0a8d390de676b5458f4c114c6f5d63af4188a36d53adb814f9d6c2bcd",
+      "lines": 35,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/network/SimpleChannel.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/network/SimpleChannel.java",
+      "sha256_utf8_lf": "a04fba0502674f3dac144a417ff2a9dfeaae6384017b04d9ea9c0b6f9139c7a5",
+      "lines": 564,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/api/attachment/v1/AttachmentType.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/api/attachment/v1/AttachmentType.java",
+      "sha256_utf8_lf": "fe1e1625345320fe255654fff0658dbd3d47f4a11a57d119dc42f9524ccbdeef",
+      "lines": 114,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-entity-events-v1/src/main/java/net/fabricmc/fabric/mixin/entity/event/ServerPlayerEntityMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-entity-events-v1/src/main/java/net/fabricmc/fabric/mixin/entity/event/ServerPlayerEntityMixin.java",
+      "sha256_utf8_lf": "f4c833c924e3ba30987944facc8acf79ab434f5dfc9f41012c797daeb0bb15c4",
+      "lines": 132,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-events-interaction-v0/src/main/java/net/fabricmc/fabric/api/event/player/UseBlockCallback.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-events-interaction-v0/src/main/java/net/fabricmc/fabric/api/event/player/UseBlockCallback.java",
+      "sha256_utf8_lf": "ea9beaf6a099425e54ef5f5f51edbc7c9877d231247ff86474ef620987c814b2",
+      "lines": 53,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-events-interaction-v0/src/main/java/net/fabricmc/fabric/mixin/event/interaction/ServerPlayerEntityMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-events-interaction-v0/src/main/java/net/fabricmc/fabric/mixin/event/interaction/ServerPlayerEntityMixin.java",
+      "sha256_utf8_lf": "b0a8aa0cf1036c85c47f42e1aebd50ec1adc0d463556643dd4601586ac76ba48",
+      "lines": 42,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-item-api-v1/src/main/java/net/fabricmc/fabric/mixin/item/RegistriesMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-item-api-v1/src/main/java/net/fabricmc/fabric/mixin/item/RegistriesMixin.java",
+      "sha256_utf8_lf": "85f7baf90019ad97efbb63636b67b88db30dc4ed0d7938805d646b399b25c9c5",
+      "lines": 34,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-loot-api-v3/src/main/java/net/fabricmc/fabric/mixin/loot/ReloadableRegistriesMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-loot-api-v3/src/main/java/net/fabricmc/fabric/mixin/loot/ReloadableRegistriesMixin.java",
+      "sha256_utf8_lf": "90edac14fa9d9644ee2b260cb934311553fa9177c9f4c303d4ff5f72ddb52053",
+      "lines": 128,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-registry-sync-v0/src/client/java/net/fabricmc/fabric/mixin/registry/sync/client/ClientRegistriesDynamicRegistriesMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-registry-sync-v0/src/client/java/net/fabricmc/fabric/mixin/registry/sync/client/ClientRegistriesDynamicRegistriesMixin.java",
+      "sha256_utf8_lf": "3ee885973a7cdcb61519dd0381a58ba0a9282bb9b6aee55b42aee07e1b9a2ba2",
+      "lines": 53,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/api/event/registry/RegistryAttribute.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/api/event/registry/RegistryAttribute.java",
+      "sha256_utf8_lf": "8f3fef327cd3236f6edb73a2defc9a608427ef1368b609c34d43b39529e27052",
+      "lines": 29,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/mixin/registry/sync/RegistriesMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/mixin/registry/sync/RegistriesMixin.java",
+      "sha256_utf8_lf": "72e98202e5a6d7076e1b53b94a92d54e42739cdfd8eaf33c466c4cfedf84021d",
+      "lines": 40,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/mixin/registry/sync/SerializableRegistriesMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/mixin/registry/sync/SerializableRegistriesMixin.java",
+      "sha256_utf8_lf": "f7085d117aef0020fddf2a06e7936ea23085a6cd6c995d6be2e4a424807a12db",
+      "lines": 65,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-resource-conditions-api-v1/src/main/java/net/fabricmc/fabric/mixin/resource/conditions/ReloadableRegistriesMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-resource-conditions-api-v1/src/main/java/net/fabricmc/fabric/mixin/resource/conditions/ReloadableRegistriesMixin.java",
+      "sha256_utf8_lf": "7f6c6d582807858c24b2b6f984ec87981d93a06f46c59a70520b2048b41a16d5",
+      "lines": 76,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-resource-loader-v0/src/main/java/net/fabricmc/fabric/api/resource/IdentifiableResourceReloadListener.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-resource-loader-v0/src/main/java/net/fabricmc/fabric/api/resource/IdentifiableResourceReloadListener.java",
+      "sha256_utf8_lf": "056cd3a6563b36e4eb7f17d79d1e970e06ac570c6bfbd686d6cd069074e85634",
+      "lines": 48,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-resource-loader-v0/src/main/java/net/fabricmc/fabric/api/resource/ResourceReloadListenerKeys.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-resource-loader-v0/src/main/java/net/fabricmc/fabric/api/resource/ResourceReloadListenerKeys.java",
+      "sha256_utf8_lf": "a216528112332f2a3b857696443adc5bc2656fdec915ce8e05bb95c10ce45595",
+      "lines": 41,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-screen-handler-api-v1/src/main/java/net/fabricmc/fabric/mixin/screenhandler/ServerPlayerEntityMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-screen-handler-api-v1/src/main/java/net/fabricmc/fabric/mixin/screenhandler/ServerPlayerEntityMixin.java",
+      "sha256_utf8_lf": "32c59222ead0050e4334ac288e6cc4bc6ee30fd79974af2d191ce830b948712f",
+      "lines": 100,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "mixin",
+      "path": "src/modlauncher/java/org/spongepowered/asm/service/modlauncher/MixinTransformationHandler.java",
+      "url": "https://raw.githubusercontent.com/SpongePowered/Mixin/4053421aa10aaac6127d969028a29c94fe3054f6/src/modlauncher/java/org/spongepowered/asm/service/modlauncher/MixinTransformationHandler.java",
+      "sha256_utf8_lf": "157c82916eb717e1a4fd2ff889465f78e73a7c0fa90387ed1267a17abf6dc06e",
+      "lines": 143,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "mixin",
+      "path": "src/modlauncher9/java/org/spongepowered/asm/launch/MixinLaunchPlugin.java",
+      "url": "https://raw.githubusercontent.com/SpongePowered/Mixin/4053421aa10aaac6127d969028a29c94fe3054f6/src/modlauncher9/java/org/spongepowered/asm/launch/MixinLaunchPlugin.java",
+      "sha256_utf8_lf": "f08a5656d378a818ee47c85024c30c4186cb8dde43a277b9fabe09aa7db2563b",
+      "lines": 37,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "buildSrc/settings.gradle",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/buildSrc/settings.gradle",
+      "sha256_utf8_lf": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "lines": 0,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "gradle.properties",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/gradle.properties",
+      "sha256_utf8_lf": "2fa1ebb51404543a0b0eabb22fb1348a21fbe0e0e974db7da871eff431a160dc",
+      "lines": 66,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "settings.gradle",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/settings.gradle",
+      "sha256_utf8_lf": "e9c31bbf87c26063c6665790ed13faf6902b90c3b169f03eeee03fa32fe89176",
+      "lines": 51,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/registries/GameData.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/registries/GameData.java",
+      "sha256_utf8_lf": "bf7ecf261754c6afeaa231e701a10f169d57d961f3614ccf9f94bbdc6e8cc129",
+      "lines": 135,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "build_shared.gradle",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/build_shared.gradle",
+      "sha256_utf8_lf": "5d1b719a329dcd7c85402813fe4a5d88b034bceace2a1da8539f9fc045c8f501",
+      "lines": 85,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "gradle.properties",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/gradle.properties",
+      "sha256_utf8_lf": "25cc9e6ca7a2a601e3e10a9849d47a7f4a7d9b794ef8fc1f6bb3019b7a00156a",
+      "lines": 17,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "mdk/gradle.properties",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/mdk/gradle.properties",
+      "sha256_utf8_lf": "7ec998e40179befacea7c733ae9865e38b98c132a7d7259ed2009154ba45cd08",
+      "lines": 9,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "mdk/settings.gradle",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/mdk/settings.gradle",
+      "sha256_utf8_lf": "75f8b73354dff84b5c4d74aec9ae4ce7a1f0a3bf6a6c66853cc068b99a9fe2a8",
+      "lines": 5,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "settings.gradle",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/settings.gradle",
+      "sha256_utf8_lf": "11afdc3ef5a8fa8e90ca5d3d9d6be9901b54ed97ee27fde6b09dcf81fd79b0d3",
+      "lines": 129,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "projects/base/build.gradle",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/projects/base/build.gradle",
+      "sha256_utf8_lf": "9136466a60dc3dd0584cf31116158b423007ff261be15bd5b376e5d68e996b37",
+      "lines": 34,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/network/ConfigSync.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/network/ConfigSync.java",
+      "sha256_utf8_lf": "c57f5672b8c8d284a76044316648a110f83124b4579402df46211f482f76f749",
+      "lines": 44,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/network/configuration/CheckExtensibleEnums.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/network/configuration/CheckExtensibleEnums.java",
+      "sha256_utf8_lf": "40061dc46499dce92eb9aed2f94f36a075251295d29e8a7d3124f7a0d55ce559",
+      "lines": 274,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/network/configuration/CheckFeatureFlags.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/network/configuration/CheckFeatureFlags.java",
+      "sha256_utf8_lf": "072f2fb927488e2b473dbe070457cb4dd5bfaa315b623324c9d4598008482fdd",
+      "lines": 108,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/network/configuration/SyncRegistries.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/network/configuration/SyncRegistries.java",
+      "sha256_utf8_lf": "3474ae1804eedf820ffd66fe8d34c3ac30d6659bb983472aa7f7c3589a3f9dce",
+      "lines": 36,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/network/negotiation/NegotiableNetworkComponent.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/network/negotiation/NegotiableNetworkComponent.java",
+      "sha256_utf8_lf": "4592e4c856e40a59a454f609d06977fb23275ed7a8c578c1655d326fc7db1c57",
+      "lines": 36,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/network/negotiation/NetworkComponentNegotiator.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/network/negotiation/NetworkComponentNegotiator.java",
+      "sha256_utf8_lf": "c5b438a44cef98c876114ea68cd17f5c3315721897dc5fdac4592366bf1e3e36",
+      "lines": 190,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/network/registration/NetworkChannel.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/network/registration/NetworkChannel.java",
+      "sha256_utf8_lf": "5185cd8d7e44ae989543a986bdc787086dcdff43e1e00893318b55007969841c",
+      "lines": 26,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/common/util/LazyOptional.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/common/util/LazyOptional.java",
+      "sha256_utf8_lf": "fc2b511ed836b9d70dca8294fc35eba1d94946cd646b9d4e6b3130283fd1e0c6",
+      "lines": 304,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/event/entity/player/PlayerEvent.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/event/entity/player/PlayerEvent.java",
+      "sha256_utf8_lf": "6c0faf19acb3d8579a5de9fbcdd12f02cf2253ab80b28855f30a2903d88d5198",
+      "lines": 544,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/event/network/GatherLoginConfigurationTasksEvent.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/event/network/GatherLoginConfigurationTasksEvent.java",
+      "sha256_utf8_lf": "50b6731f06e0143f2f777feaf4d016d655751e0005d5af063d7c9a98fe427f5c",
+      "lines": 34,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/network/packets/LoginWrapper.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/network/packets/LoginWrapper.java",
+      "sha256_utf8_lf": "4cc232709ebe12b0aac3563a2514527257f79cf787f0f2ccc0eaaf0657b4f15d",
+      "lines": 56,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "mixin",
+      "path": "src/modlauncher/java/org/spongepowered/asm/launch/MixinLaunchPluginLegacy.java",
+      "url": "https://raw.githubusercontent.com/SpongePowered/Mixin/4053421aa10aaac6127d969028a29c94fe3054f6/src/modlauncher/java/org/spongepowered/asm/launch/MixinLaunchPluginLegacy.java",
+      "sha256_utf8_lf": "37ecec6e85e18ae6046a76b08a39802b911d945ae875c66d0c065b359636a7ae",
+      "lines": 265,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "buildSrc/src/main/java/net/neoforged/neodev/CreateUserDevConfig.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/buildSrc/src/main/java/net/neoforged/neodev/CreateUserDevConfig.java",
+      "sha256_utf8_lf": "c1683755b3d3fbca952a352a3e2be296a1405f8065a3e094123f8a8fb9a870d6",
+      "lines": 197,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "buildSrc/src/main/java/net/neoforged/neodev/NeoDevBasePlugin.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/buildSrc/src/main/java/net/neoforged/neodev/NeoDevBasePlugin.java",
+      "sha256_utf8_lf": "8f192f67b59fc06901d452ee85534d590683e35e139c1a036a4e5d9023225a92",
+      "lines": 65,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "buildSrc/src/main/java/net/neoforged/neodev/NeoDevPlugin.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/buildSrc/src/main/java/net/neoforged/neodev/NeoDevPlugin.java",
+      "sha256_utf8_lf": "0c3fef8ba3e249a6569373195f7ab24821509bb1cb891b2f965fa3772a8ed33b",
+      "lines": 667,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "buildSrc/src/main/java/net/neoforged/neodev/TransformSources.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/buildSrc/src/main/java/net/neoforged/neodev/TransformSources.java",
+      "sha256_utf8_lf": "a2126831baf70931905155a4f435523dc232b0ada99c660b1d8f6754a8f70e75",
+      "lines": 103,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "buildSrc/src/main/java/net/neoforged/neodev/installer/CreateInstallerProfile.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/buildSrc/src/main/java/net/neoforged/neodev/installer/CreateInstallerProfile.java",
+      "sha256_utf8_lf": "dcca65f98df3ebb65b7b27de6a79760694b1897571ac49c5cde15ab8c6b946f0",
+      "lines": 230,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java.patch",
+      "sha256_utf8_lf": "4a6301eb110814f147175c81f0d4deed11d0ec9df57df5b857b2f9a322c952e4",
+      "lines": 59,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/network/ChannelListManager.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/network/ChannelListManager.java",
+      "sha256_utf8_lf": "7c3d341f9d9663e6a8be3684e48352d0f1509f0ccff41c151fd95ae2eb8da5d6",
+      "lines": 178,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/network/ForgePacketHandler.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/network/ForgePacketHandler.java",
+      "sha256_utf8_lf": "c323d34011ba997cba6d3384b2acd78db86c482637f39d8719bc4e70c9ebb4ad",
+      "lines": 261,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/FabricLoaderImpl.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/FabricLoaderImpl.java",
+      "sha256_utf8_lf": "5659ad8619062e0ba25c93c45fe721afae0dee357076067b71019b92f54c6728",
+      "lines": 636,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/discovery/ModSolver.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/discovery/ModSolver.java",
+      "sha256_utf8_lf": "9d2be1dff55eadd0635a49f26f7999418539fa9c5c29bbb564351c249f13a3fd",
+      "lines": 1107,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/util/version/VersionPredicateParser.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/util/version/VersionPredicateParser.java",
+      "sha256_utf8_lf": "2b046bbf7f27ce30d2606664cf2ce63883ef9a4b83c863117ead00cbc391f298",
+      "lines": 270,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge_ml_series",
+      "path": "src/main/java/cpw/mods/modlauncher/ClassTransformer.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/ModLauncher/ffce32c1bfa79f443baba9ee58030c2aea5c26b0/src/main/java/cpw/mods/modlauncher/ClassTransformer.java",
+      "sha256_utf8_lf": "97b2a4c5e56425f26c5c1fb2ab333d1e2e4d4901624436f1ab9181a215d7123f",
+      "lines": 196,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge_ml_series",
+      "path": "src/main/java/cpw/mods/modlauncher/LaunchPluginHandler.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/ModLauncher/ffce32c1bfa79f443baba9ee58030c2aea5c26b0/src/main/java/cpw/mods/modlauncher/LaunchPluginHandler.java",
+      "sha256_utf8_lf": "46d1d74d38f1857c7b4405fecd64a4f43b129ff7b7f7711e3ec7a91e7b934335",
+      "lines": 108,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge_at_series",
+      "path": "at-mlservice/src/main/java/net/minecraftforge/accesstransformer/service/AccessTransformerService.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/AccessTransformers/c89aba52660fb341e7e4ba663ff78df240611f0c/at-mlservice/src/main/java/net/minecraftforge/accesstransformer/service/AccessTransformerService.java",
+      "sha256_utf8_lf": "5b786748c91a5f3a28a8646ba35237db7c36c388754635ddbf3b52fb05302e6c",
+      "lines": 58,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge_core_series",
+      "path": "src/main/java/net/minecraftforge/coremod/transformer/CoreModBaseTransformer.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/CoreMods/e7503dd0cdd2607a2244ece31174d5c8e01bf306/src/main/java/net/minecraftforge/coremod/transformer/CoreModBaseTransformer.java",
+      "sha256_utf8_lf": "c7b759b3b40162ce6588666aa11d924d5d5d26fcfc6536c4f7728b8761975f31",
+      "lines": 105,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge_bus_series",
+      "path": "src/main/java/net/minecraftforge/eventbus/ASMEventHandler.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/EventBus/d125933aa2577e194e5b9d8c305b445ace07baf9/src/main/java/net/minecraftforge/eventbus/ASMEventHandler.java",
+      "sha256_utf8_lf": "016bc9893c484dcb2dfabdf8d185f401c91b86e2421237c50e3cfdef8f0fbd32",
+      "lines": 73,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge_bus_series",
+      "path": "src/main/java/net/minecraftforge/eventbus/EventBus.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/EventBus/d125933aa2577e194e5b9d8c305b445ace07baf9/src/main/java/net/minecraftforge/eventbus/EventBus.java",
+      "sha256_utf8_lf": "5340d5d54ac56a7fe992559aa673ac607a1aa589466450a274ea056a095235eb",
+      "lines": 328,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge_bus_series",
+      "path": "src/main/java/net/minecraftforge/eventbus/api/Event.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/EventBus/d125933aa2577e194e5b9d8c305b445ace07baf9/src/main/java/net/minecraftforge/eventbus/api/Event.java",
+      "sha256_utf8_lf": "07edeb891c23f95119b328edfa4db0840769f3f27784dd142e6f06178cabe204",
+      "lines": 156,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "loader",
+      "path": "minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/patch/EntrypointPatch.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric-loader/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/patch/EntrypointPatch.java",
+      "sha256_utf8_lf": "3b2b72a12e4825083c36f67a45c5b575616a41a37135e93d4ef99b1d6c486a4b",
+      "lines": 582,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/attachment/LevelAttachmentsSavedData.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/attachment/LevelAttachmentsSavedData.java",
+      "sha256_utf8_lf": "1a66a1ff47834f90184182fe21d622a3fb3702eb2acc2719ca45532ef5fd090f",
+      "lines": 50,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/client/event/RegisterClientReloadListenersEvent.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/client/event/RegisterClientReloadListenersEvent.java",
+      "sha256_utf8_lf": "13c6aea8b2016be4ef044ff2d945cc125ac689754b7e6a7348a9c78af526b5bc",
+      "lines": 44,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/client/event/RegisterKeyMappingsEvent.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/client/event/RegisterKeyMappingsEvent.java",
+      "sha256_utf8_lf": "c7b03432fa3a4475a408383cfb4dfbbafcf813276d8ea679be656a1f85262bad",
+      "lines": 38,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/client/event/RegisterMenuScreensEvent.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/client/event/RegisterMenuScreensEvent.java",
+      "sha256_utf8_lf": "7aba192b9253bbf2acb6ad308682a2d3d220de31d23f291b4bbee6e62e2866ef",
+      "lines": 34,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/client/event/RegisterParticleProvidersEvent.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/client/event/RegisterParticleProvidersEvent.java",
+      "sha256_utf8_lf": "2ec15bf924a7637eabab3ce6ba59fa57c562c179348ee09ccb7ee373ed96b468",
+      "lines": 85,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/client/event/RegisterShadersEvent.java",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/client/event/RegisterShadersEvent.java",
+      "sha256_utf8_lf": "5c189d62e1d3f768c63490cfa4942c8d21af38116467b8febcd7e0e125ab1f12",
+      "lines": 59,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/level/chunk/LevelChunk.java.patch",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/level/chunk/LevelChunk.java.patch",
+      "sha256_utf8_lf": "87a7836bb1e7c68ac7b6021fe8531005d0622ae888e51b4f8aed373a995b3dc2",
+      "lines": 185,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/client/event/EntityRenderersEvent.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/client/event/EntityRenderersEvent.java",
+      "sha256_utf8_lf": "0f868e2b0b1d98c3696f22e28d187d0b514f79bffecbc04653992743a8b19abb",
+      "lines": 236,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/client/event/ModelEvent.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/client/event/ModelEvent.java",
+      "sha256_utf8_lf": "9fb89423773448ad13a06f82805fd8fa2bb2481154442e53b246f81f5ffe9d65",
+      "lines": 169,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/client/event/RegisterShadersEvent.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/client/event/RegisterShadersEvent.java",
+      "sha256_utf8_lf": "651846de4964c0c44ea7cbf123ca4b3ab0d56cafa5a5890e1f63ef93b41701e9",
+      "lines": 62,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/client/event/RenderLevelStageEvent.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/client/event/RenderLevelStageEvent.java",
+      "sha256_utf8_lf": "3735dad2f9b8147c2f5471b707d7e5e38ca34466a0e5c51a345c0078e032bf16",
+      "lines": 247,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/data/event/GatherDataEvent.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/data/event/GatherDataEvent.java",
+      "sha256_utf8_lf": "0bb50702ba4a94117270871394d32761caac226d0598b6d128dbdfbeb82cc1fa",
+      "lines": 115,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/event/AddReloadListenerEvent.java",
+      "url": "https://raw.githubusercontent.com/MinecraftForge/MinecraftForge/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/event/AddReloadListenerEvent.java",
+      "sha256_utf8_lf": "ee816bf6e98375805334038f695b27030f3cf43cac7bfefe372c926943fa55ac",
+      "lines": 114,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/impl/attachment/AttachmentPersistentState.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/impl/attachment/AttachmentPersistentState.java",
+      "sha256_utf8_lf": "23d0c07ce1e252ca4cb09d83944e65869b11af7891144fec76bd79065f60aa0d",
+      "lines": 56,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-data-generation-api-v1/src/main/java/net/fabricmc/fabric/api/datagen/v1/FabricDataGenerator.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-generation-api-v1/src/main/java/net/fabricmc/fabric/api/datagen/v1/FabricDataGenerator.java",
+      "sha256_utf8_lf": "c8430d183fc031e84fed2570557e600a886ff6817404d2b688956646affd37e5",
+      "lines": 177,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-data-generation-api-v1/src/main/java/net/fabricmc/fabric/impl/datagen/FabricDataGenHelper.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-generation-api-v1/src/main/java/net/fabricmc/fabric/impl/datagen/FabricDataGenHelper.java",
+      "sha256_utf8_lf": "aa0676598bf975bc287b834f321c4bd687dd9b9ff150e5cbd8ba980b05d0c2f6",
+      "lines": 256,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-key-binding-api-v1/src/client/java/net/fabricmc/fabric/api/client/keybinding/v1/KeyBindingHelper.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-key-binding-api-v1/src/client/java/net/fabricmc/fabric/api/client/keybinding/v1/KeyBindingHelper.java",
+      "sha256_utf8_lf": "6b9c88e76c32d0d38605fd5dfbd21d253c1965bc2a7acb03ce6ff58d53265610",
+      "lines": 63,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-registry-sync-v0/src/client/java/net/fabricmc/fabric/mixin/registry/sync/client/MinecraftClientMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-registry-sync-v0/src/client/java/net/fabricmc/fabric/mixin/registry/sync/client/MinecraftClientMixin.java",
+      "sha256_utf8_lf": "76865a735c99f49f4ea47722817e9ee087732442fcc77991b8ef20fa6311bf85",
+      "lines": 60,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/mixin/registry/sync/SimpleRegistryMixin.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/mixin/registry/sync/SimpleRegistryMixin.java",
+      "sha256_utf8_lf": "713a0b36206276fb9e5137ddb2d3685a21b30dfec4b9aa4352f5c6d81af659aa",
+      "lines": 511,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-rendering-v1/src/client/java/net/fabricmc/fabric/api/client/rendering/v1/CoreShaderRegistrationCallback.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-rendering-v1/src/client/java/net/fabricmc/fabric/api/client/rendering/v1/CoreShaderRegistrationCallback.java",
+      "sha256_utf8_lf": "d23849bfbc914cd5c6291da58a3b6fba9bbfcf62d38f1a4db64859633efae40a",
+      "lines": 73,
+      "inspection_scope": "cited_excerpt"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-rendering-v1/src/client/java/net/fabricmc/fabric/api/client/rendering/v1/HudRenderCallback.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-rendering-v1/src/client/java/net/fabricmc/fabric/api/client/rendering/v1/HudRenderCallback.java",
+      "sha256_utf8_lf": "1a5b04e8a3a26043e66aaead7655ba48f9456889a0ceaba431a00cd764864a0f",
+      "lines": 39,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "fabric",
+      "path": "fabric-screen-api-v1/src/client/java/net/fabricmc/fabric/api/client/screen/v1/ScreenEvents.java",
+      "url": "https://raw.githubusercontent.com/FabricMC/fabric/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-screen-api-v1/src/client/java/net/fabricmc/fabric/api/client/screen/v1/ScreenEvents.java",
+      "sha256_utf8_lf": "d1e9c4d6fb158ee2390437a2ad57b782ed1fe5f360de2cfb0676cbd0b0d34562",
+      "lines": 199,
+      "inspection_scope": "retrieved_supporting_source; not a full audit"
+    },
+    {
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/server/ReloadableServerResources.java.patch",
+      "url": "https://raw.githubusercontent.com/neoforged/NeoForge/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/server/ReloadableServerResources.java.patch",
+      "sha256_utf8_lf": "f7e60995f0ccd2c05ce3f1f5ce350900dc69d05a47652451d607d2010080b2f5",
+      "lines": 73,
+      "inspection_scope": "cited_excerpt"
+    }
+  ],
+  "source_artifacts": [
+    {
+      "id": "neo_fml",
+      "url": "https://maven.neoforged.net/releases/net/neoforged/fancymodloader/loader/4.0.45/loader-4.0.45-sources.jar",
+      "sha256": "232db58b2b6ac1bf3834e659fb156e8943b42cc2bc18ff8201ffb404d559c952",
+      "bytes": 275334,
+      "source_entries_count": 203,
+      "inspection_scope": "selected source excerpts only"
+    },
+    {
+      "id": "neo_modlauncher",
+      "url": "https://maven.neoforged.net/releases/cpw/mods/modlauncher/11.0.5/modlauncher-11.0.5-sources.jar",
+      "sha256": "91d7656f7c4113c50ce548e4e242613e1a934bc7e4c1f62f1057a37db6bd11fa",
+      "bytes": 68125,
+      "source_entries_count": 51,
+      "inspection_scope": "selected source excerpts only"
+    },
+    {
+      "id": "neo_at",
+      "url": "https://maven.neoforged.net/releases/net/neoforged/accesstransformers/10.0.1/accesstransformers-10.0.1-sources.jar",
+      "sha256": "03b7b9819a61fd718da21850841c430959d70c9b3673958da967711d5bdf3b4f",
+      "bytes": 38853,
+      "source_entries_count": 21,
+      "inspection_scope": "selected source excerpts only"
+    },
+    {
+      "id": "neo_coremods",
+      "url": "https://maven.neoforged.net/releases/net/neoforged/coremods/6.0.4/coremods-6.0.4-sources.jar",
+      "sha256": "ff1f74be2cd56f3320e3f983926be8b43767714fcd60d0f4f8bb808ffe6b8368",
+      "bytes": 11583,
+      "source_entries_count": 10,
+      "inspection_scope": "selected source excerpts only"
+    },
+    {
+      "id": "neo_bus",
+      "url": "https://maven.neoforged.net/releases/net/neoforged/bus/8.0.2/bus-8.0.2-sources.jar",
+      "sha256": "78f10c0cfbb78807b9cfb264472f3805da23966bc5e81b311c961ac1613cb3ac",
+      "bytes": 22669,
+      "source_entries_count": 21,
+      "inspection_scope": "selected source excerpts only"
+    },
+    {
+      "id": "aw",
+      "url": "https://maven.fabricmc.net/net/fabricmc/access-widener/2.1.0/access-widener-2.1.0-sources.jar",
+      "sha256": "946f8d6de7c38fb6ab5d47d4cecdc85c6f59cda4371a30962aa09654e3aa8588",
+      "bytes": 17683,
+      "source_entries_count": 10,
+      "inspection_scope": "selected source excerpts only"
+    },
+    {
+      "id": "extras_055",
+      "url": "https://maven.neoforged.net/releases/io/github/llamalad7/mixinextras-neoforge/0.5.5/mixinextras-neoforge-0.5.5-sources.jar",
+      "sha256": "bfb200ef4f00500bc55eae3787bbb9baf72f407e54de7eb344855d029ed53d97",
+      "bytes": 221113,
+      "source_entries_count": 218,
+      "inspection_scope": "selected source excerpts only"
+    },
+    {
+      "id": "forge_modlauncher",
+      "url": "https://maven.minecraftforge.net/releases/net/minecraftforge/modlauncher/10.2.4/modlauncher-10.2.4-sources.jar",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "id": "forge_at",
+      "url": "https://maven.minecraftforge.net/releases/net/minecraftforge/accesstransformers/8.2.2/accesstransformers-8.2.2-sources.jar",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "id": "forge_coremods",
+      "url": "https://maven.minecraftforge.net/releases/net/minecraftforge/coremods/5.2.6/coremods-5.2.6-sources.jar",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "id": "forge_bus",
+      "url": "https://maven.minecraftforge.net/releases/net/minecraftforge/eventbus/6.2.33/eventbus-6.2.33-sources.jar",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "id": "extras_041",
+      "url": "https://repo.maven.apache.org/maven2/io/github/llamalad7/mixinextras-common/0.4.1/mixinextras-common-0.4.1-sources.jar",
+      "sha256": "c1cbfbc9fb136843171bfd3f2066fb13bc72ca688807f3770341aac9f547e892",
+      "bytes": 100652,
+      "source_entries_count": 103,
+      "inspection_scope": "selected source excerpts only"
+    },
+    {
+      "id": "neo_at_ml",
+      "url": "https://maven.neoforged.net/releases/net/neoforged/accesstransformers/at-modlauncher/10.0.1/at-modlauncher-10.0.1-sources.jar",
+      "sha256": "4f23566bb1e9a6cb1250a564ea337ab984c69daf54d7e304515b7002c479fcca",
+      "bytes": 1689,
+      "source_entries_count": 2,
+      "inspection_scope": "selected source excerpts only"
+    },
+    {
+      "id": "neo_coremods_fml",
+      "url": "https://maven.neoforged.net/releases/net/neoforged/coremods/7.0.3/coremods-7.0.3-sources.jar",
+      "sha256": "1061a6d4b6aedb43708144c554d8f0c83a62f1b6fd39654e3fef7b0facdce513",
+      "bytes": 11360,
+      "source_entries_count": 10,
+      "inspection_scope": "selected source excerpts only"
+    },
+    {
+      "id": "neo_bus_fml",
+      "url": "https://maven.neoforged.net/releases/net/neoforged/bus/8.0.5/bus-8.0.5-sources.jar",
+      "sha256": "d0e705c9b626c5ea2ad85df6f827f1fb8891d01c04da608d29680a73fcd993e9",
+      "bytes": 23775,
+      "source_entries_count": 21,
+      "inspection_scope": "selected source excerpts only"
+    }
+  ],
+  "metadata_artifacts": [
+    {
+      "id": "neo_fml_pom",
+      "url": "https://maven.neoforged.net/releases/net/neoforged/fancymodloader/loader/4.0.45/loader-4.0.45.pom",
+      "sha256": "25bf9d8368bb90e34d7aba0cf45b652ee4ece8a9e5e4723e1a951c59fa8fdf5e",
+      "bytes": 6110
+    },
+    {
+      "id": "neo_at_module",
+      "url": "https://maven.neoforged.net/releases/net/neoforged/accesstransformers/10.0.1/accesstransformers-10.0.1.module",
+      "sha256": "b3df09600aba72f2ac3ed1ba9f896fd7094aec0a774e50cdfaa10725118b2ed9",
+      "bytes": 4333
+    }
+  ],
+  "citation_targets": {
+    "aw-src": {
+      "kind": "source_artifact",
+      "artifact_id": "aw",
+      "url": "https://maven.fabricmc.net/net/fabricmc/access-widener/2.1.0/access-widener-2.1.0-sources.jar"
+    },
+    "core-src": {
+      "kind": "source_artifact",
+      "artifact_id": "neo_coremods",
+      "url": "https://maven.neoforged.net/releases/net/neoforged/coremods/6.0.4/coremods-6.0.4-sources.jar"
+    },
+    "corefml-src": {
+      "kind": "source_artifact",
+      "artifact_id": "neo_coremods_fml",
+      "url": "https://maven.neoforged.net/releases/net/neoforged/coremods/7.0.3/coremods-7.0.3-sources.jar"
+    },
+    "extras041-src": {
+      "kind": "source_artifact",
+      "artifact_id": "extras_041",
+      "url": "https://repo.maven.apache.org/maven2/io/github/llamalad7/mixinextras-common/0.4.1/mixinextras-common-0.4.1-sources.jar"
+    },
+    "extras055-src": {
+      "kind": "source_artifact",
+      "artifact_id": "extras_055",
+      "url": "https://maven.neoforged.net/releases/io/github/llamalad7/mixinextras-neoforge/0.5.5/mixinextras-neoforge-0.5.5-sources.jar"
+    },
+    "f-asmhandler": {
+      "kind": "git",
+      "repository_id": "forge_bus_series",
+      "path": "src/main/java/net/minecraftforge/eventbus/ASMEventHandler.java",
+      "url": "https://github.com/MinecraftForge/EventBus/blob/d125933aa2577e194e5b9d8c305b445ace07baf9/src/main/java/net/minecraftforge/eventbus/ASMEventHandler.java"
+    },
+    "f-atservice": {
+      "kind": "git",
+      "repository_id": "forge_at_series",
+      "path": "at-mlservice/src/main/java/net/minecraftforge/accesstransformer/service/AccessTransformerService.java",
+      "url": "https://github.com/MinecraftForge/AccessTransformers/blob/c89aba52660fb341e7e4ba663ff78df240611f0c/at-mlservice/src/main/java/net/minecraftforge/accesstransformer/service/AccessTransformerService.java"
+    },
+    "f-build": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "build_forge.gradle",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/build_forge.gradle"
+    },
+    "f-bus": {
+      "kind": "git",
+      "repository_id": "forge_bus_series",
+      "path": "src/main/java/net/minecraftforge/eventbus/EventBus.java",
+      "url": "https://github.com/MinecraftForge/EventBus/blob/d125933aa2577e194e5b9d8c305b445ace07baf9/src/main/java/net/minecraftforge/eventbus/EventBus.java"
+    },
+    "f-capprovider": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/common/capabilities/CapabilityProvider.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/common/capabilities/CapabilityProvider.java"
+    },
+    "f-corewrapper": {
+      "kind": "git",
+      "repository_id": "forge_core_series",
+      "path": "src/main/java/net/minecraftforge/coremod/transformer/CoreModBaseTransformer.java",
+      "url": "https://github.com/MinecraftForge/CoreMods/blob/e7503dd0cdd2607a2244ece31174d5c8e01bf306/src/main/java/net/minecraftforge/coremod/transformer/CoreModBaseTransformer.java"
+    },
+    "f-datapack": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/registries/DataPackRegistryEvent.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/registries/DataPackRegistryEvent.java"
+    },
+    "f-entitypatch": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/entity/Entity.java.patch",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/entity/Entity.java.patch"
+    },
+    "f-event": {
+      "kind": "git",
+      "repository_id": "forge_bus_series",
+      "path": "src/main/java/net/minecraftforge/eventbus/api/Event.java",
+      "url": "https://github.com/MinecraftForge/EventBus/blob/d125933aa2577e194e5b9d8c305b445ace07baf9/src/main/java/net/minecraftforge/eventbus/api/Event.java"
+    },
+    "f-gamedata": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/registries/GameData.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/registries/GameData.java"
+    },
+    "f-gather": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/data/event/GatherDataEvent.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/data/event/GatherDataEvent.java"
+    },
+    "f-itempatch": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "patches/minecraft/net/minecraft/world/item/ItemStack.java.patch",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/patches/minecraft/net/minecraft/world/item/ItemStack.java.patch"
+    },
+    "f-jij": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "fmlloader/src/main/java/net/minecraftforge/fml/loading/moddiscovery/JarInJarDependencyLocator.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlloader/src/main/java/net/minecraftforge/fml/loading/moddiscovery/JarInJarDependencyLocator.java"
+    },
+    "f-lazy": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/common/util/LazyOptional.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/common/util/LazyOptional.java"
+    },
+    "f-mlclass": {
+      "kind": "git",
+      "repository_id": "forge_ml_series",
+      "path": "src/main/java/cpw/mods/modlauncher/ClassTransformer.java",
+      "url": "https://github.com/MinecraftForge/ModLauncher/blob/ffce32c1bfa79f443baba9ee58030c2aea5c26b0/src/main/java/cpw/mods/modlauncher/ClassTransformer.java"
+    },
+    "f-model": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/client/event/ModelEvent.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/client/event/ModelEvent.java"
+    },
+    "f-modinfo": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "fmlloader/src/main/java/net/minecraftforge/fml/loading/moddiscovery/ModInfo.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlloader/src/main/java/net/minecraftforge/fml/loading/moddiscovery/ModInfo.java"
+    },
+    "f-netinit": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/network/NetworkInitialization.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/network/NetworkInitialization.java"
+    },
+    "f-packet": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/network/ForgePacketHandler.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/network/ForgePacketHandler.java"
+    },
+    "f-parallel": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/fml/event/lifecycle/ParallelDispatchEvent.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/fml/event/lifecycle/ParallelDispatchEvent.java"
+    },
+    "f-reloadevent": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "src/main/java/net/minecraftforge/event/AddReloadListenerEvent.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/src/main/java/net/minecraftforge/event/AddReloadListenerEvent.java"
+    },
+    "f-sorter": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "fmlloader/src/main/java/net/minecraftforge/fml/loading/ModSorter.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlloader/src/main/java/net/minecraftforge/fml/loading/ModSorter.java"
+    },
+    "f-workqueue": {
+      "kind": "git",
+      "repository_id": "forge",
+      "path": "fmlcore/src/main/java/net/minecraftforge/fml/DeferredWorkQueue.java",
+      "url": "https://github.com/MinecraftForge/MinecraftForge/blob/a11d1936c53f1f93787f239ff42cb8e93a1d037a/fmlcore/src/main/java/net/minecraftforge/fml/DeferredWorkQueue.java"
+    },
+    "fa-arrayevent": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-api-base/src/main/java/net/fabricmc/fabric/impl/base/event/ArrayBackedEvent.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-api-base/src/main/java/net/fabricmc/fabric/impl/base/event/ArrayBackedEvent.java"
+    },
+    "fa-attimpl": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/impl/attachment/AttachmentRegistryImpl.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/impl/attachment/AttachmentRegistryImpl.java"
+    },
+    "fa-attmixin": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/mixin/attachment/AttachmentTargetsMixin.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/mixin/attachment/AttachmentTargetsMixin.java"
+    },
+    "fa-attregistry": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/api/attachment/v1/AttachmentRegistry.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/api/attachment/v1/AttachmentRegistry.java"
+    },
+    "fa-attserialize": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/impl/attachment/AttachmentSerializingImpl.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/impl/attachment/AttachmentSerializingImpl.java"
+    },
+    "fa-attsync": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/impl/attachment/sync/AttachmentSync.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/impl/attachment/sync/AttachmentSync.java"
+    },
+    "fa-atttype": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/api/attachment/v1/AttachmentType.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-attachment-api-v1/src/main/java/net/fabricmc/fabric/api/attachment/v1/AttachmentType.java"
+    },
+    "fa-config": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/mixin/networking/ServerConfigurationNetworkHandlerMixin.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/mixin/networking/ServerConfigurationNetworkHandlerMixin.java"
+    },
+    "fa-datagen": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-data-generation-api-v1/src/main/java/net/fabricmc/fabric/api/datagen/v1/FabricDataGenerator.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-generation-api-v1/src/main/java/net/fabricmc/fabric/api/datagen/v1/FabricDataGenerator.java"
+    },
+    "fa-datagenentry": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-data-generation-api-v1/src/main/java/net/fabricmc/fabric/api/datagen/v1/DataGeneratorEntrypoint.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-data-generation-api-v1/src/main/java/net/fabricmc/fabric/api/datagen/v1/DataGeneratorEntrypoint.java"
+    },
+    "fa-dynamic": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/api/event/registry/DynamicRegistries.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/api/event/registry/DynamicRegistries.java"
+    },
+    "fa-login": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/mixin/networking/ServerLoginNetworkHandlerMixin.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/mixin/networking/ServerLoginNetworkHandlerMixin.java"
+    },
+    "fa-model": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-model-loading-api-v1/src/client/java/net/fabricmc/fabric/api/client/model/loading/v1/ModelLoadingPlugin.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-model-loading-api-v1/src/client/java/net/fabricmc/fabric/api/client/model/loading/v1/ModelLoadingPlugin.java"
+    },
+    "fa-payload": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/api/networking/v1/PayloadTypeRegistry.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-networking-api-v1/src/main/java/net/fabricmc/fabric/api/networking/v1/PayloadTypeRegistry.java"
+    },
+    "fa-regsync": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/impl/registry/sync/RegistrySyncManager.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-registry-sync-v0/src/main/java/net/fabricmc/fabric/impl/registry/sync/RegistrySyncManager.java"
+    },
+    "fa-reloadlistener": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-resource-loader-v0/src/main/java/net/fabricmc/fabric/api/resource/IdentifiableResourceReloadListener.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-resource-loader-v0/src/main/java/net/fabricmc/fabric/api/resource/IdentifiableResourceReloadListener.java"
+    },
+    "fa-reshelper": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-resource-loader-v0/src/main/java/net/fabricmc/fabric/impl/resource/loader/ResourceManagerHelperImpl.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-resource-loader-v0/src/main/java/net/fabricmc/fabric/impl/resource/loader/ResourceManagerHelperImpl.java"
+    },
+    "fa-shader": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-rendering-v1/src/client/java/net/fabricmc/fabric/api/client/rendering/v1/CoreShaderRegistrationCallback.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-rendering-v1/src/client/java/net/fabricmc/fabric/api/client/rendering/v1/CoreShaderRegistrationCallback.java"
+    },
+    "fa-useblock": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-events-interaction-v0/src/main/java/net/fabricmc/fabric/api/event/player/UseBlockCallback.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-events-interaction-v0/src/main/java/net/fabricmc/fabric/api/event/player/UseBlockCallback.java"
+    },
+    "fa-worldrender": {
+      "kind": "git",
+      "repository_id": "fabric",
+      "path": "fabric-rendering-v1/src/client/java/net/fabricmc/fabric/api/client/rendering/v1/WorldRenderEvents.java",
+      "url": "https://github.com/FabricMC/fabric/blob/83c07162d88a703d15c8dae50cbbc12f4e9e63c3/fabric-rendering-v1/src/client/java/net/fabricmc/fabric/api/client/rendering/v1/WorldRenderEvents.java"
+    },
+    "fl-build": {
+      "kind": "git",
+      "repository_id": "loader",
+      "path": "build.gradle",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/build.gradle"
+    },
+    "fl-discoverer": {
+      "kind": "git",
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/discovery/ModDiscoverer.java",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/discovery/ModDiscoverer.java"
+    },
+    "fl-entrypatch": {
+      "kind": "git",
+      "repository_id": "loader",
+      "path": "minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/patch/EntrypointPatch.java",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/patch/EntrypointPatch.java"
+    },
+    "fl-hooks": {
+      "kind": "git",
+      "repository_id": "loader",
+      "path": "minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/Hooks.java",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/Hooks.java"
+    },
+    "fl-impl": {
+      "kind": "git",
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/FabricLoaderImpl.java",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/FabricLoaderImpl.java"
+    },
+    "fl-knot": {
+      "kind": "git",
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/launch/knot/KnotClassDelegate.java",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/launch/knot/KnotClassDelegate.java"
+    },
+    "fl-metadata": {
+      "kind": "git",
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/metadata/V1ModMetadataParser.java",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/metadata/V1ModMetadataParser.java"
+    },
+    "fl-resolver": {
+      "kind": "git",
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/discovery/ModResolver.java",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/discovery/ModResolver.java"
+    },
+    "fl-transformer": {
+      "kind": "git",
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/transformer/FabricTransformer.java",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/transformer/FabricTransformer.java"
+    },
+    "fl-version": {
+      "kind": "git",
+      "repository_id": "loader",
+      "path": "src/main/java/net/fabricmc/loader/impl/util/version/VersionPredicateParser.java",
+      "url": "https://github.com/FabricMC/fabric-loader/blob/fda9a7b84f0898f57b46fbbfda58795e7fa31cef/src/main/java/net/fabricmc/loader/impl/util/version/VersionPredicateParser.java"
+    },
+    "ml-src": {
+      "kind": "source_artifact",
+      "artifact_id": "neo_modlauncher",
+      "url": "https://maven.neoforged.net/releases/cpw/mods/modlauncher/11.0.5/modlauncher-11.0.5-sources.jar"
+    },
+    "mx-handler": {
+      "kind": "git",
+      "repository_id": "mixin",
+      "path": "src/modlauncher/java/org/spongepowered/asm/service/modlauncher/MixinTransformationHandler.java",
+      "url": "https://github.com/SpongePowered/Mixin/blob/4053421aa10aaac6127d969028a29c94fe3054f6/src/modlauncher/java/org/spongepowered/asm/service/modlauncher/MixinTransformationHandler.java"
+    },
+    "mx-plugin": {
+      "kind": "git",
+      "repository_id": "mixin",
+      "path": "src/modlauncher/java/org/spongepowered/asm/launch/MixinLaunchPluginLegacy.java",
+      "url": "https://github.com/SpongePowered/Mixin/blob/4053421aa10aaac6127d969028a29c94fe3054f6/src/modlauncher/java/org/spongepowered/asm/launch/MixinLaunchPluginLegacy.java"
+    },
+    "n-attinternals": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/attachment/AttachmentInternals.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/attachment/AttachmentInternals.java"
+    },
+    "n-attsync": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/attachment/AttachmentSync.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/attachment/AttachmentSync.java"
+    },
+    "n-atttype": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/attachment/AttachmentType.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/attachment/AttachmentType.java"
+    },
+    "n-capcache": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/capabilities/BlockCapabilityCache.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/capabilities/BlockCapabilityCache.java"
+    },
+    "n-caphooks": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/capabilities/CapabilityHooks.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/capabilities/CapabilityHooks.java"
+    },
+    "n-clientreload": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/client/event/RegisterClientReloadListenersEvent.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/client/event/RegisterClientReloadListenersEvent.java"
+    },
+    "n-common": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/internal/CommonModLoader.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/internal/CommonModLoader.java"
+    },
+    "n-datapack": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/registries/DataPackRegistryEvent.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/registries/DataPackRegistryEvent.java"
+    },
+    "n-deferred": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/registries/DeferredRegister.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/registries/DeferredRegister.java"
+    },
+    "n-devplugin": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "buildSrc/src/main/java/net/neoforged/neodev/NeoDevPlugin.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/buildSrc/src/main/java/net/neoforged/neodev/NeoDevPlugin.java"
+    },
+    "n-entityext": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/common/extensions/IEntityExtension.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/common/extensions/IEntityExtension.java"
+    },
+    "n-entitypatch": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/world/entity/Entity.java.patch",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/world/entity/Entity.java.patch"
+    },
+    "n-gamedata": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/registries/GameData.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/registries/GameData.java"
+    },
+    "n-gather": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/data/event/GatherDataEvent.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/data/event/GatherDataEvent.java"
+    },
+    "n-holder": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/registries/DeferredHolder.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/registries/DeferredHolder.java"
+    },
+    "n-interfaces": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/resources/META-INF/injected-interfaces.json",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/resources/META-INF/injected-interfaces.json"
+    },
+    "n-itempatch": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/world/item/ItemStack.java.patch",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/world/item/ItemStack.java.patch"
+    },
+    "n-mapped": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/core/MappedRegistry.java.patch",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/core/MappedRegistry.java.patch"
+    },
+    "n-model": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/client/event/ModelEvent.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/client/event/ModelEvent.java"
+    },
+    "n-negotiator": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/network/negotiation/NetworkComponentNegotiator.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/network/negotiation/NetworkComponentNegotiator.java"
+    },
+    "n-network": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/network/registration/NetworkRegistry.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/network/registration/NetworkRegistry.java"
+    },
+    "n-properties": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "gradle.properties",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/gradle.properties"
+    },
+    "n-registrar": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/network/registration/PayloadRegistrar.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/network/registration/PayloadRegistrar.java"
+    },
+    "n-regload": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/resources/RegistryDataLoader.java.patch",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/resources/RegistryDataLoader.java.patch"
+    },
+    "n-regmanager": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/registries/RegistryManager.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/registries/RegistryManager.java"
+    },
+    "n-reloadevent": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/event/AddReloadListenerEvent.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/event/AddReloadListenerEvent.java"
+    },
+    "n-reloadreg": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/server/ReloadableServerResources.java.patch",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/server/ReloadableServerResources.java.patch"
+    },
+    "n-renderers": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/client/event/EntityRenderersEvent.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/client/event/EntityRenderersEvent.java"
+    },
+    "n-renderstage": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/client/event/RenderLevelStageEvent.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/client/event/RenderLevelStageEvent.java"
+    },
+    "n-serverconfig": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "patches/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java.patch",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/patches/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java.patch"
+    },
+    "n-shader": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "src/main/java/net/neoforged/neoforge/client/event/RegisterShadersEvent.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/src/main/java/net/neoforged/neoforge/client/event/RegisterShadersEvent.java"
+    },
+    "n-transources": {
+      "kind": "git",
+      "repository_id": "neo",
+      "path": "buildSrc/src/main/java/net/neoforged/neodev/TransformSources.java",
+      "url": "https://github.com/neoforged/NeoForge/blob/a2d6402a3c1eec093aef7e7d10ac5145906c199e/buildSrc/src/main/java/net/neoforged/neodev/TransformSources.java"
+    },
+    "nat-src": {
+      "kind": "source_artifact",
+      "artifact_id": "neo_at",
+      "url": "https://maven.neoforged.net/releases/net/neoforged/accesstransformers/10.0.1/accesstransformers-10.0.1-sources.jar"
+    },
+    "natml-src": {
+      "kind": "source_artifact",
+      "artifact_id": "neo_at_ml",
+      "url": "https://maven.neoforged.net/releases/net/neoforged/accesstransformers/at-modlauncher/10.0.1/at-modlauncher-10.0.1-sources.jar"
+    },
+    "nbus-src": {
+      "kind": "source_artifact",
+      "artifact_id": "neo_bus_fml",
+      "url": "https://maven.neoforged.net/releases/net/neoforged/bus/8.0.5/bus-8.0.5-sources.jar"
+    },
+    "nfml-src": {
+      "kind": "source_artifact",
+      "artifact_id": "neo_fml",
+      "url": "https://maven.neoforged.net/releases/net/neoforged/fancymodloader/loader/4.0.45/loader-4.0.45-sources.jar"
+    }
+  },
+  "declared_dependency_differences": {
+    "neoforge_gradle_properties": {
+      "fml": "4.0.45",
+      "modlauncher": "11.0.5",
+      "bus": "8.0.2",
+      "coremods": "6.0.4"
+    },
+    "fml_4_0_45_pom": {
+      "modlauncher": "11.0.3",
+      "bus": "8.0.5",
+      "coremods": "7.0.3",
+      "at_modlauncher": "10.0.1"
+    },
+    "resolved_runtime_versions": "unverified"
+  },
+  "probes": [
+    {
+      "id": "S3-R01",
+      "document": "07-registries.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-R02",
+      "document": "07-registries.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-R03",
+      "document": "07-registries.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-R04",
+      "document": "07-registries.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-R05",
+      "document": "07-registries.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-R06",
+      "document": "07-registries.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-R07",
+      "document": "07-registries.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-R08",
+      "document": "07-registries.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-T01",
+      "document": "08-access-and-transformers.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-T02",
+      "document": "08-access-and-transformers.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-T03",
+      "document": "08-access-and-transformers.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-T04",
+      "document": "08-access-and-transformers.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-T05",
+      "document": "08-access-and-transformers.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-T06",
+      "document": "08-access-and-transformers.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-T07",
+      "document": "08-access-and-transformers.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-D01",
+      "document": "09-discovery-and-metadata.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-D02",
+      "document": "09-discovery-and-metadata.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-D03",
+      "document": "09-discovery-and-metadata.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-D04",
+      "document": "09-discovery-and-metadata.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-D05",
+      "document": "09-discovery-and-metadata.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-D06",
+      "document": "09-discovery-and-metadata.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-D07",
+      "document": "09-discovery-and-metadata.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-E01",
+      "document": "10-event-semantics.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-E02",
+      "document": "10-event-semantics.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-E03",
+      "document": "10-event-semantics.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-E04",
+      "document": "10-event-semantics.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-E05",
+      "document": "10-event-semantics.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-E06",
+      "document": "10-event-semantics.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-P01",
+      "document": "11-data-lifecycle.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-P02",
+      "document": "11-data-lifecycle.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-P03",
+      "document": "11-data-lifecycle.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-P04",
+      "document": "11-data-lifecycle.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-P05",
+      "document": "11-data-lifecycle.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-P06",
+      "document": "11-data-lifecycle.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-P07",
+      "document": "11-data-lifecycle.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-P08",
+      "document": "11-data-lifecycle.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-N01",
+      "document": "12-network-protocol.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-N02",
+      "document": "12-network-protocol.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-N03",
+      "document": "12-network-protocol.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-N04",
+      "document": "12-network-protocol.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-N05",
+      "document": "12-network-protocol.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-N06",
+      "document": "12-network-protocol.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-N07",
+      "document": "12-network-protocol.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-N08",
+      "document": "12-network-protocol.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-X01",
+      "document": "13-mixinextras.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-X02",
+      "document": "13-mixinextras.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-X03",
+      "document": "13-mixinextras.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-X04",
+      "document": "13-mixinextras.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-X05",
+      "document": "13-mixinextras.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-X06",
+      "document": "13-mixinextras.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-X07",
+      "document": "13-mixinextras.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-C01",
+      "document": "14-client-rendering.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-C02",
+      "document": "14-client-rendering.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-C03",
+      "document": "14-client-rendering.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-C04",
+      "document": "14-client-rendering.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-C05",
+      "document": "14-client-rendering.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-C06",
+      "document": "14-client-rendering.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-C07",
+      "document": "14-client-rendering.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-L01",
+      "document": "15-resources-and-datagen.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-L02",
+      "document": "15-resources-and-datagen.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-L03",
+      "document": "15-resources-and-datagen.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-L04",
+      "document": "15-resources-and-datagen.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-L05",
+      "document": "15-resources-and-datagen.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-L06",
+      "document": "15-resources-and-datagen.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-A01",
+      "document": "16-transform-audit.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-A02",
+      "document": "16-transform-audit.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-A03",
+      "document": "16-transform-audit.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-A04",
+      "document": "16-transform-audit.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-A05",
+      "document": "16-transform-audit.md",
+      "status": "not_run"
+    },
+    {
+      "id": "S3-A06",
+      "document": "16-transform-audit.md",
+      "status": "not_run"
+    }
+  ]
+}

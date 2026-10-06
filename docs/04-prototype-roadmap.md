@@ -12,6 +12,8 @@
 
 **补充前置验收：映射与 Mixin。** 按 [专项调查的验证矩阵](05-mapping-and-mixin.md) 先完成 M01–M04 的命名、refmap 和访问规则检查，再建立单一 Mixin 服务与 X01–X04 的注入 / 结构变化实验。映射文件可以读取、API 样例可以编译，都不能替代这一步。早期统一 API 的原生对照可并行推进，但原生态模组加载成功的结论依赖此闭环。
 
+**第三轮调查补充。** 按 [06–16 专项](06-stage3-investigation.md) 将注册窗口、发现 / 依赖图、接口 ABI、Transformer 排序和最小 Audit 纳入前置契约。原型至少覆盖直接注册与 Deferred supplier 的可见性、世界动态定义与 Holder 身份、合法与不合法的变换顺序。NeoForge 构建属性与 FML 传递依赖声明存在版本差异，先取得实际解析 / 安装产物，再锁运行组合；见 [来源索引](stage3-sources.md)。
+
 ## 2. 阶段 1：用新 Common Mod 验证最小统一服务
 
 先使用一个不依赖复杂注入的新样例模组：注册一个物品，监听服务器与世界 Tick，加载一份自定义 JSON，发送一组 C2S / S2C 消息。可先用三端原生适配样例对照契约，但最终还要迁入自主内核。
@@ -35,6 +37,8 @@
 
 验收条件：不启动另外两套完整加载器；同一测试 JAR 在原生 Fabric 与 NeoForbric 中比较入口、注册状态和行为轨迹；Mojang / intermediary / SRG 转换的已覆盖成员能正确链接；必要 Mixin 注入实际执行，错误注入目标可归因。
 
+加入 [发现探针 S3-D](09-discovery-and-metadata.md)、[变换探针 S3-T](08-access-and-transformers.md) 与 [审计探针 S3-A](16-transform-audit.md) 的最小子集。若样本包含 MixinExtras，必须用 [S3-X](13-mixinextras.md) 验证其 operation / local 行为，不能用普通 Inject 的结果替代。
+
 仅通过 `fabric.mod.json` 识别、进入标题界面或没有 `ClassNotFoundException`，都不足以宣告这一阶段完成。
 
 ## 4. 阶段 3：逐个接入 NeoForge 与 Forge
@@ -45,11 +49,15 @@
 
 验收条件：各用一个固定 JAR 的原生环境作为对照；注册发生在对应合法窗口；延迟工作完成后才越过阶段屏障；受支持的运行事件有正确结果与次数；未知必需功能标为不支持，不用吞异常换取启动成功。
 
+分别运行 [注册 S3-R](07-registries.md) 与 [事件 S3-E](10-event-semantics.md) 探针，确认 priority、receiveCanceled、结果修改和 enqueueWork 屏障。首批 JAR 若要求网络，必须提前执行 [S3-N](12-network-protocol.md)，完整走 login→configuration→play；payload 注册成功不能代替握手。
+
 ## 5. 阶段 4：结构与复杂领域
 
-在初始加载路径稳定后，再按 Patch 审计推进伤害 / 交互、capability / attachment、网络协商、渲染、动态注册表与持久化。
+在初始加载路径稳定后，扩大伤害 / 交互、capability / attachment、网络协议、渲染、动态内容与持久化覆盖。注册定义、Holder、必要 ABI 和握手框架此前已纳入；这一阶段增加复杂功能，而不是首次补这些基础契约。
 
 每个领域先提交调用点与结果契约，再编写原生对照探针。优先用能区分不同实现的实验，例如“取消是否发生在扣耐久前”“复制实体后数据是否共享错误”“连接协商失败时是否仍允许进入世界”。避免只检查统一事件方法被调用。
+
+数据生命周期按 [S3-P](11-data-lifecycle.md) 单独立项；客户端 [S3-C](14-client-rendering.md) 和资源 / datagen [S3-L](15-resources-and-datagen.md) 另行验收。服务端通过不外推到客户端；存档、复制与同步也不互相替代。
 
 ## 6. 阶段 5：混装与保存重载
 
