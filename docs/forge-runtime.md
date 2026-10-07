@@ -14,7 +14,7 @@
 
 Forge 版本取自[官方 1.21.1 推荐版本](https://files.minecraftforge.net/net/minecraftforge/forge/index_1.21.1.html)。安装器 SHA-256、39 个规范化输入的完整 inventory / SHA-256、SRG 命名输入哈希固定在 `forge-1.21.1.lock.json`。输入准备只运行安装器声明且版本在白名单中的 installertools / FART / binarypatcher，逐项验证 processor 输出；不会执行安装器的启动脚本。
 
-`forge-1.21.1.anchors.json` 固定真实上游类的 SHA-256 和完整方法 descriptor，包括 Launcher、FML、状态提供器、注册表、config、network、AT、coremod 与版本兼容矩阵。完整类哈希同时锚定指令调用顺序。打开 G 前核验全部锚点，偏离直接 `FORGE_ANCHOR`，不尝试相邻版本。报告保存未变换的 native 方法调用序列及状态定义，失败报告保留 cause 链。
+`forge-1.21.1.anchors.json` 固定 40 个真实上游类的 SHA-256 和完整方法 descriptor，包括 Launcher、FML、状态提供器、注册表、config、network、AT、coremod 与版本兼容矩阵。完整类哈希同时锚定指令调用顺序。打开 G 前核验全部锚点，偏离直接 `FORGE_ANCHOR`，不尝试相邻版本。报告保存未变换的 native 方法调用序列及状态定义，失败报告保留 cause 链。
 
 Forge 输入工具库由安装器确定；共享 ASM 仍由 kernel 提供 9.10.1。此次只证明固定 Forge 工具在这套共享 ASM 上的以下契约，未宣称任意模组的 ASM ABI 都兼容。
 
@@ -43,6 +43,8 @@ Launcher facade 填充真实 Environment / blackboard，提供 SRG→Mojang 成�
 准入 `javafml` / `lowcodefml` 模组，加载其 AT 与 manifest `MixinConfigs`，通过 NF 的 Mixin service 执行 Mixin / MixinExtras，转换 SRG 成员和 refmap 为 Mojang 名称。EventBus 动态生成的 dispatcher 也由 G 定义并记录所属输入。外部 JS / Java coremod、custom transformation service、其他 language / state provider 和 launch plugin 在构造前拒绝 `FORGE_FEATURE_UNSUPPORTED`；MixinSquared 尚未验证。Forge profile 当前只接入 Forge 模组，不支持三端混装。
 
 客户端结构 hook 必须读取原始固定输入。实际失败 audit 显示 native plugin 已改写 `Main` 的哈希，而客户端生命周期 hook 随后仍按原始哈希校验；现通过显式排序依赖让结构 hook 在 native plugin 之前执行。Forge `Minecraft` 的退出调用锚点是五处，不能照搬 NeoForge 的两处。回归测试只变换 `Main` / `Minecraft` 字节码，不执行入口，并保留对错误输入的拒绝。
+
+NF 提前暴露 `ModList` metadata 供 Mixin plugin 查询，因此 Minecraft 的 crash-report preload 可能早于原生 container 构造。准备阶段使用 Forge 自己的 `setLoadedMods(emptyList)` 初始化空索引；查询 container 返回 empty，报告状态为 `NONE`，没有提前构造模组。之后原生 gather 创建并索引真实 containers。内部模组和 JEI probe 均验证构造前的查询和 crash report，以及构造后的真实 G 对象。
 
 ## Forge 依赖兼容矩阵
 

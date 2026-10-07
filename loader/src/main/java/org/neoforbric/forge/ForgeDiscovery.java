@@ -29,7 +29,7 @@ public final class ForgeDiscovery {
             Archive archive = original.permitDeclaredNested(discovery.permitted.getOrDefault(original.hash(), Set.of()));
             if (archive.read("META-INF/mods.toml") != null) for (var metadata : ForgeMetadata.read(archive).mods()) {
                 mods.add(new Discovery.Candidate(archive, metadata)); audit.record("DISCOVER", "mod-discovered", metadata.id(), Map.of("ecosystem", "FORGE", "descriptor", "META-INF/mods.toml", "source", archive.path().toString(), "sha256", archive.hash(), "version", metadata.version()));
-            } else if (!roots.contains(original)) { libraries.add(archive); audit.record("DISCOVER", "forge-library", archive.path().toString(), Map.of("sha256", archive.hash())); }
+            } else if (!roots.contains(original)) { ForgeAdmission.library(archive); libraries.add(archive); audit.record("DISCOVER", "forge-library", archive.path().toString(), Map.of("sha256", archive.hash())); }
             else throw new Failure("FORGE_PROFILE", "Forge profile requires META-INF/mods.toml: " + archive.path());
         }
         return new Result(List.copyOf(mods), List.copyOf(libraries));

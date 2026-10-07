@@ -30,6 +30,19 @@ class ForgeModsTest {
     @Test void unadaptedTakeoverIsRejectedBeforeConstruction() throws Exception {
         Archive archive = Archive.read(TestJars.jar(root.resolve("service.jar"),Map.of("META-INF/mods.toml",TestJars.text(toml("service","")),"META-INF/services/cpw.mods.modlauncher.api.ITransformationService",TestJars.text("danger.Service"))));
         var mod=new Discovery.Candidate(archive,ForgeMetadata.read(archive).mods().getFirst()); assertEquals("FORGE_FEATURE_UNSUPPORTED",assertThrows(Failure.class,()->ForgeAdmission.admit(mod)).code());
+        var library = Archive.read(TestJars.jar(root.resolve("library.jar"), Map.of("META-INF/services/cpw.mods.modlauncher.serviceapi.ILaunchPluginService", TestJars.text("danger.Plugin"))));
+        assertEquals("FORGE_FEATURE_UNSUPPORTED", assertThrows(Failure.class, () -> ForgeAdmission.library(library)).code());
+    }
+    @Test void optionalDependenciesAndDistDoNotBecomeMandatory() throws Exception {
+        var archive = jar("optional", "[[dependencies.optional]]\nmodId=\"bb\"\nmandatory=false\nversionRange=\"[2,3)\"\nside=\"BOTH\"\n");
+        var optional = new Discovery.Candidate(archive, ForgeMetadata.read(archive).mods().getFirst());
+        assertEquals(List.of(optional), Resolver.plan(List.of(optional), "server", new AuditLog(), false, false, true).mods());
+        var installed = jar("bb", ""); var bb = new Discovery.Candidate(installed, ForgeMetadata.read(installed).mods().getFirst());
+        assertEquals("DEPENDENCY_VERSION", assertThrows(Failure.class, () -> Resolver.plan(List.of(optional, bb), "server", new AuditLog(), false, false, true)).code());
+        var sided = jar("sided", "[[dependencies.sided]]\nmodId=\"missing\"\nmandatory=true\nversionRange=\"[1,2)\"\nside=\"CLIENT\"\n");
+        var mod = new Discovery.Candidate(sided, ForgeMetadata.read(sided).mods().getFirst());
+        assertEquals(List.of(mod), Resolver.plan(List.of(mod), "server", new AuditLog(), false, false, true).mods());
+        assertEquals("MISSING_DEPENDENCY", assertThrows(Failure.class, () -> Resolver.plan(List.of(mod), "client", new AuditLog(), false, false, true)).code());
     }
     @Test void mapsSrgBytecodeAndRefmapButRejectsUnknownMembers() throws Exception {
         ClassWriter writer=new ClassWriter(0);writer.visit(Opcodes.V21,Opcodes.ACC_PUBLIC,"test/Mapping",null,"java/lang/Object",null);

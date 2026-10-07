@@ -60,6 +60,7 @@ public final class ForgeHostHook implements TransformPipeline.Transformer {
                     case "getGamePath()Ljava/nio/file/Path;" -> "gamePath";
                     case "getNameFunction(Ljava/lang/String;)Ljava/util/Optional;" -> "findNameMapping";
                     case "getGameLayer()Ljava/lang/ModuleLayer;" -> "gameLayer";
+                    case "getLaunchHandler()Lnet/minecraftforge/fml/loading/targets/CommonLaunchHandler;" -> "launchHandler";
                     default -> null;
                 };
                 if (target != null) {

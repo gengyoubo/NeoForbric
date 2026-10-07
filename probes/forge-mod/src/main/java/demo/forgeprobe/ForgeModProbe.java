@@ -28,6 +28,8 @@ public final class ForgeModProbe {
     private final ForgeConfigSpec.IntValue answer;
     public ForgeModProbe() {
         owner = Thread.currentThread().getName();
+        var service = java.util.ServiceLoader.load(ProbeService.class).findFirst().orElseThrow();
+        if (service.value() != 7 || service.getClass().getClassLoader() != getClass().getClassLoader()) throw new IllegalStateException("Named module ServiceLoader lost provider ownership");
         var bus = FMLJavaModLoadingContext.get().getModEventBus(); ITEMS.register(bus); CUSTOM.register(bus);
         var builder = new ForgeConfigSpec.Builder(); answer = builder.defineInRange("answer", 42, 0, 100);
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, builder.build());

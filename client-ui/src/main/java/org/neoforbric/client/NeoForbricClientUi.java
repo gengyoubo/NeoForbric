@@ -6,6 +6,7 @@ import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.*;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import org.neoforbric.api.LoadedMods;
 import org.neoforbric.api.ModEcosystem;
 import org.lwjgl.glfw.*;
@@ -23,6 +24,18 @@ public final class NeoForbricClientUi {
     public static void onTitleScreen(Object instance) {
         TitleScreen screen = (TitleScreen) instance;
         if (screen.children().stream().anyMatch(child -> child instanceof ModsButton)) return;
+        var nativeMods = screen.children().stream().filter(child -> child instanceof Button).map(child -> (Button)child)
+                .filter(button -> button.getMessage().getContents() instanceof TranslatableContents text && text.getKey().equals("fml.menu.mods")).findFirst();
+        if (nativeMods.isPresent()) {
+            // Native patched menus already reserve a slot for Mods, often beside Realms.
+            // Replace that slot while preserving every native row and button rectangle.
+            Button original = nativeMods.get();
+            try {
+                Method remove = Screen.class.getDeclaredMethod("removeWidget", GuiEventListener.class); remove.setAccessible(true); remove.invoke(screen, original);
+            } catch (ReflectiveOperationException error) { throw new IllegalStateException("Cannot replace native Mods button", error); }
+            addModsButton(screen, new ModsButton(original.getX(), original.getY(), original.getWidth(), screen));
+            return;
+        }
         var mainButtons = screen.children().stream().filter(child -> child instanceof Button)
                 .map(child -> (Button) child).filter(button -> !(button instanceof PlainTextButton) && button.getWidth() == 200)
                 .sorted(Comparator.comparingInt(AbstractWidget::getY)).toList();
@@ -35,7 +48,9 @@ public final class NeoForbricClientUi {
                 && !(widget instanceof PlainTextButton) && !mainButtons.contains(widget) && widget.getY() > originalBottom)
             widget.setY(controlsY);
         for (int row = 0; row < mainButtons.size(); row++) mainButtons.get(row).setY(base + row * rowStep);
-        ModsButton button = new ModsButton(screen.width / 2 - 100, base + mainButtons.size() * rowStep, screen);
+        addModsButton(screen, new ModsButton(screen.width / 2 - 100, base + mainButtons.size() * rowStep, 200, screen));
+    }
+    private static void addModsButton(TitleScreen screen, ModsButton button) {
         try {
             Method add = Screen.class.getDeclaredMethod("addRenderableWidget", GuiEventListener.class); add.setAccessible(true); add.invoke(screen, button);
         } catch (ReflectiveOperationException error) { throw new IllegalStateException("Cannot attach Mods button to 1.21.1 TitleScreen", error); }
@@ -71,8 +86,8 @@ public final class NeoForbricClientUi {
         net.minecraft.server.Bootstrap.realStdoutPrintln("MODS_BACK_OK title=TitleScreen buttons=1");
     }
     private static final class ModsButton extends Button {
-        ModsButton(int x, int y, Screen parent) {
-            super(x, y, 200, 20, Component.literal("Mods"), button -> Minecraft.getInstance().setScreen(new NeoForbricModsScreen(parent)), DEFAULT_NARRATION);
+        ModsButton(int x, int y, int width, Screen parent) {
+            super(x, y, width, 20, Component.literal("Mods"), button -> Minecraft.getInstance().setScreen(new NeoForbricModsScreen(parent)), DEFAULT_NARRATION);
             setTooltip(Tooltip.create(Component.literal("View source ecosystems and loader decisions")));
         }
         @Override protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {

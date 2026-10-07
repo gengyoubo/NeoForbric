@@ -48,12 +48,14 @@ public final class NativeForgeRuntime {
     public static void prepare(Path game, Path universal, List<Path> mods, List<String> order,
             ClassLoader loader, Map<Path, Consumer<Consumer<byte[]>>> scans, List<Path> accessRules) throws Exception {
         if (prepared) throw new IllegalStateException("FORGE_STATE: Metadata prepared twice"); prepared = true;
+        ForgeBridge.minecraftPaths(game, universal);
         FMLLoader.progressWindowTick = () -> {};
-        field(FMLLoader.class, "launchHandlerName", "neoforbric_forge_" + ForgeBridge.dist().name().toLowerCase(Locale.ROOT));
+        field(FMLLoader.class, "launchHandlerName", ForgeBridge.launchHandler().name());
         var languageConstructor = LanguageLoadingProvider.class.getDeclaredConstructor(); languageConstructor.setAccessible(true);
         field(FMLLoader.class, "languageLoadingProvider", languageConstructor.newInstance());
         // Use Forge's no-window provider. This prepares loading progress only; it never initializes GLFW.
         ImmediateWindowHandler.load("neoforbric", new String[0]);
+        if (ForgeBridge.dist() == net.minecraftforge.api.distmarker.Dist.CLIENT) field(ImmediateWindowHandler.class, "provider", new ForgeWindowProvider());
         List<ModFile> admitted = new ArrayList<>();
         admitted.add(file(game, source -> new ModFileInfo((ModFile)source, config(Map.of("modLoader", "minecraft", "loaderVersion", "[1.21.1]", "license", "Minecraft EULA",
                 "mods", List.of(Map.of("modId", "minecraft", "version", "1.21.1", "displayName", "Minecraft")))), ignored -> {},
@@ -124,7 +126,11 @@ public final class NativeForgeRuntime {
     private static ModuleLayer layer(List<ModFile> files, ClassLoader loader) {
         Map<String, ModuleReference> references = new LinkedHashMap<>();
         for (var file : files) {
-            var descriptor = ModuleDescriptor.newAutomaticModule(file.getModFileInfo().moduleName()).packages(file.getSecureJar().getPackages()).build();
+            var builder = ModuleDescriptor.newAutomaticModule(file.getModFileInfo().moduleName()).packages(file.getSecureJar().getPackages());
+            // Named automatic modules need their declared SPI providers in the
+            // descriptor; ServiceLoader otherwise ignores classpath providers in them.
+            file.getSecureJar().getProviders().forEach(provider -> builder.provides(provider.serviceName(), provider.providers()));
+            var descriptor = builder.build();
             if (references.putIfAbsent(descriptor.name(), new ModuleReference(descriptor, file.getFilePath().toUri()) {
                 public ModuleReader open() { throw new UnsupportedOperationException("NF owns module bytes"); }
             }) != null) throw new IllegalStateException("FORGE_MODULE: Duplicate " + descriptor.name());

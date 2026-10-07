@@ -34,8 +34,10 @@ public final class ForgeBaseline {
                 try {
                     report.put("nativeServices", runtime.prepare(loader, output.resolve("run"), arguments[4]));
                     // Transform the real client entrypoint bytes, without defining or invoking them.
-                    for (String name : List.of(ClientLifecycleHook.MAIN, ClientLifecycleHook.CLIENT, TitleScreenHook.TARGET)) pipeline.apply(name, index.original(name), index::original, audit);
-                    report.put("clientHookBytecode", "PASS; original-byte hooks precede native plugins; no class definition");
+                    if (arguments[4].equals("client")) {
+                        for (String name : List.of(ClientLifecycleHook.MAIN, ClientLifecycleHook.CLIENT, TitleScreenHook.TARGET)) pipeline.apply(name, index.original(name), index::original, audit);
+                        report.put("clientHookBytecode", "PASS; original-byte hooks precede native plugins; no class definition");
+                    }
                     var probe = Class.forName("org.neoforbric.forge.runtime.ForgeContractProbe", true, loader);
                     report.put("contracts", ForgeRuntime.invoke(probe.getMethod("run", Path.class), output.resolve("run")));
                     if (loader.hasDefined("net.minecraft.client.Minecraft")) throw new Failure("FORGE_CLIENT_DEFINITION", "Headless probe defined Minecraft client");

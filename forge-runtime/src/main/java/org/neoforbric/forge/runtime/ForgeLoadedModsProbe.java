@@ -6,6 +6,8 @@ import net.minecraftforge.fml.*;
 public final class ForgeLoadedModsProbe {
     private ForgeLoadedModsProbe() {}
     public static Map<String, Object> beforeConstruction(List<String> ids) throws Exception {
+        // Keep short-lived headless probes independent of the network and daemon shutdown timing.
+        net.minecraftforge.fml.loading.FMLConfig.updateConfig(net.minecraftforge.fml.loading.FMLConfig.ConfigValue.VERSION_CHECK, false);
         for (String id : ids) if (ModList.get().getModContainerById(id).isPresent()) throw new IllegalStateException("Mod constructed before native gather: " + id);
         var crash = ModList.class.getDeclaredMethod("crashReport"); crash.setAccessible(true);
         String report = (String)crash.invoke(ModList.get());

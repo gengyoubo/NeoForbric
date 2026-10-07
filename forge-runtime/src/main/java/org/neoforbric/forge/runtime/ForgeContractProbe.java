@@ -84,6 +84,11 @@ public final class ForgeContractProbe {
         require(ForgeContractProbe.class.getClassLoader() == ModContainer.class.getClassLoader(), "Forge classes must share G");
         require(Launcher.INSTANCE.environment().getProperty(IEnvironment.Keys.NAMING.get()).orElseThrow().equals("mojang"), "Missing launcher environment");
         require(Launcher.INSTANCE.blackboard() != null, "Missing launcher blackboard");
+        var launch = net.minecraftforge.fml.loading.FMLLoader.getLaunchHandler();
+        require(launch != null && launch.getDist() == ForgeBridge.dist() && !launch.isData() && launch.isProduction() && launch.getNaming().equals("mojang"), "Missing passive production launch handler");
+        require(Launcher.INSTANCE.environment().findLaunchHandler(launch.name()).orElseThrow() == launch, "Launch handler query identity");
+        try { launch.launchService(new String[0], ModuleLayer.boot()); throw new IllegalStateException("Launch handler took over main"); }
+        catch (UnsupportedOperationException expected) { require(expected.getMessage().startsWith("FORGE_LAUNCH_OWNERSHIP"), "Wrong launch handler refusal"); }
         var pluginHandlerField = Launcher.class.getDeclaredField("launchPlugins"); pluginHandlerField.setAccessible(true);
         var pluginHandler = Objects.requireNonNull(pluginHandlerField.get(Launcher.INSTANCE), "Missing passive launch plugin handler");
         var pluginsField = pluginHandler.getClass().getDeclaredField("plugins"); pluginsField.setAccessible(true);

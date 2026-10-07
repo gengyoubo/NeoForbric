@@ -30,6 +30,8 @@ public final class ForgeBridge {
     private static List<ITransformer<?>> coremods = List.of();
     private static EventBusEngine events;
     private static RuntimeDistCleaner cleaner;
+    private static net.minecraftforge.fml.loading.targets.CommonLaunchHandler handler;
+    private static List<Path> minecraftPaths = List.of();
     private ForgeBridge() {}
     public static Dist dist() { return Objects.requireNonNull(side, "Forge side has not been bound"); }
     public static String naming() { return "mojang"; }
@@ -45,7 +47,20 @@ public final class ForgeBridge {
             }
         };
     }
-    public static Optional<?> findLaunchHandler(String name) { return Optional.empty(); }
+    public static Optional<?> findLaunchHandler(String name) { return handler != null && handler.name().equals(name) ? Optional.of(handler) : Optional.empty(); }
+    public static net.minecraftforge.fml.loading.targets.CommonLaunchHandler launchHandler() { return Objects.requireNonNull(handler, "Forge launch query adapter not ready"); }
+    public static void minecraftPaths(Path game, Path universal) { minecraftPaths = List.of(game, universal); }
+    private static final class PassiveLaunchHandler extends net.minecraftforge.fml.loading.targets.CommonLaunchHandler {
+        PassiveLaunchHandler() { super(side == Dist.CLIENT ? CLIENT : SERVER, "neoforbric_forge_"); }
+        public boolean isProduction() { return true; }
+        public String getNaming() { return "mojang"; }
+        public List<Path> getMinecraftPaths() { return minecraftPaths; }
+        public ServiceRunner launchService(String[] args, ModuleLayer layer) { throw takeover(); }
+        protected String[] preLaunch(String[] args, ModuleLayer layer) { throw takeover(); }
+        protected ServiceRunner makeService(String[] args, ModuleLayer layer) { throw takeover(); }
+        protected void runTarget(String module, String target, String[] args, ModuleLayer layer) { throw takeover(); }
+        private UnsupportedOperationException takeover() { return new UnsupportedOperationException("FORGE_LAUNCH_OWNERSHIP: NF owns JVM main and G"); }
+    }
     public static Optional<?> findLayerManager() { return Optional.empty(); }
     public static Optional<BiFunction<INameMappingService.Domain, String, String>> findNameMapping(String namespace) {
         return namespace.equals("srg") ? Optional.of((domain, name) -> map(name)) : Optional.empty();
@@ -58,6 +73,7 @@ public final class ForgeBridge {
     public static Map<String, Object> prepare(Path gameDirectory, String physicalSide, Path universal, Path accessRules, Map<String, String> mapping) throws Exception {
         if (directory != null) throw new IllegalStateException("FORGE_STATE: Bridge already bound");
         directory = gameDirectory; side = physicalSide.equals("client") ? Dist.CLIENT : Dist.DEDICATED_SERVER; names = Map.copyOf(mapping);
+        handler = new PassiveLaunchHandler();
         var constructor = Launcher.class.getDeclaredConstructor(); constructor.setAccessible(true); Launcher.INSTANCE = constructor.newInstance();
         var environment = Launcher.INSTANCE.environment();
         environment.putPropertyIfAbsent(IEnvironment.Keys.GAMEDIR.get(), directory);

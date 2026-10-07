@@ -974,6 +974,87 @@
         "lambda$static$0(Ljava/nio/file/spi/FileSystemProvider;)Z",
         "<clinit>()V"
       ]
+    },
+    "net.minecraftforge.fml.loading.ModSorter": {
+      "sha256": "8d9334a08e4aa0220601eab94c49de29e3c0b1fe7604bf7e14915dae14aa9ba0",
+      "methods": [
+        "<init>(Ljava/util/List;)V",
+        "sort(Ljava/util/List;Ljava/util/List;)Lnet/minecraftforge/fml/loading/LoadingModList;",
+        "sort()V",
+        "addDependency(Lcom/google/common/graph/MutableGraph;Lnet/minecraftforge/forgespi/language/IModInfo$ModVersion;)V",
+        "buildUniqueList()V",
+        "detectSystemMods(Ljava/util/Map;)V",
+        "verifyDependencyVersions()Ljava/util/List;",
+        "formatDependencyError(Lnet/minecraftforge/forgespi/language/IModInfo$ModVersion;Ljava/util/Map;)Ljava/lang/String;",
+        "modVersionContained(Lnet/minecraftforge/forgespi/language/IModInfo$ModVersion;Ljava/util/Map;)Z",
+        "lambda$verifyDependencyVersions$14(Ljava/util/Map;Lnet/minecraftforge/forgespi/language/IModInfo$ModVersion;)Lnet/minecraftforge/fml/loading/EarlyLoadingException$ExceptionData;",
+        "lambda$verifyDependencyVersions$13(Ljava/util/Map;Lnet/minecraftforge/forgespi/language/IModInfo$ModVersion;)Ljava/lang/String;",
+        "lambda$verifyDependencyVersions$12(Lnet/minecraftforge/forgespi/language/IModInfo$ModVersion;)Z",
+        "lambda$verifyDependencyVersions$11(Ljava/util/Map;Lnet/minecraftforge/forgespi/language/IModInfo$ModVersion;)Ljava/lang/String;",
+        "lambda$verifyDependencyVersions$10(Ljava/util/Map;Lnet/minecraftforge/forgespi/language/IModInfo$ModVersion;)Z",
+        "lambda$verifyDependencyVersions$9(Lnet/minecraftforge/forgespi/language/IModInfo$ModVersion;)Z",
+        "lambda$verifyDependencyVersions$8(Lnet/minecraftforge/forgespi/language/IModInfo;)Ljava/util/stream/Stream;",
+        "lambda$buildUniqueList$7(Ljava/util/Map$Entry;)Lnet/minecraftforge/forgespi/language/IModInfo;",
+        "lambda$buildUniqueList$6(Ljava/util/Map$Entry;)Z",
+        "lambda$sort$5(Ljava/lang/String;)Lnet/minecraftforge/fml/loading/EarlyLoadingException$ExceptionData;",
+        "lambda$sort$4(Lnet/minecraftforge/fml/loading/moddiscovery/ModFileInfo;Ljava/util/function/Consumer;)V",
+        "lambda$sort$3(Lcom/google/common/graph/MutableGraph;Lnet/minecraftforge/forgespi/language/IModInfo$ModVersion;)V",
+        "lambda$sort$2(Ljava/util/concurrent/atomic/AtomicInteger;Lnet/minecraftforge/fml/loading/moddiscovery/ModFileInfo;)Ljava/lang/Integer;",
+        "lambda$sort$1(Lnet/minecraftforge/fml/loading/moddiscovery/ModFile;)Lnet/minecraftforge/fml/loading/moddiscovery/ModInfo;",
+        "lambda$sort$0(Lnet/minecraftforge/fml/loading/moddiscovery/ModFile;)Lnet/minecraftforge/fml/loading/moddiscovery/ModInfo;",
+        "<clinit>()V"
+      ]
+    },
+    "net.minecraftforge.fml.loading.VersionSupportMatrix": {
+      "sha256": "deb0a38152e7f8c42dd261117d4fa9c19bdfa8477231b8b23bf6e58e4f7a7510",
+      "methods": [
+        "<init>()V",
+        "testVersionSupportMatrix(Lorg/apache/maven/artifact/versioning/VersionRange;Ljava/lang/String;Ljava/lang/String;Ljava/util/function/BiPredicate;)Z",
+        "testVersionSupportMatrix(Lorg/apache/maven/artifact/versioning/VersionRange;Ljava/lang/String;Ljava/lang/String;)Z",
+        "entry(Ljava/lang/String;Ljava/lang/String;)Ljava/util/Map$Entry;",
+        "entry(Ljava/lang/String;Ljava/util/List;)Ljava/util/Map$Entry;",
+        "lambda$entry$0(Lorg/apache/maven/artifact/versioning/DefaultArtifactVersion;)Lorg/apache/maven/artifact/versioning/ArtifactVersion;",
+        "<clinit>()V"
+      ]
+    },
+    "net.minecraftforge.fml.ModList": {
+      "sha256": "a1502bdddc20a431677b681b70e49b0ca8d198ff90014c9dbe0a106466b41f26",
+      "methods": [
+        "<init>(Ljava/util/List;Ljava/util/List;)V",
+        "getModContainerState(Ljava/lang/String;)Ljava/lang/String;",
+        "fileToLine(Lnet/minecraftforge/forgespi/locating/IModFile;)Ljava/lang/String;",
+        "crashReport()Ljava/lang/String;",
+        "of(Ljava/util/List;Ljava/util/List;)Lnet/minecraftforge/fml/ModList;",
+        "get()Lnet/minecraftforge/fml/ModList;",
+        "getModFiles()Ljava/util/List;",
+        "getModFileById(Ljava/lang/String;)Lnet/minecraftforge/forgespi/language/IModFileInfo;",
+        "futureVisitor(Lnet/minecraftforge/fml/IModStateTransition$EventGenerator;Lnet/minecraftforge/fml/loading/progress/ProgressMeter;Ljava/util/function/BiFunction;)Ljava/util/function/Function;",
+        "completableFutureFromExceptionList(Ljava/util/List;)Ljava/util/concurrent/CompletionStage;",
+        "gather(Ljava/util/List;)Ljava/util/concurrent/CompletableFuture;",
+        "setLoadedMods(Ljava/util/List;)V",
+        "getModObjectById(Ljava/lang/String;)Ljava/util/Optional;",
+        "getModContainerById(Ljava/lang/String;)Ljava/util/Optional;",
+        "getModContainerByObject(Ljava/lang/Object;)Ljava/util/Optional;",
+        "getMods()Ljava/util/List;",
+        "isLoaded(Ljava/lang/String;)Z",
+        "size()I",
+        "getAllScanData()Ljava/util/List;",
+        "forEachModFile(Ljava/util/function/Consumer;)V",
+        "applyForEachModFile(Ljava/util/function/Function;)Ljava/util/stream/Stream;",
+        "forEachModContainer(Ljava/util/function/BiConsumer;)V",
+        "forEachModInOrder(Ljava/util/function/Consumer;)V",
+        "applyForEachModContainer(Ljava/util/function/Function;)Ljava/util/stream/Stream;",
+        "lambda$getModContainerByObject$9(Ljava/lang/Object;Lnet/minecraftforge/fml/ModContainer;)Z",
+        "lambda$getModObjectById$8(Ljava/lang/Object;)Ljava/lang/Object;",
+        "lambda$setLoadedMods$7(Lnet/minecraftforge/fml/ModContainer;)I",
+        "lambda$gather$6(Ljava/util/List;Ljava/lang/Object;)Ljava/util/List;",
+        "lambda$gather$5(Ljava/lang/Void;Ljava/lang/Throwable;)Ljava/lang/Object;",
+        "lambda$gather$4(Ljava/util/List;ILjava/lang/Object;Ljava/lang/Throwable;)V",
+        "lambda$completableFutureFromExceptionList$3(Ljava/util/Map$Entry;)Z",
+        "lambda$completableFutureFromExceptionList$2(Ljava/util/Map$Entry;)Z",
+        "lambda$futureVisitor$1(Lnet/minecraftforge/fml/IModStateTransition$EventGenerator;Lnet/minecraftforge/fml/loading/progress/ProgressMeter;Ljava/util/function/BiFunction;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;",
+        "lambda$futureVisitor$0(Lnet/minecraftforge/fml/IModStateTransition$EventGenerator;Lnet/minecraftforge/fml/loading/progress/ProgressMeter;Ljava/util/function/BiFunction;Ljava/util/concurrent/Executor;Lnet/minecraftforge/fml/ModContainer;)Ljava/util/concurrent/CompletableFuture;"
+      ]
     }
   }
 }
