@@ -5,3 +5,7 @@
 *.log
 /run/
 /neoforbric-installer.jar
+/config/
+/logs/
+/bivrik/
+/.mixin.out/

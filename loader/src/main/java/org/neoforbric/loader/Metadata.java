@@ -54,7 +54,7 @@ public record Metadata(String id, String version, Ecosystem ecosystem, String en
                 }
                 return List.copyOf(result);
             }
-            JsonObject json = StrictJson.object(text);
+            JsonObject json = name.equals("fabric.mod.json") ? FabricJson.object(text) : StrictJson.object(text);
             String id = string(json, "id"), version = string(json, "version");
             String environment = json.has("environment") ? string(json, "environment") : "*";
             if (!Set.of("*", "client", "server").contains(environment)) throw new Failure("METADATA_INVALID", "Invalid environment " + environment);

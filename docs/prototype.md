@@ -88,7 +88,7 @@ JVM → org.neoforbric.bootstrap.Main
 
 同名类出现在不同输入 JAR 时，即使字节相同也拒绝；同一真实路径的重复档案输入只索引一次。尚无库版本选择、包重定位或库下载机制。模组所需的其他类必须随已准入档案提供，不能依赖任意父类路径回退。
 
-JAR 在发现时读成内存快照，后续资源和类定义使用同一份字节。模组和游戏档案统一限制为压缩体 256 MiB、单项 32 MiB、展开总量 256 MiB、文件项 100,000 个，以支持 Cobblemon 的资源 / 嵌套语言库及 Chipped 等包含大量小资源的模组。重映射规范化阶段使用相同的单项和展开总量限制。超限错误会指出具体限制。资源按游戏 JAR、已解析模组顺序聚合；`META-INF/services` 可以由显式 `ServiceLoader.load(SPI, G)` 枚举，测试验证共享 SPI 身份和多个 provider。内核不会据此自动启动 native loader 或转换服务。
+JAR 在发现时读成内存快照，后续资源和类定义使用同一份字节。模组和游戏档案统一限制为压缩体 1 GiB、单项 32 MiB、展开总量 1 GiB、文件项 100,000 个，以支持 Cobblemon 的资源 / 嵌套语言库、Chipped 等包含大量小资源的模组，以及 Z's Medieval Music 等整张原声带类的大体积模组。重映射规范化阶段使用相同的单项和展开总量限制。超限错误会指出具体限制。资源按游戏 JAR、已解析模组顺序聚合；`META-INF/services` 可以由显式 `ServiceLoader.load(SPI, G)` 枚举，测试验证共享 SPI 身份和多个 provider。内核不会据此自动启动 native loader 或转换服务。
 
 资源 URL 使用 `neoforbric:` 自定义内存协议，`.class` 资源视图仍是原始字节，转换后的 SHA-256 另记在定义记录里。依赖 `jar:` URL、磁盘展开或改写资源的库尚未支持。`CodeSource` 保留原始文件位置，源字节身份以审计哈希为准。
 
@@ -113,7 +113,7 @@ JAR 在发现时读成内存快照，后续资源和类定义使用同一份字�
 
 入口是实现共享 `org.neoforbric.api.ModInitializer` 的 public、非 abstract 类，具有 public 无参构造器。这个 SPI 只有 `void onInitialize()`，用于验证入口与加载器身份，尚不是统一 Minecraft 生命周期 API。编译时可参照 `fixtures/mod-a/build.gradle` 对 loader 使用 `compileOnly`，不要把内核复制进模组 JAR。
 
-JSON 使用严格 UTF-8 / JSON 解析，拒绝重复键、额外根值、未知原型字段。原型 id 为 `[a-z][a-z0-9_-]{0,63}`；版本为严格三段 SemVer，支持 prerelease 与 build metadata，比较时忽略 build metadata。依赖表达式支持 `*`、精确版本、`= > >= < <=`，空格连接的条件全部满足才算匹配。这里没有实现 Fabric 谓词或 Maven 区间、`^` / `~`、通配版本和 OR。
+原型 JSON 使用严格 UTF-8 / JSON 解析，拒绝重复键、额外根值、未知原型字段。Fabric 描述文件使用 Fabric Loader 自己的 JSON reader，不开启 lenient，兼容其引号字符串中的原始控制字符及重复键行为。原型 id 为 `[a-z][a-z0-9_-]{0,63}`；版本为严格三段 SemVer，支持 prerelease 与 build metadata，比较时忽略 build metadata。依赖表达式支持 `*`、精确版本、`= > >= < <=`，空格连接的条件全部满足才算匹配。这里没有实现 Fabric 谓词或 Maven 区间、`^` / `~`、通配版本和 OR。
 
 `environment` 为 `*`、`client` 或 `server`；默认 `*`，CLI 默认选择 server。被排除的模组不能满足必需依赖。必需依赖必须存在且版本匹配；可选依赖缺失可忽略，存在时必须匹配。选中的模组依赖和存在的 `after` 项构成前置关系；无关系的节点按 id 排序，循环直接失败。
 

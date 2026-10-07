@@ -7,6 +7,7 @@ import java.util.regex.*;
 import net.fabricmc.mappingio.tree.MappingTree;
 import org.neoforbric.loader.Failure;
 import org.neoforbric.loader.Archive;
+import org.neoforbric.loader.FabricJson;
 
 /** Refmap keys retain the annotation's source spelling; only resolved target values change. */
 final class FabricRefmaps {
@@ -14,7 +15,7 @@ final class FabricRefmaps {
     static Set<String> paths(Archive source) {
         Set<String> paths = new TreeSet<>();
         for (String name : source.names()) if (name.endsWith("refmap.json")) paths.add(name);
-        JsonObject metadata = JsonParser.parseString(new String(source.read("fabric.mod.json"), StandardCharsets.UTF_8)).getAsJsonObject();
+        JsonObject metadata = FabricJson.metadata(source);
         if (metadata.has("mixins")) for (JsonElement entry : metadata.getAsJsonArray("mixins")) {
             String config = entry.isJsonObject() ? entry.getAsJsonObject().get("config").getAsString() : entry.getAsString();
             byte[] bytes = source.read(config);

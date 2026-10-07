@@ -1,20 +1,31 @@
 package org.neoforbric.loader;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.net.URLClassLoader;
+import java.net.URLConnection;
 import java.security.*;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neoforbric.fabric.NativeFabricRuntime;
 
 /** The sole defining loader for all admitted game and mod types. Parent access is an allowlist. */
-public final class GameClassLoader extends SecureClassLoader implements Closeable {
+public final class GameClassLoader extends URLClassLoader implements Closeable {
     static { registerAsParallelCapable(); }
+    // Kept for diagnostics/probes; URLClassLoader has no configurable name.
+    @Override public String getName() { return "NeoForbric-Game"; }
     private final ClassIndex index;
     private final TransformPipeline transforms;
     private final AuditLog audit;
     private final GameResources filesystemResources;
     private final AtomicReference<Failure> poison = new AtomicReference<>();
+    // Byte-provider URLs added at runtime, e.g. Fabric-ASM (mm / Shedaniel) generated Mixin
+    // blobs. The loader owns bytes through the index, but Fabric-ASM hands Mixin a custom URL
+    // that the game loader must expose so generated Mixin classes can be read and defined.
+    private final List<URL> addedInputs = new CopyOnWriteArrayList<>();
     private final ThreadLocal<Deque<String>> transforming = ThreadLocal.withInitial(ArrayDeque::new);
     private volatile boolean ready;
     private volatile boolean closed;
@@ -29,7 +40,7 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
         this(index, transforms, parent, audit, null);
     }
     public GameClassLoader(ClassIndex index, TransformPipeline transforms, ClassLoader parent, AuditLog audit, GameResources filesystemResources) {
-        super("NeoForbric-Game", parent);
+        super(new URL[0], parent);
         this.index = index;
         this.transforms = transforms;
         this.audit = audit;
@@ -44,6 +55,28 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
         audit.record("SEALED", "definition-gate", "G", Map.of("state", "open"));
     }
     public boolean hasDefined(String name) { return findLoadedClass(name) != null; }
+
+    /** Fabric-ASM reflects for exactly this signature to register its generated Mixin byte source. */
+    public void addURL(URL url) { if (url != null) addedInputs.add(url); }
+    /** Exposes an input JAR to classpath scanners (Reflections, ClassGraph) without changing ownership. */
+    public void addClasspath(URL url) { if (url != null) super.addURL(url); }
+    /** Resolves a slash-form resource name against the runtime byte-provider URLs, or null. */
+    public URL addedResource(String name) {
+        for (URL base : addedInputs) {
+            try {
+                URL candidate = new URL(base, name);
+                if (candidate.openConnection() != null) return candidate;
+            } catch (IOException | RuntimeException absent) { /* provider does not hold this entry */ }
+        }
+        return null;
+    }
+    /** Generated class bytes for {code name} (dotted or slashed) served by an added URL, or null. */
+    public byte[] addedClassBytes(String name) {
+        URL url = addedResource(name.replace('.', '/') + ".class");
+        if (url == null) return null;
+        try (InputStream in = url.openStream()) { return in.readAllBytes(); }
+        catch (IOException unreadable) { return null; }
+    }
 
     @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         if (closed) throw new Failure("LOADER_CLOSED", "Game domain is closed");
@@ -76,7 +109,7 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
     @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
         ClassIndex.Entry entry = index.entry(name);
         Generated generated = entry == null && generator != null ? generator.apply(name) : null;
-        if (entry == null && generated == null) throw new ClassNotFoundException(name + " has no admitted game-domain owner");
+        if (entry == null && generated == null) return defineAdded(name);
         try {
             byte[] bytes;
             Archive owner = entry == null ? generated.owner() : entry.archive();
@@ -102,6 +135,25 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
             Failure.rethrowFatal(failed);
             throw definitionFailure(name, failed);
         }
+    }
+
+    /** Defines a runtime-generated class (e.g. an mm Mixin blob) from an added URL byte source. */
+    private Class<?> defineAdded(String name) throws ClassNotFoundException {
+        URL url = addedResource(name.replace('.', '/') + ".class");
+        if (url == null) throw new ClassNotFoundException(name + " has no admitted game-domain owner");
+        byte[] bytes;
+        try (InputStream in = url.openStream()) { bytes = in.readAllBytes(); }
+        catch (IOException unreadable) { throw new ClassNotFoundException(name, unreadable); }
+        ClassIndex.validateName(name, bytes);
+        int separator = name.lastIndexOf('.');
+        if (separator > 0) {
+            String packageName = name.substring(0, separator);
+            synchronized (this) {
+                if (getDefinedPackage(packageName) == null) definePackage(packageName, null, null, null, null, null, null, null);
+            }
+        }
+        audit.record("GAME", "class-defined", name, Map.of("loader", "G", "module", "unnamed", "source", url.toString(), "finalSha256", Archive.sha256(bytes)));
+        return defineClass(name, bytes, 0, bytes.length, new CodeSource(url, (java.security.cert.Certificate[]) null));
     }
 
     /** JVM package sealing: a sealed package only accepts classes from the archive that declared the seal. */
@@ -134,7 +186,7 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
         if (closed) return null;
         if (sharedResource(name)) return getParent().getResource(name);
         List<URL> resources = ownedResources(name);
-        return resources.isEmpty() ? null : resources.getFirst();
+        return resources.isEmpty() ? addedResource(name) : resources.getFirst();
     }
     // Module.getResourceAsStream uses this overload, bypassing getResource.
     // All admitted types belong to this loader's unnamed module.
@@ -147,7 +199,10 @@ public final class GameClassLoader extends SecureClassLoader implements Closeabl
             try { return getParent().getResources(name); }
             catch (java.io.IOException failed) { throw new Failure("RESOURCE_IO", "Cannot enumerate " + name, failed); }
         }
-        return Collections.enumeration(ownedResources(name));
+        List<URL> resources = new ArrayList<>(ownedResources(name));
+        URL added = addedResource(name);
+        if (added != null) resources.add(added);
+        return Collections.enumeration(resources);
     }
     private List<URL> ownedResources(String name) { return filesystemResources == null ? index.resources(name) : index.resources(name, filesystemResources); }
     private static boolean sharedResource(String name) {

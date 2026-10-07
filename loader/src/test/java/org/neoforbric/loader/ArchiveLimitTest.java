@@ -56,9 +56,19 @@ class ArchiveLimitTest {
     }
 
     @Test void expandedTotalIsStillBounded() throws Exception {
-        Path path = jar("oversized-total.jar", 9, new byte[32 * 1024 * 1024]);
-        Failure failure = assertThrows(Failure.class, () -> Archive.read(path));
-        assertEquals("ARCHIVE_LIMIT", failure.code());
-        assertTrue(failure.getMessage().contains("256 MiB expanded size"));
+        System.setProperty("neoforbric.archive.maxExpandedBytes", Integer.toString(64 * 1024 * 1024));
+        try {
+            Path path = jar("oversized-total.jar", 9, new byte[32 * 1024 * 1024]);
+            Failure failure = assertThrows(Failure.class, () -> Archive.read(path));
+            assertEquals("ARCHIVE_LIMIT", failure.code());
+            assertTrue(failure.getMessage().contains("64 MiB expanded size"));
+        } finally {
+            System.clearProperty("neoforbric.archive.maxExpandedBytes");
+        }
+    }
+
+    @Test void largeContentModsUpToOneGiBAreAcceptedInPrinciple() {
+        assertEquals(1024 * 1024 * 1024, Archive.maxArchiveBytes());
+        assertEquals(1024 * 1024 * 1024, Archive.maxExpandedBytes());
     }
 }

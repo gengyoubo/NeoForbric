@@ -47,13 +47,26 @@ public final class Bootstrap {
                 audit.record(phase, "eula", path.toString(), Map.of("accepted", "true"));
             }
             phase("DISCOVER");
-            var candidates = Discovery.discover(options.mods(), audit);
-            boolean hasFabricMods = candidates.stream().anyMatch(candidate -> candidate.metadata().ecosystem() == Metadata.Ecosystem.FABRIC);
+            var discovered = Discovery.discover(options.mods(), audit);
+            boolean hasFabricMods = discovered.stream().anyMatch(candidate -> candidate.metadata().ecosystem() == Metadata.Ecosystem.FABRIC);
             RuntimeInputs runtime = null;
+            List<Discovery.Candidate> candidates = discovered;
+            Map<Path, String> scopeExclusions = new HashMap<>();
             if (options.client() && hasFabricMods && !Boolean.getBoolean("neoforbric.fabric.plain")) {
                 fabricRuntime = new NativeFabricRuntime(options, audit);
                 runtime = RuntimeInputs.read(options.runtime(), audit);
-                candidates = fabricRuntime.discover(candidates, runtime);
+                List<Discovery.Candidate> fabricInputs = new ArrayList<>();
+                List<Discovery.Candidate> otherInputs = new ArrayList<>();
+                for (var candidate : discovered) {
+                    if (candidate.metadata().ecosystem() == Metadata.Ecosystem.FABRIC) fabricInputs.add(candidate);
+                    else {
+                        otherInputs.add(candidate);
+                        String adapter = switch (candidate.metadata().ecosystem()) { case FORGE -> "Forge"; case NEOFORGE -> "NeoForge"; default -> "Non-Fabric"; };
+                        scopeExclusions.put(candidate.archive().path(), adapter + " mods are not supported by the experimental Fabric runtime");
+                    }
+                }
+                candidates = new ArrayList<>(fabricRuntime.discover(fabricInputs, runtime));
+                candidates.addAll(otherInputs);
             }
             if (options.client()) catalog = new ModCatalog(candidates, audit);
             if (options.inspect()) {
@@ -65,7 +78,11 @@ public final class Bootstrap {
             if (options.client() && fabricRuntime == null) candidates = catalog.selectClient(candidates);
             else if (options.minecraft() && fabricRuntime == null) candidates = candidates.stream().map(c -> c.metadata().available(options.side()) ? FabricAdmission.admit(c) : c).toList();
             var mods = fabricRuntime == null ? Resolver.resolve(candidates, options.side(), audit, options.minecraft()) : fabricRuntime.resolve();
-            if (fabricRuntime != null) catalog.selectFabricRuntime(candidates, mods, fabricRuntime.exclusions());
+            if (fabricRuntime != null) {
+                Map<Path, String> exclusions = new HashMap<>(scopeExclusions);
+                exclusions.putAll(fabricRuntime.exclusions());
+                catalog.selectFabricRuntime(candidates, mods, exclusions);
+            }
             phase("PREPARE");
             if (runtime == null) runtime = options.minecraft() ? RuntimeInputs.read(options.runtime(), audit) : null;
             if (runtime != null && !runtime.side().equals(options.side())) throw new Failure("GAME_SIDE", "Runtime inputs belong to " + runtime.side() + ", requested " + options.side());
@@ -123,9 +140,11 @@ public final class Bootstrap {
             }
             preparedMods.forEach(m -> inputs.add(m.archive()));
             ClassLoader parent = Bootstrap.class.getClassLoader();
-            ClassIndex index = ClassIndex.prepare(inputs, parent, audit, libraries, clientUi);
+            ClassIndex index = ClassIndex.prepare(inputs, parent, audit, libraries, clientUi, fabricRuntime != null);
             try (GameResources resources = options.minecraft() ? new GameResources(audit) : null;
                  GameClassLoader loader = new GameClassLoader(index, pipeline, parent, audit, resources)) {
+                // Classpath scanners used by mods (Reflections, ClassGraph) read classloader URLs.
+                for (Archive archive : inputs) loader.addClasspath(archive.codeSource());
                 if (fabricRuntime != null) {
                     NativeFabricRuntime generatedFabric = fabricRuntime;
                     loader.generatedClasses(name -> generatedFabric.generated(name, index));

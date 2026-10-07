@@ -145,7 +145,7 @@ public final class GamePreparation {
                 if (version < versions.getOrDefault(name, -1)) continue;
                 try (InputStream in = jar.getInputStream(entry)) {
                     byte[] bytes = in.readNBytes(Archive.MAX_ENTRY + 1); total += bytes.length;
-                    if (bytes.length > Archive.MAX_ENTRY || total > Archive.MAX_EXPANDED) throw new Failure("ARCHIVE_LIMIT", input.toString());
+                    if (bytes.length > Archive.MAX_ENTRY || total > Archive.maxExpandedBytes()) throw new Failure("ARCHIVE_LIMIT", input.toString());
                     entries.put(name, bytes); versions.put(name, version);
                 }
             }
@@ -196,9 +196,11 @@ public final class GamePreparation {
     public static void remapFabricMods(List<FabricInput> mods, RuntimeInputs inputs) throws IOException {
         MemoryMappingTree tree = mappings(inputs.mappings(), inputs.intermediaryMappings());
         FabricRemapAccess access = new FabricRemapAccess(tree);
-        // TinyRemapper can coalesce duplicate inputs. Reject conflicts in the original
-        // snapshots before that merge can hide disagreeing package annotations.
+        // Fabric permits the same class in more than one input (shaded libraries such as
+        // night-config, and bundled nested libraries). The first input in resolution order
+        // owns it, exactly like Fabric's own class path.
         Map<String, byte[]> originalClasses = new HashMap<>();
+        int duplicateClasses = 0;
         for (FabricInput mod : mods) {
             // Flatten Java 21 multi-release classes and remove module descriptors
             // in the per-launch snapshot, retaining its Mixin remapping policy.
@@ -217,10 +219,10 @@ public final class GamePreparation {
             }
             for (String resource : original.names()) if (resource.endsWith(".class")) {
                 byte[] bytes = original.read(resource), previous = originalClasses.putIfAbsent(resource, bytes);
-                if (previous != null && !(resource.endsWith("/package-info.class") && Arrays.equals(previous, bytes)))
-                    throw new Failure("DUPLICATE_CLASS", "Conflicting Fabric input " + resource + " in " + mod.source());
+                if (previous != null && !Arrays.equals(previous, bytes)) duplicateClasses++;
             }
         }
+        if (duplicateClasses > 0) System.out.println("Fabric inputs share " + duplicateClasses + " first-wins classes across mods");
         FabricRefmaps.SelectorMapper selectors = new FabricRefmaps.SelectorMapper(tree);
         Set<InputTag> staticMixins = new HashSet<>();
         TinyRemapper remapper = fabricRemapper(tree, staticMixins, access,

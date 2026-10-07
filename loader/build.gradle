@@ -16,14 +16,14 @@ dependencies {
     implementation 'org.ow2.asm:asm-util:9.10.1'
     implementation 'net.fabricmc:tiny-remapper:0.10.4'
     implementation 'net.fabricmc:mapping-io:0.6.1'
-    implementation 'org.jetbrains.kotlin:kotlin-metadata-jvm:2.2.20'
+    implementation 'org.jetbrains.kotlin:kotlin-metadata-jvm:2.4.20'
     implementation "net.fabricmc:fabric-loader:${rootProject.fabricLoaderVersion}@jar"
     implementation 'net.fabricmc:access-widener:2.1.0'
     implementation 'net.fabricmc:sponge-mixin:0.17.4+mixin.0.8.7'
     implementation 'io.github.llamalad7:mixinextras-fabric:0.5.5'
     testImplementation platform('org.junit:junit-bom:5.12.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.jetbrains.kotlin:kotlin-reflect:2.2.20'
+    testImplementation 'org.jetbrains.kotlin:kotlin-reflect:2.4.20'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 tasks.named('test', Test) {

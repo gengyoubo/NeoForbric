@@ -33,6 +33,9 @@ public final class ClassIndex {
         return prepare(inputs, parent, audit, libraries, Set.of());
     }
     public static ClassIndex prepare(List<Archive> inputs, ClassLoader parent, AuditLog audit, Set<java.nio.file.Path> libraries, Set<java.nio.file.Path> clientUi) {
+        return prepare(inputs, parent, audit, libraries, clientUi, false);
+    }
+    public static ClassIndex prepare(List<Archive> inputs, ClassLoader parent, AuditLog audit, Set<java.nio.file.Path> libraries, Set<java.nio.file.Path> clientUi, boolean allowDuplicateClasses) {
         Map<String, Entry> classes = new TreeMap<>();
         Set<String> seenArchives = new HashSet<>();
         List<Archive> unique = new ArrayList<>();
@@ -55,6 +58,13 @@ public final class ClassIndex {
                     // and package annotations which disagree, still have exactly one required owner.
                     if (name.endsWith(".package-info") && Arrays.equals(previous.bytes(), archive.read(resource))) {
                         audit.record("PREPARE", "identical-package-metadata", name, Map.of("owner", previous.archive().path().toString(), "duplicate", archive.path().toString()));
+                        continue;
+                    }
+                    // Fabric packs routinely ship the same shaded / bundled library in several
+                    // inputs; Fabric itself lets the first class path entry win. The experimental
+                    // Fabric runtime mirrors that, while the native paths stay strictly owned.
+                    if (allowDuplicateClasses) {
+                        audit.record("PREPARE", "shared-class-first-wins", name, Map.of("owner", previous.archive().path().toString(), "duplicate", archive.path().toString()));
                         continue;
                     }
                     throw new Failure("DUPLICATE_CLASS", name + " belongs to both " + previous.archive().path() + " and " + archive.path());

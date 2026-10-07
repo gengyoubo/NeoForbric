@@ -33,6 +33,11 @@ public final class NeoFabricLauncher extends FabricLauncherBase {
     @Override public boolean isClassLoaded(String name) { return game != null && game.hasDefined(name.replace('/', '.')); }
     @Override public Class<?> loadIntoTarget(String name) throws ClassNotFoundException { return getTargetClassLoader().loadClass(name); }
     @Override public InputStream getResourceAsStream(String name) {
+        // Fabric-ASM (mm / Shedaniel) registers generated Mixin blobs through the game loader.
+        if (game != null) {
+            var added = game.addedResource(name);
+            if (added != null) try { return added.openStream(); } catch (IOException ignored) { /* fall through */ }
+        }
         // Mixin consumes small metadata streams. Memory snapshots also avoid leaking Windows
         // JAR handles when third-party metadata readers leave their stream open.
         byte[] bytes = index == null ? null : index.resourceBytes(name);
@@ -50,6 +55,7 @@ public final class NeoFabricLauncher extends FabricLauncherBase {
             catch (IOException error) { throw error; }
             catch (Exception error) { throw new IOException("Pre-Mixin bytes unavailable: " + name, error); }
         }
+        if (game != null) { byte[] added = game.addedClassBytes(name); if (added != null) return added; }
         try (InputStream in = NeoFabricLauncher.class.getClassLoader().getResourceAsStream(dotted.replace('.', '/') + ".class")) { return in == null ? null : in.readAllBytes(); }
     }
     @Override public Manifest getManifest(Path path) {

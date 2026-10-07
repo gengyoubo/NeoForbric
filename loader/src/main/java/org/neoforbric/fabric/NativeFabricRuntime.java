@@ -91,7 +91,15 @@ public final class NativeFabricRuntime implements AutoCloseable {
             @Override public byte[] transform(TransformPipeline.Context context, byte[] bytes) {
                 // Fabric API also targets shipped libraries (e.g. DFU TaggedChoice) and
                 // post-processes accessor interfaces in its own modules.
-                return FabricLifecycleCompatibility.afterMixin(context.name(), NeoMixinService.transform(context.name(), bytes));
+                try {
+                    return FabricLifecycleCompatibility.afterMixin(context.name(), NeoMixinService.transform(context.name(), bytes));
+                } catch (org.spongepowered.asm.mixin.transformer.throwables.IllegalClassLoadError directMixin) {
+                    // Mixin forbids loading a mixin class directly. Classpath scanners such as
+                    // Reflections (CraftTweaker, etc.) do exactly that while expanding supertypes.
+                    // The bytecode is already remapped to Mojang here, so hand it back unchanged.
+                    audit.record("PREPARE", "mixin-direct-load", context.name(), Map.of("reason", "Mixin class referenced directly"));
+                    return bytes;
+                }
             }
         });
         audit.record("PREPARE", "fabric-runtime-installed", "plan", Map.of("mods", Integer.toString(prepared.size()), "nativeLoadInvoked", "false", "nativeFreezeInvoked", "false"));

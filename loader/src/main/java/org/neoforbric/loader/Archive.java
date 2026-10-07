@@ -11,12 +11,18 @@ import java.util.zip.*;
 
 /** One immutable byte snapshot: discovery, resources and definition cannot observe different file revisions. */
 public final class Archive {
-    // Large content mods bundle resources and language runtimes (e.g. Cobblemon).
-    private static final int MAX_ARCHIVE = 256 * 1024 * 1024;
+    // Large content mods bundle resources, language runtimes and full soundtracks (e.g. Cobblemon, Z's Medieval Music).
+    private static final int DEFAULT_MAX_ARCHIVE = 1024 * 1024 * 1024;
     public static final int MAX_ENTRY = 32 * 1024 * 1024;
-    public static final int MAX_EXPANDED = 256 * 1024 * 1024;
+    private static final int DEFAULT_MAX_EXPANDED = 1024 * 1024 * 1024;
     // Resource-heavy mods such as Chipped contain tens of thousands of small files.
     private static final int MAX_ENTRIES = 100_000;
+
+    /** The embedder can tighten the archive bounds without recompiling the loader. */
+    public static int maxArchiveBytes() { return Integer.getInteger("neoforbric.archive.maxBytes", DEFAULT_MAX_ARCHIVE); }
+    public static int maxExpandedBytes() { return Integer.getInteger("neoforbric.archive.maxExpandedBytes", DEFAULT_MAX_EXPANDED); }
+
+    private static String mib(int bytes) { return (bytes / (1024 * 1024)) + " MiB"; }
     private final Path path;
     private final String hash;
     private final Map<String, byte[]> entries;
@@ -42,11 +48,13 @@ public final class Archive {
 
     public static Archive read(Path path) throws IOException {
         Path actual = path.toRealPath();
+        int maxArchive = maxArchiveBytes();
+        int maxExpanded = maxExpandedBytes();
         byte[] source;
         try (InputStream in = Files.newInputStream(actual)) {
-            source = in.readNBytes(MAX_ARCHIVE + 1);
+            source = in.readNBytes(maxArchive + 1);
         }
-        if (source.length > MAX_ARCHIVE) throw new Failure("ARCHIVE_LIMIT", actual + " exceeds 256 MiB");
+        if (source.length > maxArchive) throw new Failure("ARCHIVE_LIMIT", actual + " exceeds " + mib(maxArchive));
         Map<String, byte[]> entries = new LinkedHashMap<>();
         int expanded = 0;
         try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(source))) {
@@ -63,8 +71,8 @@ public final class Archive {
                 expanded += bytes.length;
                 if (bytes.length > MAX_ENTRY)
                     throw new Failure("ARCHIVE_LIMIT", actual + " entry " + name + " exceeds 32 MiB");
-                if (expanded > MAX_EXPANDED)
-                    throw new Failure("ARCHIVE_LIMIT", actual + " exceeds 256 MiB expanded size at " + name);
+                if (expanded > maxExpanded)
+                    throw new Failure("ARCHIVE_LIMIT", actual + " exceeds " + mib(maxExpanded) + " expanded size at " + name);
                 entries.put(name, bytes);
             }
         }

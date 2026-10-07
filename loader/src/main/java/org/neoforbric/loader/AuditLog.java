@@ -31,7 +31,11 @@ public final class AuditLog {
         Files.createDirectories(absolute.getParent());
         Path temporary = Files.createTempFile(absolute.getParent(), ".audit-", ".json");
         try {
-            Files.writeString(temporary, new GsonBuilder().setPrettyPrinting().create().toJson(report) + "\n", StandardCharsets.UTF_8);
+            // Stream the report: a large launch audit can exceed the heap if serialized to one String first.
+            try (var writer = Files.newBufferedWriter(temporary, StandardCharsets.UTF_8)) {
+                new GsonBuilder().setPrettyPrinting().create().toJson(report, writer);
+                writer.write("\n");
+            }
             try {
                 Files.move(temporary, absolute, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
             } catch (AtomicMoveNotSupportedException ignored) {

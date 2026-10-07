@@ -1,7 +1,6 @@
 package org.neoforbric.minecraft;
 
 import com.google.gson.*;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.metadata.version.VersionPredicate;
@@ -13,7 +12,7 @@ import org.neoforbric.loader.*;
 public final class FabricAdmission {
     public record Entry(String group, String className, String api, String method) {}
     private FabricAdmission() {}
-    private static JsonObject json(Archive archive) { return JsonParser.parseString(new String(archive.read("fabric.mod.json"), StandardCharsets.UTF_8)).getAsJsonObject(); }
+    private static JsonObject json(Archive archive) { return FabricJson.metadata(archive); }
     public static Discovery.Candidate admit(Discovery.Candidate candidate) {
         if (candidate.metadata().ecosystem() != Metadata.Ecosystem.FABRIC) return candidate;
         JsonObject json = json(candidate.archive());
