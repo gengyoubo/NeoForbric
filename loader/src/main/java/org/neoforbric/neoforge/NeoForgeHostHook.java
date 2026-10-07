@@ -66,6 +66,15 @@ public final class NeoForgeHostHook implements TransformPipeline.Transformer {
             ClassWriter writer = new ClassWriter(0); node.accept(writer); return writer.toByteArray();
         }
         if (context.name().equals("net.minecraft.client.gui.screens.TitleScreen")) return titleScreen(bytes);
+        if (context.name().equals("net.neoforged.neoforge.internal.CommonModLoader")) {
+            ClassNode node = new ClassNode(); new ClassReader(bytes).accept(node, 0);
+            var methods = node.methods.stream().filter(m -> m.name.equals("load")
+                    && m.desc.equals("(Ljava/util/concurrent/Executor;Ljava/util/concurrent/Executor;)V")).toList();
+            if (methods.size() != 1) throw new Failure("NEOFORGE_ANCHOR", "Expected one pinned NeoForge common setup anchor");
+            methods.getFirst().instructions.insert(new MethodInsnNode(Opcodes.INVOKESTATIC,
+                    "org/neoforbric/neoforge/runtime/NativeNeoForgeRuntime", "loadServerDefaults", "()V", false));
+            ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS); node.accept(writer); return writer.toByteArray();
+        }
         if (context.name().equals("net.neoforged.neoforge.server.ServerLifecycleHooks")) {
             ClassNode node = new ClassNode(); new ClassReader(bytes).accept(node, 0);
             var methods = node.methods.stream().filter(m -> m.name.equals("handleExit") && m.desc.equals("(I)V")).toList();

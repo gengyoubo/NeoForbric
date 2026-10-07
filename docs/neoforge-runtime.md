@@ -25,6 +25,15 @@ Minecraft、NeoForge 和用户模组的命名 module 绑定到同一个 G。modu
 
 主菜单只保留 NeoForbric 的 Mods 按钮，移除 NeoForge 额外添加的按钮和布局行。统一 UI 按实际按钮排列主菜单，按钮高 20、行距 28，底部控制按钮另留间距，避免 NeoForge 的起始位置差异导致按钮重叠。
 
+公共初始化前通过 `ConfigTracker.loadDefaultServerConfigs()` 初始化内存中的 SERVER 默认配置，供装备属性扫描等启动期访问使用，避免 MineColonies 扫描 JustDireThings / AllTheArcanistGear 装备时出现 `Cannot get config value before config is loaded`。CLIENT / COMMON 仍从配置目录加载；进入世界或连接服务器时，由原生配置加载和同步替换 SERVER 默认值。启动期不读取存档的 `serverconfig`，也不创建 SERVER 配置文件。
+
+配置回归探针验证公共初始化及其延迟任务可以读取默认值、Loading 事件只触发一次，以及服务器同步能替换默认值；分别覆盖 vanilla 注册表契约和 NeoForge 补丁客户端路径：
+
+```powershell
+./gradlew.bat runNeoForgeRegistryProbe
+./gradlew.bat runNeoForgeRegistryProbe -PneoForgeRegistryContract=false
+```
+
 ## EcologicalGarden 验证
 
 实际启动完成了模组构造、内容注册、资源加载和主菜单；注册表中存在 **141 个物品、7 个方块、36 种实体类型**。Item 与客户端共享 G 的类身份。世界探针创建独立存档，验证玩家登录、3 个模组生物从集成服务端同步到客户端、60 tick 运行以及正常保存退出。登录后也出现了模组的“选择精灵”界面。

@@ -16,6 +16,7 @@ import net.neoforged.neoforge.registries.RegisterEvent;
 public final class NativeNeoForgeRuntime {
     private static List<ModContainer> containers;
     private static boolean contract, constructed;
+    private static boolean serverDefaultsLoaded;
     private static final Set<String> phases = new HashSet<>();
     private NativeNeoForgeRuntime() {}
     public static void prepare(LoadingModList plan, ModuleLayer layer, Map<String, List<String>> entrypoints, boolean registryContract) {
@@ -75,6 +76,7 @@ public final class NativeNeoForgeRuntime {
                 if (!phases.contains("REGISTRY_OPEN")) throw new IllegalStateException("Freeze precedes registration");
                 net.neoforged.fml.config.ConfigTracker.INSTANCE.loadConfigs(net.neoforged.fml.config.ModConfig.Type.CLIENT, net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get());
                 net.neoforged.fml.config.ConfigTracker.INSTANCE.loadConfigs(net.neoforged.fml.config.ModConfig.Type.COMMON, net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get());
+                loadServerDefaults();
                 dispatch("Common setup", FMLCommonSetupEvent::new);
             }
             case "CLIENT_INIT" -> {
@@ -85,6 +87,12 @@ public final class NativeNeoForgeRuntime {
             default -> throw new IllegalArgumentException("Unknown canonical phase " + phase);
         }
         System.out.println("NEOFORGE_CANONICAL_PHASE " + phase);
+    }
+    /** Setup-time item scans need SERVER values before a world or remote server supplies them. */
+    public static void loadServerDefaults() {
+        if (serverDefaultsLoaded) return;
+        net.neoforged.fml.config.ConfigTracker.INSTANCE.loadDefaultServerConfigs();
+        serverDefaultsLoaded = true;
     }
     private static void dispatch(String name, java.util.function.BiFunction<ModContainer, DeferredWorkQueue, ParallelDispatchEvent> factory) {
         DeferredWorkQueue queue = new DeferredWorkQueue(name);

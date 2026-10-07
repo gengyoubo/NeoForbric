@@ -13,6 +13,9 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.javafmlmod.FMLModContainer;
 import net.neoforged.fml.event.lifecycle.*;
+import net.neoforged.fml.config.*;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.registries.*;
@@ -26,17 +29,38 @@ public final class RegistryProbe {
     public static final DeferredHolder<Block, Block> BLOCK = BLOCKS.register("probe", () -> new Block(BlockBehaviour.Properties.of()));
     public static final DeferredHolder<Item, BlockItem> ITEM = ITEMS.register("probe", () -> new BlockItem(BLOCK.get(), new Item.Properties()));
     public static IEventBus bus;
+    private static final ModConfigSpec.IntValue SERVER_VALUE;
+    private static final ModConfigSpec SERVER_SPEC;
+    private static ModConfig serverConfig;
+    private static int configLoads;
+    static {
+        var builder = new ModConfigSpec.Builder();
+        SERVER_VALUE = builder.defineInRange("armor", 7, 0, 100);
+        SERVER_SPEC = builder.build();
+    }
     public RegistryProbe(IEventBus modBus, ModContainer container, FMLModContainer concrete, Dist dist) {
         if (container != concrete || concrete.getEventBus() != modBus || dist != Dist.CLIENT || modBus == NeoForge.EVENT_BUS)
             throw new AssertionError("Constructor injection did not preserve facade identities");
         EVENTS.add("constructor"); bus = modBus;
+        container.registerConfig(ModConfig.Type.SERVER, SERVER_SPEC);
+        modBus.addListener((ModConfigEvent.Loading event) -> {
+            if (event.getConfig().getSpec() == SERVER_SPEC) { serverConfig = event.getConfig(); configLoads++; }
+        });
         if (BLOCK.isBound() || ITEM.isBound()) throw new AssertionError("Deferred content bound before RegisterEvent");
         BLOCKS.register(modBus); ITEMS.register(modBus);
         modBus.addListener((RegisterEvent event) -> {
             if (event.getRegistryKey() == Registries.BLOCK) EVENTS.add("block-register");
             if (event.getRegistryKey() == Registries.ITEM) EVENTS.add("item-register");
         });
-        modBus.addListener((FMLCommonSetupEvent event) -> { EVENTS.add("common-setup"); event.enqueueWork(() -> EVENTS.add("common-work")); });
+        modBus.addListener((FMLCommonSetupEvent event) -> {
+            EVENTS.add("common-setup");
+            if (SERVER_VALUE.get() != 7 || configLoads != 1) throw new AssertionError("SERVER defaults unavailable before common setup");
+            event.enqueueWork(() -> {
+                if (SERVER_VALUE.get() != 7) throw new AssertionError("SERVER defaults unavailable in deferred item scan");
+                EVENTS.add("common-work");
+                System.out.println("NEOFORGE_SERVER_CONFIG_SETUP_OK default=7 loadingEvents=" + configLoads);
+            });
+        });
         modBus.addListener((FMLClientSetupEvent event) -> EVENTS.add("client-setup"));
         modBus.addListener((FMLLoadCompleteEvent event) -> EVENTS.add("complete"));
         modBus.addListener((BuildCreativeModeTabContentsEvent event) -> {
@@ -45,6 +69,10 @@ public final class RegistryProbe {
     }
     public static void verifyClient(Object client) {
         var launcher = cpw.mods.modlauncher.Launcher.INSTANCE;
+        if (serverConfig.getFullPath() != null) throw new AssertionError("Startup SERVER defaults must remain in memory");
+        ConfigTracker.acceptSyncedConfig(serverConfig, "armor = 23\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        if (SERVER_VALUE.get() != 23) throw new AssertionError("Synced SERVER config did not replace startup defaults");
+        System.out.println("NEOFORGE_SERVER_CONFIG_SYNC_OK synced=23");
         if (launcher == null || launcher.getClass().getClassLoader() != RegistryProbe.class.getClassLoader()
                 || !launcher.environment().getProperty(cpw.mods.modlauncher.api.IEnvironment.Keys.LAUNCHTARGET.get()).orElseThrow().equals("neoforbricclient"))
             throw new AssertionError("Passive launcher information did not preserve kernel ownership");

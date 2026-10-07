@@ -134,7 +134,7 @@ tasks.register('runClient', JavaExec) {
     javaLauncher = project(':loader').javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
     classpath = project(':loader').sourceSets.main.runtimeClasspath
     mainClass = 'org.neoforbric.bootstrap.Main'
-    maxHeapSize = providers.gradleProperty('clientHeap').getOrElse('6g')
+    maxHeapSize = providers.gradleProperty('clientHeap').getOrElse('10g')
     workingDir = clientDirectory
     args '--minecraft-client', '--runtime', layout.buildDirectory.file('minecraft-client/runtime.json').get().asFile.absolutePath,
             '--mods', clientModsDirectory.absolutePath, '--client-ui', layout.buildDirectory.file('minecraft-client/client-ui.jar').get().asFile.absolutePath,
@@ -167,7 +167,7 @@ tasks.register('runNeoForgeRegistryProbe', JavaExec) {
     workingDir = directory
     systemProperty 'neoforbric.neoforge.runtime', layout.buildDirectory.file('neoforge-client/neoforge-runtime.json').get().asFile.absolutePath
     systemProperty 'neoforbric.neoforge.bridge', project(':neoforge-runtime').tasks.named('jar').get().archiveFile.get().asFile.absolutePath
-    systemProperty 'neoforbric.neoforge.registryContract', 'true'
+    systemProperty 'neoforbric.neoforge.registryContract', providers.gradleProperty('neoForgeRegistryContract').getOrElse('true')
     systemProperty 'neoforbric.debug', 'true'
     jvmArgs '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED', '--add-opens=java.base/java.util.jar=ALL-UNNAMED',
             '--add-exports=java.base/sun.security.util=ALL-UNNAMED', '-Dfile.encoding=UTF-8'
