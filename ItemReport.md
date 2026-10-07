@@ -32,7 +32,7 @@ neoforge:ATM10<br>
 将整合包放进run/client里，然后观察。如果出现项目本身的异常就扣分，如果能稳定启动至游戏主界面为80分
 ## 整合包评分
 Slime Advanture 48/100<br>
-ATM /100<br>
+ATM 60/100<br>
 # 结论
 
 # 后记
