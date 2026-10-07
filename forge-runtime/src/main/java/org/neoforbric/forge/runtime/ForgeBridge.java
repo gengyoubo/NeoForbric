@@ -66,9 +66,9 @@ public final class ForgeBridge {
         return namespace.equals("srg") ? Optional.of((domain, name) -> map(name)) : Optional.empty();
     }
     private static String map(String name) {
-        String result = names.get(name);
-        if (result == null && (name.startsWith("m_") || name.startsWith("f_"))) throw new IllegalStateException("FORGE_MAPPING: Unmapped member " + name);
-        return result == null ? name : result;
+        // MCPNamingService preserves unknown names. AT files often retain rules
+        // for removed members; native AT simply finds no matching member.
+        return names.getOrDefault(name, name);
     }
     public static Map<String, Object> prepare(Path gameDirectory, String physicalSide, Path universal, Path accessRules, Map<String, String> mapping) throws Exception {
         if (directory != null) throw new IllegalStateException("FORGE_STATE: Bridge already bound");
@@ -88,6 +88,9 @@ public final class ForgeBridge {
         // before installing callbacks so it cannot recursively transform itself.
         if (net.minecraftforge.fml.loading.FMLEnvironment.dist != side) throw new IllegalStateException("FORGE_SIDE: Environment differs from bound Dist");
         cleaner = new RuntimeDistCleaner(); cleaner.getExtension().accept(side); plugins.put(cleaner.name(), cleaner);
+        Class.forName("net.minecraftforge.fml.loading.RuntimeDistCleaner$Target", true, ForgeBridge.class.getClassLoader());
+        for (ILaunchPluginService plugin : List.of(new net.minecraftforge.fml.common.asm.RuntimeEnumExtender(), new net.minecraftforge.fml.common.asm.ObjectHolderDefinalize(), new net.minecraftforge.fml.common.asm.CapabilityTokenSubclass())) plugins.put(plugin.name(), plugin);
+        for (String helper : List.of("net.minecraftforge.fml.common.asm.CapabilityTokenSubclass$Holder", "net.minecraftforge.fml.common.asm.CapabilityTokenSubclass$1", "net.minecraftforge.fml.common.asm.ObjectHolderDefinalize$VanillaObjectHolderData")) Class.forName(helper, true, ForgeBridge.class.getClassLoader());
         events = new EventBusEngine(); var eventPlugin = new ModLauncherService();
         var engine = ModLauncherService.class.getDeclaredField("eventBusEngine"); engine.setAccessible(true); engine.set(eventPlugin, events);
         plugins.put(eventPlugin.name(), eventPlugin);
@@ -120,16 +123,60 @@ public final class ForgeBridge {
         return Map.of("side", physicalSide, "loader", "G", "jsTransformers", coremods.size(), "plugins", List.copyOf(plugins.keySet()));
     }
     public static byte[] plugins(String name, byte[] bytes) {
+        return plugins(name, bytes, "classloading");
+    }
+    public static byte[] plugins(String name, byte[] bytes, String reason) {
         if (events == null) return bytes;
         // These are upstream launch-tool classes, normally defined before native
         // game transformation. They remain owned by G but do not transform themselves.
-        if (name.startsWith("net.minecraftforge.fml.loading.") || name.startsWith("net.minecraftforge.eventbus.")
+        if (name.startsWith("net.minecraftforge.fml.loading.") || name.startsWith("net.minecraftforge.fml.common.asm.") || name.startsWith("net.minecraftforge.eventbus.")
                 || name.startsWith("net.minecraftforge.coremod.") || name.startsWith("net.minecraftforge.accesstransformer.")
                 || name.startsWith("cpw.mods.modlauncher.")) return bytes;
         Type type = Type.getObjectType(name.replace('.', '/')); ClassNode node = read(bytes);
-        cleaner.processClassWithFlags(ILaunchPluginService.Phase.BEFORE, node, type, "classloading");
-        if (events.handlesClass(type)) events.processClass(node, type);
-        return write(node);
+        int flags = 0;
+        for (var phase : ILaunchPluginService.Phase.values()) for (var plugin : plugins.values()) {
+            if (plugin instanceof AccessTransformerService || !plugin.handlesClass(type, false, reason).contains(phase)) continue;
+            flags |= plugin.processClassWithFlags(phase, node, type, reason);
+        }
+        if (flags == 0) return bytes;
+        var writer = new ForgeBytecodeWriter((flags & ClassWriter.COMPUTE_FRAMES) != 0 ? ClassWriter.COMPUTE_FRAMES : ClassWriter.COMPUTE_MAXS, node);
+        node.accept(writer); return writer.toByteArray();
+    }
+    public static void prepareModCoremods(List<Path> mods) throws Exception {
+        var provider = new CoreModProvider(); int count = 0;
+        for (Path path : mods) try (var jar = new JarFile(path.toFile())) {
+            var declaration = jar.getJarEntry("META-INF/coremods.json"); if (declaration == null) continue;
+            var config = com.google.gson.JsonParser.parseString(new String(jar.getInputStream(declaration).readAllBytes(), StandardCharsets.UTF_8)).getAsJsonObject();
+            for (var entry : config.entrySet()) {
+                String script = entry.getValue().getAsString(); String owner = path.getFileName() + ":" + entry.getKey();
+                provider.addCoreMod(new ICoreModFile() {
+                    public String getOwnerId() { return owner; }
+                    public Path getPath() { return path.resolveSibling(path.getFileName() + "-" + script.replace('/', '_')); }
+                    public Reader readCoreMod() throws IOException { return getAdditionalFile(script); }
+                    public Reader getAdditionalFile(String name) throws IOException {
+                        if (name.startsWith("/") || name.contains("\\") || name.contains(":") || Arrays.stream(name.split("/", -1)).anyMatch(part -> Set.of("", ".", "..").contains(part))) throw new IOException("Invalid coremod resource " + name);
+                        try (var source = new JarFile(path.toFile())) {
+                            var resource = source.getJarEntry(name); if (resource == null) throw new IOException("Missing coremod resource " + name);
+                            try (var input = source.getInputStream(resource)) { return new StringReader(new String(input.readAllBytes(), StandardCharsets.UTF_8)); }
+                        }
+                    }
+                }); count++;
+            }
+        }
+        if (count == 0) return;
+        var additional = provider.getCoreModTransformers();
+        // Native JS initialization records errors rather than throwing them. Never
+        // continue with a partially initialized set of admitted transformations.
+        var engineField = CoreModProvider.class.getDeclaredField("engine"); engineField.setAccessible(true);
+        var engine = engineField.get(provider); var scriptsField = engine.getClass().getDeclaredField("coreMods"); scriptsField.setAccessible(true);
+        for (Object script : (List<?>)scriptsField.get(engine)) {
+            var mod = (net.minecraftforge.coremod.CoreMod)script;
+            if (mod.hasError()) throw new IllegalStateException("FORGE_COREMOD: " + mod.getPath(), mod.getError());
+        }
+        for (var transformer : additional) for (var target : transformer.targets())
+            if (target.getTargetType() != ITransformer.TargetType.CLASS && target.getTargetType() != ITransformer.TargetType.PRE_CLASS) throw new UnsupportedOperationException("FORGE_COREMOD_TARGET: Unadapted target " + target.getTargetType());
+        var all = new ArrayList<ITransformer<?>>(coremods); all.addAll(additional); coremods = List.copyOf(all);
+        System.out.println("FORGE_MOD_COREMODS_READY scripts=" + count + " transformers=" + additional.size());
     }
     public static Map<String, Object> generated(String name) throws Exception {
         var factory = net.minecraftforge.eventbus.ModLauncherFactory.class;

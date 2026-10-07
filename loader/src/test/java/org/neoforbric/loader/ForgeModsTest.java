@@ -20,6 +20,46 @@ class ForgeModsTest {
         TestJars.jar(root.resolve("universal.jar"), Map.of("META-INF/mods.toml", TestJars.text(toml("universal", "")), "fabric.mod.json", TestJars.text("{\"schemaVersion\":1,\"id\":\"wrong\",\"version\":\"1\"}")));
         var result = ForgeDiscovery.discover(root,new AuditLog()); assertEquals("universal",result.mods().getFirst().metadata().id()); assertEquals(Metadata.Ecosystem.FORGE,result.mods().getFirst().metadata().ecosystem());
     }
+    @Test void forgeDescriptorWinsOverUnexpandedNeoForgeTemplate() throws Exception {
+        TestJars.jar(root.resolve("dual.jar"), Map.of("META-INF/mods.toml", TestJars.text(toml("medievalend", "")),
+                "META-INF/neoforge.mods.toml", TestJars.text("[[dependencies.${mod_id}]]\nmodId=\"neoforge\"\n")));
+        var result = ForgeDiscovery.discover(root, new AuditLog());
+        assertEquals(List.of("medievalend"), result.mods().stream().map(mod -> mod.metadata().id()).toList());
+        assertEquals(Metadata.Ecosystem.FORGE, result.mods().getFirst().metadata().ecosystem());
+    }
+    @Test void admittedJsCoremodsRequireExistingCanonicalScriptResources() throws Exception {
+        var valid = Archive.read(TestJars.jar(root.resolve("scripts.jar"), Map.of("META-INF/coremods.json", TestJars.text("{\"test\":\"coremods/test.js\"}"), "coremods/test.js", TestJars.text("function initializeCoreMod() { return {}; }"))));
+        assertDoesNotThrow(() -> ForgeAdmission.library(valid));
+        for (String path : List.of("../test.js", "coremods/missing.js", "/test.js")) {
+            var bad = Archive.read(TestJars.jar(root.resolve("bad.jar"), Map.of("META-INF/coremods.json", TestJars.text("{\"test\":\"" + path + "\"}"))));
+            assertEquals("FORGE_COREMOD", assertThrows(Failure.class, () -> ForgeAdmission.library(bad)).code());
+        }
+    }
+    @Test void remappedMultiReleaseArchivePreservesSelectedJava21View() throws Exception {
+        var manifest = new java.util.jar.Manifest(); manifest.getMainAttributes().putValue("Manifest-Version", "1.0"); manifest.getMainAttributes().putValue("Multi-Release", "true");
+        var source = Archive.read(TestJars.jar(root.resolve("multi.jar"), Map.of("test/Runtime.class", TestJars.type("test.Runtime"),
+                "runtime.txt", TestJars.text("base"), "META-INF/versions/21/runtime.txt", TestJars.text("java21"), "META-INF/versions/22/runtime.txt", TestJars.text("java22")), manifest)).java21View(new AuditLog());
+        var mapped = ForgeRemapper.remap(source, root.resolve("remapped"), Map.of(), new AuditLog());
+        assertDoesNotThrow(mapped::requireSupportedLayout);
+        assertArrayEquals(TestJars.text("java21"), mapped.read("runtime.txt"));
+        assertFalse(mapped.names().stream().anyMatch(name -> name.startsWith("META-INF/versions/")));
+    }
+    @Test void mixinMetadataReadsPreserveTheirTransformationReason() throws Exception {
+        var pipeline = new TransformPipeline(); var reasons = new ArrayList<String>(); var audit = new AuditLog();
+        pipeline.add(new TransformPipeline.Transformer() {
+            public String id() { return "plugins"; }
+            public byte[] transform(TransformPipeline.Context context, byte[] bytes) { reasons.add(context.reason()); return bytes; }
+        });
+        pipeline.add(new TransformPipeline.Transformer() {
+            public String id() { return "mixin"; }
+            public Set<String> after() { return Set.of("plugins"); }
+            public byte[] transform(TransformPipeline.Context context, byte[] bytes) { return bytes; }
+        });
+        pipeline.seal(audit); byte[] bytes = TestJars.type("test.Metadata");
+        pipeline.applyBefore("test.Metadata", bytes, name -> bytes, audit, "mixin");
+        pipeline.apply("test.Metadata", bytes, name -> bytes, audit);
+        assertEquals(List.of("mixin", "classloading"), reasons);
+    }
     @Test void mandatoryOptionalSideAndOrderingAreEnforced() throws Exception {
         Archive aa = jar("aa", "[[dependencies.aa]]\nmodId=\"bb\"\nmandatory=true\nversionRange=\"[1.2,2)\"\nordering=\"AFTER\"\nside=\"BOTH\"\n"); Archive bb = jar("bb", "");
         var a = new Discovery.Candidate(aa,ForgeMetadata.read(aa).mods().getFirst()); var b = new Discovery.Candidate(bb,ForgeMetadata.read(bb).mods().getFirst());

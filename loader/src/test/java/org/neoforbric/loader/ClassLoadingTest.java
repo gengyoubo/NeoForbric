@@ -107,6 +107,48 @@ class ClassLoadingTest {
         }
     }
 
+    @Test void nativePluginDependencyLoadCannotDeadlockWithAnotherLoadingWorker() throws Exception {
+        var inPlugin = new CountDownLatch(1);
+        var loadDependency = new CountDownLatch(1);
+        var domain = new java.util.concurrent.atomic.AtomicReference<GameClassLoader>();
+        var dependency = new java.util.concurrent.atomic.AtomicReference<Class<?>>();
+        var transformed = new AtomicInteger();
+        var pipeline = new TransformPipeline();
+        pipeline.add(new TransformPipeline.Transformer() {
+            public String id() { return "forge-native-plugins"; }
+            public byte[] transform(TransformPipeline.Context context, byte[] bytes) throws Exception {
+                transformed.incrementAndGet();
+                if (context.name().equals("demo.Child")) {
+                    inPlugin.countDown();
+                    if (!loadDependency.await(10, TimeUnit.SECONDS)) throw new AssertionError("Dependency load not released");
+                    dependency.set(domain.get().loadClass("demo.Parent"));
+                }
+                return bytes;
+            }
+        });
+        var audit = new AuditLog();
+        try (var loader = loader(List.of(typeJar("child.jar", "demo.Child"), typeJar("parent.jar", "demo.Parent")), pipeline, audit)) {
+            domain.set(loader); pipeline.seal(audit); loader.open();
+            var child = new FutureTask<>(() -> loader.loadClass("demo.Child"));
+            var parent = new FutureTask<>(() -> loader.loadClass("demo.Parent"));
+            var childWorker = new Thread(child, "plugin-worker"); childWorker.setDaemon(true);
+            var parentWorker = new Thread(parent, "dependency-worker"); parentWorker.setDaemon(true);
+            childWorker.start();
+            try {
+                assertTrue(inPlugin.await(10, TimeUnit.SECONDS));
+                parentWorker.start();
+                long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+                while (parentWorker.getState() != Thread.State.BLOCKED && System.nanoTime() < deadline) Thread.sleep(1);
+                assertEquals(Thread.State.BLOCKED, parentWorker.getState(), "Competing class load must be waiting while the plugin runs");
+                loadDependency.countDown();
+                assertSame(loader, child.get(10, TimeUnit.SECONDS).getClassLoader());
+                assertSame(dependency.get(), parent.get(10, TimeUnit.SECONDS));
+                assertSame(loader, dependency.get().getClassLoader());
+                assertEquals(2, transformed.get(), "Both classes must pass through the pipeline exactly once");
+            } finally { loadDependency.countDown(); }
+        }
+    }
+
     @Test void concurrentRequestsDefineAndTransformExactlyOnce() throws Exception {
         AtomicInteger transformed = new AtomicInteger();
         TransformPipeline pipeline = new TransformPipeline();

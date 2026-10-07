@@ -5,7 +5,9 @@ import java.util.*;
 /** Explicitly registered tools only. No native launch service is discovered or started. */
 public final class TransformPipeline {
     @FunctionalInterface public interface BytecodeAccess { byte[] original(String name); }
-    public record Context(String name, BytecodeAccess bytecode) {}
+    public record Context(String name, BytecodeAccess bytecode, String reason) {
+        public Context(String name, BytecodeAccess bytecode) { this(name, bytecode, "classloading"); }
+    }
     public interface Transformer {
         String id();
         default Set<String> after() { return Set.of(); }
@@ -33,7 +35,8 @@ public final class TransformPipeline {
     public synchronized Set<String> registeredIds() { return Set.copyOf(tools.keySet()); }
     public String activeRule() { return activeRule.get(); }
 
-    // Serializes tooling until parallel-safety contracts exist. ClassLoader locks still enforce one definition per class.
+    // Serializes tooling until parallel-safety contracts exist. G takes this
+    // monitor before per-class locks, including native plugin dependency loads.
     public synchronized byte[] apply(String name, byte[] original, BytecodeAccess source, AuditLog audit) throws Exception {
         return applyUntil(name, original, source, audit, null);
     }
@@ -52,7 +55,7 @@ public final class TransformPipeline {
             String previousRule = activeRule.get();
             try {
                 activeRule.set(tool.id());
-                bytes = Objects.requireNonNull(tool.transform(new Context(name, source), bytes.clone()), "transform output").clone();
+                bytes = Objects.requireNonNull(tool.transform(new Context(name, source, boundary == null ? "classloading" : "mixin"), bytes.clone()), "transform output").clone();
                 ClassIndex.validateName(name, bytes);
             } catch (Exception | Error failed) {
                 Failure.rethrowFatal(failed);

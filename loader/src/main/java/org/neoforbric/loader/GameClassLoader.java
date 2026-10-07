@@ -112,15 +112,21 @@ public final class GameClassLoader extends URLClassLoader implements Closeable {
             if (!metadataTool) throw new Failure("REENTRANT_DEFINITION", "Transformer for " + targets.getLast() + " requested class " + name + "; use bytecode access");
             audit.record("PREPARE", "mixin-plugin-class", name, Map.of("requestingTarget", targets.getLast(), "loader", "G"));
         }
-        synchronized (getClassLoadingLock(name)) {
-            if (poison.get() != null) throw new Failure("INSTANCE_TAINTED", "An earlier definition failed; restart required", poison.get());
-            Class<?> loaded = findLoadedClass(name);
-            if (loaded == null) loaded = findClass(name);
-            if (resolve) {
-                try { resolveClass(loaded); }
-                catch (LinkageError failed) { throw definitionFailure(name, failed); }
+        // Native plugins may load a superclass while the serial transformation
+        // pipeline is held. Take that monitor before any per-class monitor, so
+        // another loading worker cannot hold the superclass lock while waiting
+        // for the pipeline. The monitor is reentrant for plugin dependencies.
+        synchronized (transforms) {
+            synchronized (getClassLoadingLock(name)) {
+                if (poison.get() != null) throw new Failure("INSTANCE_TAINTED", "An earlier definition failed; restart required", poison.get());
+                Class<?> loaded = findLoadedClass(name);
+                if (loaded == null) loaded = findClass(name);
+                if (resolve) {
+                    try { resolveClass(loaded); }
+                    catch (LinkageError failed) { throw definitionFailure(name, failed); }
+                }
+                return loaded;
             }
-            return loaded;
         }
     }
 

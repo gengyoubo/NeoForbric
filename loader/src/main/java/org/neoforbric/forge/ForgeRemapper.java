@@ -37,7 +37,7 @@ public final class ForgeRemapper {
             public Object mapValue(Object value) { return value instanceof String text ? selectors(text, names) : super.mapValue(value); }
         };
         try {
-            try (var output = new JarOutputStream(Files.newOutputStream(temporary))) {
+            try (var output = new JarOutputStream(new java.io.BufferedOutputStream(Files.newOutputStream(temporary), 65536))) {
                 for (String resource : new TreeSet<>(input.names())) {
                     byte[] bytes = input.read(resource);
                     if (resource.endsWith(".class")) { var writer = new ClassWriter(0); new ClassReader(bytes).accept(new ClassRemapper(writer, remapper), 0); bytes = writer.toByteArray(); }
@@ -48,7 +48,7 @@ public final class ForgeRemapper {
             }
             Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
         } finally { Files.deleteIfExists(temporary); }
-        Archive mapped = Archive.read(target).permitDeclaredNested(nested);
+        Archive mapped = Archive.read(target).java21View(audit).permitDeclaredNested(nested);
         audit.record("PREPARE", "mod-remap", input.path().toString(), Map.of("ecosystem", "FORGE", "sourceSha256", input.hash(), "outputSha256", mapped.hash(), "from", "srg", "to", "mojang")); return mapped;
     }
 }

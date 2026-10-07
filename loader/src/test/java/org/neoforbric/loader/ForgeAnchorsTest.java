@@ -26,7 +26,7 @@ class ForgeAnchorsTest {
         return classes;
     }
     @Test void realPinnedClassesMatchHashesAndMethodDescriptors() throws Exception {
-        var classes = nativeClasses(); assertEquals(40, classes.size());
+        var classes = nativeClasses(); assertEquals(50, classes.size());
         classes.forEach(ForgeAnchors::verifyClass);
     }
     @Test void changedInstructionsAndMethodDescriptorsFailBeforeDefinition() throws Exception {

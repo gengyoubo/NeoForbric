@@ -20,7 +20,9 @@ public final class ForgeMixins {
             public String id() { return "forge-mixin"; }
             public Set<String> after() { return preceding; }
             public byte[] transform(TransformPipeline.Context context, byte[] input) {
-                if (!ready) return input;
+                if (!ready || context.name().startsWith("net.minecraftforge.fml.loading.") || context.name().startsWith("net.minecraftforge.fml.common.asm.") || context.name().startsWith("net.minecraftforge.eventbus.")
+                        || context.name().startsWith("net.minecraftforge.coremod.") || context.name().startsWith("net.minecraftforge.accesstransformer.")
+                        || context.name().startsWith("cpw.mods.modlauncher.")) return input;
                 return NeoMixinService.transform(context.name(), input);
             }
         });

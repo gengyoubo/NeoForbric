@@ -18,6 +18,9 @@ public final class ClassIndex {
     }
 
     public static boolean shared(String name) {
+        // Platform entrypoints need native Forge types in G. The MixinExtras
+        // engine itself remains the single shared implementation on P.
+        if (org.neoforbric.forge.ForgeMixins.active() && name.startsWith("com.llamalad7.mixinextras.platform.forge.")) return false;
         return name.startsWith("org.neoforbric.api.") || name.startsWith("org.objectweb.asm.") || name.startsWith("net.fabricmc.api.")
                 || ((org.neoforbric.neoforge.NeoForgeMixins.active() || org.neoforbric.forge.ForgeMixins.active()) && ((name.startsWith("org.spongepowered.asm.") && !mixinSynthetic(name)) || name.startsWith("com.llamalad7.mixinextras.")))
                 || (NativeFabricRuntime.active() && (name.startsWith("net.fabricmc.loader.")

@@ -1055,6 +1055,154 @@
         "lambda$futureVisitor$1(Lnet/minecraftforge/fml/IModStateTransition$EventGenerator;Lnet/minecraftforge/fml/loading/progress/ProgressMeter;Ljava/util/function/BiFunction;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;",
         "lambda$futureVisitor$0(Lnet/minecraftforge/fml/IModStateTransition$EventGenerator;Lnet/minecraftforge/fml/loading/progress/ProgressMeter;Ljava/util/function/BiFunction;Ljava/util/concurrent/Executor;Lnet/minecraftforge/fml/ModContainer;)Ljava/util/concurrent/CompletableFuture;"
       ]
+    },
+    "net.minecraftforge.client.loading.NoVizFallback": {
+      "sha256": "a600ca98a13949ea319225768536a3826c1a3a163812fd91d8b236f60c62dc73",
+      "methods": [
+        "<init>()V",
+        "windowHandoff(Ljava/util/function/IntSupplier;Ljava/util/function/IntSupplier;Ljava/util/function/Supplier;Ljava/util/function/LongSupplier;)Ljava/util/function/LongSupplier;",
+        "loadingOverlay(Ljava/util/function/Supplier;Ljava/util/function/Supplier;Ljava/util/function/Consumer;Z)Ljava/util/function/Supplier;",
+        "windowPositioning(Ljava/util/Optional;Ljava/util/function/IntConsumer;Ljava/util/function/IntConsumer;Ljava/util/function/IntConsumer;Ljava/util/function/IntConsumer;)Ljava/lang/Boolean;",
+        "glVersion()Ljava/lang/String;",
+        "lambda$loadingOverlay$1(Ljava/util/function/Supplier;Ljava/util/function/Supplier;Ljava/util/function/Consumer;Z)Lnet/minecraft/client/gui/screens/LoadingOverlay;",
+        "lambda$windowHandoff$0(Ljava/util/function/IntSupplier;Ljava/util/function/IntSupplier;Ljava/util/function/Supplier;Ljava/util/function/LongSupplier;)J"
+      ]
+    },
+    "net.minecraftforge.fml.loading.MCPNamingService": {
+      "sha256": "e4ff3d8fc4104fbd1659d11882fc6e3784218b70e8a9149ec4a7802776ce5f00",
+      "methods": [
+        "<init>()V",
+        "mappingName()Ljava/lang/String;",
+        "mappingVersion()Ljava/lang/String;",
+        "understanding()Ljava/util/Map$Entry;",
+        "namingFunction()Ljava/util/function/BiFunction;",
+        "findMapping(Lcpw/mods/modlauncher/api/INameMappingService$Domain;Ljava/lang/String;)Ljava/lang/String;",
+        "findMethodMapping(Ljava/lang/String;)Ljava/lang/String;",
+        "findFieldMapping(Ljava/lang/String;)Ljava/lang/String;",
+        "loadMappings(Ljava/lang/String;Ljava/util/function/BiConsumer;)V",
+        "lambda$loadMappings$1(Ljava/util/function/BiConsumer;[Ljava/lang/String;)V",
+        "lambda$loadMappings$0(Ljava/lang/String;)[Ljava/lang/String;",
+        "<clinit>()V"
+      ]
+    },
+    "net.minecraftforge.fml.common.asm.ObjectHolderDefinalize": {
+      "sha256": "962d3281a490476c74c95e23757807a4c405dcfeacdefa3fd45f4214fbd918a6",
+      "methods": [
+        "<init>()V",
+        "name()Ljava/lang/String;",
+        "handlesClass(Lorg/objectweb/asm/Type;Z)Ljava/util/EnumSet;",
+        "hasHolder(Ljava/util/List;)Z",
+        "getValue(Ljava/util/List;)Ljava/lang/String;",
+        "processClassWithFlags(Lcpw/mods/modlauncher/serviceapi/ILaunchPluginService$Phase;Lorg/objectweb/asm/tree/ClassNode;Lorg/objectweb/asm/Type;Ljava/lang/String;)I",
+        "lambda$processClassWithFlags$6(Ljava/util/concurrent/atomic/AtomicBoolean;Lorg/objectweb/asm/tree/FieldNode;)V",
+        "lambda$processClassWithFlags$5(Lorg/objectweb/asm/tree/FieldNode;)Z",
+        "lambda$processClassWithFlags$4(Ljava/util/concurrent/atomic/AtomicBoolean;Lorg/objectweb/asm/tree/FieldNode;)V",
+        "lambda$processClassWithFlags$3(Lorg/objectweb/asm/tree/FieldNode;)Z",
+        "lambda$getValue$2(Lorg/objectweb/asm/tree/AnnotationNode;)Z",
+        "lambda$hasHolder$1(Lorg/objectweb/asm/tree/AnnotationNode;)Z",
+        "lambda$static$0(Ljava/lang/String;)Ljava/lang/String;",
+        "<clinit>()V"
+      ]
+    },
+    "net.minecraftforge.fml.loading.targets.CommonLaunchHandler": {
+      "sha256": "870806eda7e8066ec458fafbeb6bc19fdb527493b98ec30184ecce068a24b804",
+      "methods": [
+        "<init>(Lnet/minecraftforge/fml/loading/targets/CommonLaunchHandler$LaunchType;Ljava/lang/String;)V",
+        "name()Ljava/lang/String;",
+        "getDist()Lnet/minecraftforge/api/distmarker/Dist;",
+        "isData()Z",
+        "isProduction()Z",
+        "getNaming()Ljava/lang/String;",
+        "getMinecraftPaths()Ljava/util/List;",
+        "preLaunch([Ljava/lang/String;Ljava/lang/ModuleLayer;)[Ljava/lang/String;",
+        "launchService([Ljava/lang/String;Ljava/lang/ModuleLayer;)Lcpw/mods/modlauncher/api/ServiceRunner;",
+        "makeService([Ljava/lang/String;Ljava/lang/ModuleLayer;)Lcpw/mods/modlauncher/api/ServiceRunner;",
+        "runTarget(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/ModuleLayer;)V",
+        "getPathFromResource(Ljava/lang/String;)Ljava/nio/file/Path;",
+        "getPathFromResource(Ljava/lang/String;Ljava/lang/ClassLoader;)Ljava/nio/file/Path;",
+        "lambda$makeService$0([Ljava/lang/String;Ljava/lang/ModuleLayer;)V",
+        "<clinit>()V"
+      ]
+    },
+    "net.minecraftforge.fml.common.asm.RuntimeEnumExtender": {
+      "sha256": "515b57db9f22aa92e58bd5822db7638bfaab91227dd92e1f6899d374fe5f628b",
+      "methods": [
+        "<init>()V",
+        "name()Ljava/lang/String;",
+        "handlesClass(Lorg/objectweb/asm/Type;Z)Ljava/util/EnumSet;",
+        "processClassWithFlags(Lcpw/mods/modlauncher/serviceapi/ILaunchPluginService$Phase;Lorg/objectweb/asm/tree/ClassNode;Lorg/objectweb/asm/Type;Ljava/lang/String;)I",
+        "lambda$processClassWithFlags$6(Ljava/lang/StringBuilder;Lorg/objectweb/asm/tree/FieldNode;)V",
+        "lambda$processClassWithFlags$5(Lorg/objectweb/asm/tree/FieldNode;)Z",
+        "lambda$processClassWithFlags$4(Ljava/lang/StringBuilder;Lorg/objectweb/asm/tree/MethodNode;)V",
+        "lambda$processClassWithFlags$3(Lorg/objectweb/asm/tree/MethodNode;)Z",
+        "lambda$processClassWithFlags$2(Ljava/lang/String;Lorg/objectweb/asm/tree/MethodNode;)Z",
+        "lambda$processClassWithFlags$1(Lorg/objectweb/asm/tree/MethodNode;)Z",
+        "lambda$processClassWithFlags$0(Ljava/lang/String;Lorg/objectweb/asm/tree/FieldNode;)Z",
+        "<clinit>()V"
+      ]
+    },
+    "net.minecraftforge.fml.common.asm.CapabilityTokenSubclass": {
+      "sha256": "08779241a39e554f78dca7fa1c713d67a56efd80ef29618c18aeca10eaf976d2",
+      "methods": [
+        "<init>()V",
+        "name()Ljava/lang/String;",
+        "handlesClass(Lorg/objectweb/asm/Type;Z)Ljava/util/EnumSet;",
+        "processClassWithFlags(Lcpw/mods/modlauncher/serviceapi/ILaunchPluginService$Phase;Lorg/objectweb/asm/tree/ClassNode;Lorg/objectweb/asm/Type;Ljava/lang/String;)I",
+        "<clinit>()V"
+      ]
+    },
+    "net.minecraftforge.eventbus.service.ModLauncherService": {
+      "sha256": "643f9edbaf3ba5fb38a6981e9244ca66768d1944bc9e29ecac47063e21452f24",
+      "methods": [
+        "<init>()V",
+        "name()Ljava/lang/String;",
+        "getEventBusEngine()Lnet/minecraftforge/eventbus/IEventBusEngine;",
+        "processClassWithFlags(Lcpw/mods/modlauncher/serviceapi/ILaunchPluginService$Phase;Lorg/objectweb/asm/tree/ClassNode;Lorg/objectweb/asm/Type;Ljava/lang/String;)I",
+        "handlesClass(Lorg/objectweb/asm/Type;Z)Ljava/util/EnumSet;",
+        "lambda$getEventBusEngine$0(Lcpw/mods/modlauncher/api/IModuleLayerManager;)Ljava/util/Optional;",
+        "<clinit>()V"
+      ]
+    },
+    "net.minecraftforge.eventbus.EventSubclassTransformer": {
+      "sha256": "01e1423e10e722c0f6d3163a69461bc69c68ed811bcb82819e4d5f8591629f23",
+      "methods": [
+        "<init>()V",
+        "transform(Lorg/objectweb/asm/tree/ClassNode;Lorg/objectweb/asm/Type;)Ljava/util/Optional;",
+        "transformEvent(Lorg/objectweb/asm/tree/ClassNode;)V",
+        "clear(Lorg/objectweb/asm/tree/MethodNode;)V",
+        "buildEvents(Lorg/objectweb/asm/tree/ClassNode;)Z",
+        "addListenerList(Lorg/objectweb/asm/tree/ClassNode;Z)Z",
+        "getClassLoader()Ljava/lang/ClassLoader;",
+        "getGameClassLoader()Ljava/lang/ClassLoader;",
+        "lambda$getGameClassLoader$0(Lcpw/mods/modlauncher/api/IModuleLayerManager;)Ljava/util/Optional;",
+        "<clinit>()V"
+      ]
+    },
+    "net.minecraftforge.coremod.CoreModProvider": {
+      "sha256": "4deb4d7b205ac526ff9e062822c30b120196f8265b11517c99e517c56b9a4223",
+      "methods": [
+        "<init>()V",
+        "addCoreMod(Lnet/minecraftforge/forgespi/coremod/ICoreModFile;)V",
+        "getCoreModTransformers()Ljava/util/List;"
+      ]
+    },
+    "net.minecraftforge.coremod.CoreMod": {
+      "sha256": "44f70025da8b50b6eeaf4c19eff6ac621f7590586c172228d7e7d2cbec6b2311",
+      "methods": [
+        "<init>(Lnet/minecraftforge/forgespi/coremod/ICoreModFile;Ljavax/script/ScriptEngine;)V",
+        "getPath()Ljava/nio/file/Path;",
+        "initialize()V",
+        "buildTransformers()Ljava/util/List;",
+        "buildCore(Ljava/util/Map$Entry;)Lcpw/mods/modlauncher/api/ITransformer;",
+        "hasError()Z",
+        "getError()Ljava/lang/Exception;",
+        "getFile()Lnet/minecraftforge/forgespi/coremod/ICoreModFile;",
+        "loadAdditionalFile(Ljava/lang/String;)Z",
+        "loadAdditionalData(Ljava/lang/String;)Ljava/lang/Object;",
+        "logMessage(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V",
+        "lambda$buildCore$0(Ljava/lang/Object;)Ljava/lang/String;",
+        "<clinit>()V"
+      ]
     }
   }
 }

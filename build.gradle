@@ -157,19 +157,22 @@ def clientModsDirectory = providers.gradleProperty('clientModsDir').isPresent()
         ? file(providers.gradleProperty('clientModsDir').get()) : new File(clientDirectory, 'mods')
 def clientTestMod = providers.gradleProperty('clientTestMod').getOrElse('false') == 'true'
 def forgeRequested = providers.gradleProperty('forgeProfile').getOrElse('false') == 'true'
+
+// Dual descriptors can include unused build templates. Exclusive descriptors
+// identify which native runtime this directory actually requires.
+def nativeModDescriptors = (clientModsDirectory.listFiles() ?: []).findAll { it.isFile() && it.name.endsWith('.jar') }.collect { mod ->
+    new java.util.jar.JarFile(mod).withCloseable { jar ->
+        [forge: jar.getJarEntry('META-INF/mods.toml') != null,
+         neoForge: jar.getJarEntry('META-INF/neoforge.mods.toml') != null,
+         other: jar.getJarEntry('fabric.mod.json') != null || jar.getJarEntry('neoforbric.mod.json') != null]
+    }
+}
+def hasExclusiveForge = nativeModDescriptors.any { it.forge && !it.neoForge && !it.other }
+def hasExclusiveNeoForge = nativeModDescriptors.any { it.neoForge && !it.forge && !it.other }
 def neoForgeProfile = providers.gradleProperty('neoForgeProfile').isPresent()
         ? providers.gradleProperty('neoForgeProfile').get() == 'true'
-        : (!forgeRequested && (clientModsDirectory.listFiles()?.any { mod ->
-            if (!mod.isFile() || !mod.name.endsWith('.jar')) return false
-            new java.util.jar.JarFile(mod).withCloseable { archive ->
-                archive.getJarEntry('META-INF/neoforge.mods.toml') != null
-                        && archive.getJarEntry('fabric.mod.json') == null && archive.getJarEntry('neoforbric.mod.json') == null
-            }
-        } ?: false))
-def forgeProfile = providers.gradleProperty('forgeProfile').isPresent() ? forgeRequested : (!neoForgeProfile && (clientModsDirectory.listFiles()?.any { mod ->
-    if (!mod.isFile() || !mod.name.endsWith('.jar')) return false
-    new java.util.jar.JarFile(mod).withCloseable { jar -> jar.getJarEntry('META-INF/mods.toml') != null && jar.getJarEntry('META-INF/neoforge.mods.toml') == null && jar.getJarEntry('fabric.mod.json') == null }
-} ?: false))
+        : (!forgeRequested && (hasExclusiveNeoForge || (!hasExclusiveForge && nativeModDescriptors.any { it.neoForge && !it.other })))
+def forgeProfile = providers.gradleProperty('forgeProfile').isPresent() ? forgeRequested : (!neoForgeProfile && hasExclusiveForge)
 if (forgeProfile && neoForgeProfile) throw new GradleException('Choose one of forgeProfile and neoForgeProfile')
 tasks.register('prepareClientUi') {
     dependsOn ':client-ui:jar'

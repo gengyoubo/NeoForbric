@@ -25,6 +25,16 @@ import net.minecraft.resources.*;
 public final class ForgeContractProbe {
     public static class ProbeEvent extends Event implements IModBusEvent {}
     public static final class ProbeValue {}
+    public static final class HolderProbe {
+        @ObjectHolder(value="nf_headless_probe:value", registryName="nf_headless_probe:content")
+        public static final ProbeValue HELD = new ProbeValue();
+    }
+    public enum ProbeEnum implements net.minecraftforge.common.IExtensibleEnum {
+        FIRST(1);
+        public final int value;
+        ProbeEnum(int value) { this.value = value; }
+        public static ProbeEnum create(String name, int value) { throw new IllegalStateException("Enum extension transformer missing"); }
+    }
     private ForgeContractProbe() {}
     private static void require(boolean condition, String message) { if (!condition) throw new IllegalStateException("FORGE_PROBE: " + message); }
     private static Map<String, Object> thread() { return Map.of("id", Thread.currentThread().threadId(), "name", Thread.currentThread().getName()); }
@@ -84,6 +94,24 @@ public final class ForgeContractProbe {
         require(ForgeContractProbe.class.getClassLoader() == ModContainer.class.getClassLoader(), "Forge classes must share G");
         require(Launcher.INSTANCE.environment().getProperty(IEnvironment.Keys.NAMING.get()).orElseThrow().equals("mojang"), "Missing launcher environment");
         require(Launcher.INSTANCE.blackboard() != null, "Missing launcher blackboard");
+        var capability = net.minecraftforge.common.capabilities.CapabilityManager.get(new net.minecraftforge.common.capabilities.CapabilityToken<ProbeValue>() {});
+        require(capability.getName().equals(ProbeValue.class.getName().replace('.', '/')), "CapabilityToken generic type transform missing");
+        require(capability == net.minecraftforge.common.capabilities.CapabilityManager.get(new net.minecraftforge.common.capabilities.CapabilityToken<ProbeValue>() {}), "Capability identity differs");
+        require(!Modifier.isFinal(HolderProbe.class.getDeclaredField("HELD").getModifiers()), "Native ObjectHolder definalize missing");
+        var extended = ProbeEnum.create("SECOND", 7);
+        require(extended.value == 7 && extended.ordinal() == 1 && ProbeEnum.values()[1] == extended && Enum.valueOf(ProbeEnum.class, "SECOND") == extended, "Native enum extension incomplete");
+        var metadata = new org.objectweb.asm.ClassWriter(0);
+        metadata.visit(org.objectweb.asm.Opcodes.V21, org.objectweb.asm.Opcodes.ACC_PUBLIC, "nfp/Metadata", null, "net/minecraft/client/gui/screens/Screen", null); metadata.visitEnd();
+        ForgeBridge.plugins("nfp.Metadata", metadata.toByteArray(), "mixin");
+        require(!(boolean)ForgeContractProbe.class.getClassLoader().getClass().getMethod("hasDefined", String.class).invoke(ForgeContractProbe.class.getClassLoader(), "net.minecraft.client.gui.screens.Screen"), "Mixin metadata caused EventBus to define its Minecraft parent");
+        var hierarchyNode = new org.objectweb.asm.tree.ClassNode(); hierarchyNode.name = "nfp/Frame"; hierarchyNode.superName = "java/lang/Object";
+        var frames = new ForgeBytecodeWriter(org.objectweb.asm.ClassWriter.COMPUTE_FRAMES, hierarchyNode);
+        require(frames.getCommonSuperClass("java/util/ArrayList", "java/util/LinkedList").equals("java/util/AbstractList"), "Native frame hierarchy merge differs");
+        require(frames.getCommonSuperClass("[[I", "[[J").equals("[Ljava/lang/Object;"), "Native frame array merge differs");
+        var nativeNaming = new net.minecraftforge.fml.loading.MCPNamingService().namingFunction();
+        var adaptedNaming = Launcher.INSTANCE.environment().findNameMapping("srg").orElseThrow();
+        for (var query : List.of(Map.entry(cpw.mods.modlauncher.api.INameMappingService.Domain.METHOD, "m_28928_"), Map.entry(cpw.mods.modlauncher.api.INameMappingService.Domain.FIELD, "f_999999999_")))
+            require(adaptedNaming.apply(query.getKey(), query.getValue()).equals(nativeNaming.apply(query.getKey(), query.getValue())), "Unknown naming query differs from native MCPNamingService");
         var launch = net.minecraftforge.fml.loading.FMLLoader.getLaunchHandler();
         require(launch != null && launch.getDist() == ForgeBridge.dist() && !launch.isData() && launch.isProduction() && launch.getNaming().equals("mojang"), "Missing passive production launch handler");
         require(Launcher.INSTANCE.environment().findLaunchHandler(launch.name()).orElseThrow() == launch, "Launch handler query identity");

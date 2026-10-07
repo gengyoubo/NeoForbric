@@ -61,7 +61,10 @@ public final class ForgeRuntime implements AutoCloseable {
                 public String id() { return stage.getKey(); }
                 public Set<String> after() { return Set.of(prerequisite); }
                 public byte[] transform(TransformPipeline.Context context, byte[] bytes) throws Exception {
-                    return nativeBridge == null ? bytes : (byte[])invoke(nativeBridge.getMethod(stage.getValue(), String.class, byte[].class), context.name(), bytes);
+                    if (nativeBridge == null) return bytes;
+                    return stage.getValue().equals("plugins")
+                            ? (byte[])invoke(nativeBridge.getMethod("plugins", String.class, byte[].class, String.class), context.name(), bytes, context.reason())
+                            : (byte[])invoke(nativeBridge.getMethod(stage.getValue(), String.class, byte[].class), context.name(), bytes);
                 }
             }); previous = stage.getKey();
         }
@@ -102,6 +105,7 @@ public final class ForgeRuntime implements AutoCloseable {
             byte[] manifest = archive.read("META-INF/MANIFEST.MF");
             if (manifest != null) { String declared = new java.util.jar.Manifest(new java.io.ByteArrayInputStream(manifest)).getMainAttributes().getValue("MixinConfigs"); if (declared != null) for (String config : declared.split(",")) { config = config.trim(); if (config.isEmpty() || archive.read(config) == null) throw new Failure("FORGE_MIXIN", "Missing config " + config); configs.add(config); } }
         }
+        invoke(nativeBridge.getMethod("prepareModCoremods", List.class), paths);
         invoke(nativeRuntime.getMethod("prepare", Path.class, Path.class, List.class, List.class, ClassLoader.class, Map.class, List.class), inputs.getFirst().path(), root.resolve("libraries/forge-universal.jar"), paths, mods.stream().map(m -> m.metadata().id()).toList(), loader, scans, rules);
         mixins.bind(index, loader, pipeline, inputs, side); mixins.start(List.copyOf(configs));
     }

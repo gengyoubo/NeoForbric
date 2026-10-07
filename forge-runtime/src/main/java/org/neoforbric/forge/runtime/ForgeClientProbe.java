@@ -18,10 +18,13 @@ public final class ForgeClientProbe {
         if (!(client.screen instanceof TitleScreen) || client.getOverlay() != null || client.getWindow().getWindow() == 0 || !ModLoader.isLoadingStateValid())
             throw new IllegalStateException("FORGE_CLIENT_PROBE: Main menu/window/loading contract incomplete");
         Map<String, Object> mods = new LinkedHashMap<>();
-        for (String id : List.of("forge", "jei", "mezz_config")) {
-            Object mod = ModList.get().getModContainerById(id).orElseThrow().getMod();
-            if (mod == null || mod.getClass().getClassLoader() != ForgeClientProbe.class.getClassLoader()) throw new IllegalStateException("FORGE_CLIENT_PROBE: Wrong mod owner " + id);
-            mods.put(id, mod.getClass().getName());
+        for (var info : ModList.get().getMods()) {
+            String id = info.getModId(); if (id.equals("minecraft")) continue;
+            var container = ModList.get().getModContainerById(id).orElseThrow(); Object mod = container.getMod();
+            boolean metadataOnly = container instanceof net.minecraftforge.fml.lowcodemod.LowCodeModContainer;
+            if (container.getClass().getClassLoader() != ForgeClientProbe.class.getClassLoader()
+                    || (!metadataOnly && (mod == null || mod.getClass().getClassLoader() != ForgeClientProbe.class.getClassLoader()))) throw new IllegalStateException("FORGE_CLIENT_PROBE: Wrong mod owner " + id);
+            mods.put(id, metadataOnly ? container.getClass().getName() + " (metadata only)" : mod.getClass().getName());
         }
         var buttons = client.screen.children().stream().filter(child -> child instanceof AbstractWidget widget && widget.visible && !(widget instanceof PlainTextButton)).map(child -> (AbstractWidget)child).toList();
         List<Map<String, Object>> layout = new ArrayList<>();
