@@ -1,6 +1,6 @@
 # Forge 固定版本模组运行适配
 
-已把独立的 Forge runtime 接入 `runClient` profile：被动发现 Forge 描述符和 JarJar，使用同一个 G 构造原生 FML metadata / container，执行 Forge 自己的加载状态机。无界面验证分别使用内部注册 / 配置 / Mixin 模组，以及指定的 `jei-1.21.1-forge-19.57.0.451.jar` 和其内嵌 `mezz_config`。本轮没有启动客户端、Minecraft Main、窗口、世界或原生 ModLauncher；JEI 的客户端界面和进入世界仍未验证。
+已把独立的 Forge runtime 接入 `runClient` profile：被动发现 Forge 描述符和 JarJar，使用同一个 G 构造原生 FML metadata / container，执行 Forge 自己的加载状态机。无界面验证分别使用内部注册 / 配置 / Mixin 模组，以及指定的 `jei-1.21.1-forge-19.57.0.451.jar` 和其内嵌 `mezz_config`。实际客户端已完成 JEI / mezz_config 构造、资源加载、窗口和主菜单，渲染 120 帧后正常退出。JEI 的世界内配方界面和进入世界仍未验证；没有启动原生 ModLauncher。
 
 ## 输入与锚点
 
@@ -36,7 +36,7 @@ NF 客户端生命周期 / 主菜单结构补丁（客户端 profile）
 
 使用 Forge 自己的 AT 引擎和 JS CoreModProvider。固定 universal 中两个 JS coremod 生成六个 transformer，五个 field-to-method 目标以及 Zombie 的 finalizeSpawn 方法重定向都实际执行并检查输出变化。AT 与 coremod 是不同阶段，没有用一个不透明的“transform”替代它们。此顺序是 NF 当前基线契约；完整原生启动的顺序对照尚未运行。
 
-Launcher facade 填充真实 Environment / blackboard，提供 SRG→Mojang 成员映射查询。已适配的 launch plugin 查询返回本次真正注册的 eventbus / AT / Dist cleaner 对象；没有注册的 plugin、launch handler 与 module layer 查询返回空 Optional。`Launcher.main/run`、原生 classloader 构造和 FML 原生扫描 / 启动入口明确拒绝 `FORGE_LAUNCH_OWNERSHIP`。没有启动第二个 G 或自动发现 transformation services。
+Launcher facade 填充真实 Environment / blackboard，提供 SRG→Mojang 成员映射查询。已适配的 launch plugin 查询返回本次真正注册的 eventbus / AT / Dist cleaner 对象。被动 CommonLaunchHandler 提供实际 Dist、非 data、production、Mojang 命名与 Minecraft 输入路径，FML 和 Launcher 查询返回同一个对象，避免 Block 初始化访问空 handler。没有注册的 plugin、handler 与 module layer 查询返回空 Optional。handler 的启动入口、`Launcher.main/run`、原生 classloader 构造和 FML 原生扫描 / 启动入口明确拒绝 `FORGE_LAUNCH_OWNERSHIP`。没有启动第二个 G 或自动发现 transformation services。
 
 `Launcher.launchPlugins` 反射读取返回被动 handler，其 `plugins` 是实时、只读的实际 adapter 状态；没有把这个字段留空。动态插入插件明确抛出 `FORGE_PLUGIN_REGISTRATION`，原生 handler 的独立转换 / 启动入口也被拒绝。其他私有 ModLauncher 接管字段没有完整 native 实现，不宣称任意反射使用已适配。
 
@@ -45,6 +45,10 @@ Launcher facade 填充真实 Environment / blackboard，提供 SRG→Mojang 成�
 客户端结构 hook 必须读取原始固定输入。实际失败 audit 显示 native plugin 已改写 `Main` 的哈希，而客户端生命周期 hook 随后仍按原始哈希校验；现通过显式排序依赖让结构 hook 在 native plugin 之前执行。Forge `Minecraft` 的退出调用锚点是五处，不能照搬 NeoForge 的两处。回归测试只变换 `Main` / `Minecraft` 字节码，不执行入口，并保留对错误输入的拒绝。
 
 NF 提前暴露 `ModList` metadata 供 Mixin plugin 查询，因此 Minecraft 的 crash-report preload 可能早于原生 container 构造。准备阶段使用 Forge 自己的 `setLoadedMods(emptyList)` 初始化空索引；查询 container 返回 empty，报告状态为 `NONE`，没有提前构造模组。之后原生 gather 创建并索引真实 containers。内部模组和 JEI probe 均验证构造前的查询和 crash report，以及构造后的真实 G 对象。
+
+客户端的 ImmediateWindowProvider 直接委托固定 Forge 的 NoVizFallback 完成普通 Minecraft 窗口交接、定位与 loading overlay。原生 dummy provider 按原生模块名反射绑定窗口方法，NF 的模块图不采用该模块名，因此不能照搬这条绑定路径。窗口仍由 Minecraft 创建，没有另起原生 launcher。
+
+G 的模块描述符保留每个 SecureJar 声明的 SPI providers，使具名模块中的 ServiceLoader 能找到 JEI 的平台实现。内部模组在原生构造 worker 上查询 SPI，并检查实现属于 G；实际客户端验证 JEI 与 mezz_config 构造完成。
 
 ## Forge 依赖兼容矩阵
 
@@ -71,8 +75,8 @@ Forge `syncExecutor()` 是非 self-driven 的队列。真实 probe 中 parallel 
 
 | 领域 | 已验证 |
 | --- | --- |
-| 单 G | Forge 类型与 probe 内容类型属于同一 loader；Minecraft client 类能被索引，但没有被 define |
-| Launcher | environment、blackboard、映射及适配 plugin 查询；原生 main 拒绝 |
+| 单 G | Forge 类型与 probe 内容类型属于同一 loader；无界面 baseline 只索引 client 类；实际客户端中 Forge / JEI / mezz_config 对象属于 G |
+| Launcher | environment、blackboard、映射及适配 plugin / 被动 launch handler 查询；原生 main 和 handler 启动入口拒绝 |
 | MOD / GAME bus | 独立且稳定的对象身份；listener 隔离；GAME bus 启动前不分发；原异常传播 |
 | 并行 / deferred | parallel event 不在 owner 线程；enqueueWork 不提前执行；在 native sync driver 执行 |
 | 注册表 | 独立真实 ForgeRegistry；DeferredRegister 经 RegisterEvent 绑定 RegistryObject；跨拥有者查询同一对象；迟注册和 freeze 后写入失败 |
@@ -82,7 +86,7 @@ Forge `syncExecutor()` 是非 self-driven 的队列。真实 probe 中 parallel 
 
 注册表 probe 使用原生 standalone RegistryBuilder factory，不运行 `NewRegistryEvent.fill` 对全局 Minecraft root registry 的改写。配置同步 probe 直接调用原生同步 API，没有建立网络连接。SERVER 默认加载仅用于测量原生 API，**没有照搬 NeoForge 的 setup 注入修法**。
 
-模组 probe 另验证全局 ForgeMod 构造、完整加载状态、原生内建 item 和自定义 registry、COMMON 配置在 setup 可读、SERVER 配置在世界 / sync 前未加载、自动 subscriber、worker setup / owner enqueueWork 及实际 Mixin 注入。外部 JEI probe 的 Dist 为 DEDICATED_SERVER，只证明其公共入口、内嵌依赖与原生完整加载契约；客户端 renderer / model / UI、存档 serverconfig、SimpleChannel login/play/version negotiation、集成服务端、独立服务端和主菜单仍待实测。
+模组 probe 另验证全局 ForgeMod 构造、完整加载状态、原生内建 item 和自定义 registry、COMMON 配置在 setup 可读、SERVER 配置在世界 / sync 前未加载、自动 subscriber、worker setup / owner enqueueWork、SPI 与实际 Mixin 注入。外部 JEI 无界面 probe 的 Dist 为 DEDICATED_SERVER，验证公共入口、内嵌依赖与原生完整加载契约。另已实测 JEI 客户端构造、资源加载与主菜单；世界内渲染 / 模型 / JEI 配方界面、存档 serverconfig、SimpleChannel login/play/version negotiation、集成服务端和独立服务端仍待实测。
 
 ## 无界面运行
 
@@ -95,6 +99,17 @@ Forge `syncExecutor()` 是非 self-driven 的队列。真实 probe 中 parallel 
 
 以上任务不调用 Minecraft Main。`forgeServerBaseline` 使用同一固定补丁输入测试 DEDICATED_SERVER 的 Dist / API 契约，**不是独立服务端运行验证**。`forgeJeiProbe` 将指定 JEI 复制到独立 build 目录，默认引用 `run/client/mods/jei-1.21.1-forge-19.57.0.451.jar`；可用 `-PforgeReferenceMod=<本地路径>` 指定。依赖检查始终启用，无跳过 Minecraft 范围的诊断模式。
 
-实际客户端 profile 的选择参数为 `-PforgeProfile=true -PneoForgeProfile=false`，模组目录可用 `-PclientModsDir=<Forge 模组目录>` 指定。检测到纯 Forge 描述符且未选择 NeoForge 时可自动选择 Forge。此轮只接通入口和做无界面检查，没有执行 `runClient`。
+## 客户端主菜单实测
+
+实际客户端 profile 的选择参数为 `-PforgeProfile=true -PneoForgeProfile=false`，模组目录可用 `-PclientModsDir=<Forge 模组目录>` 指定。检测到纯 Forge 描述符且未选择 NeoForge 时可自动选择 Forge。在 `forgeJeiProbe` 准备参考模组后，使用独立运行目录执行：
+
+```powershell
+./gradlew.bat runClient -PforgeProfile=true -PneoForgeProfile=false `
+  -PclientRunDir=build/forge-client-ui/run `
+  -PclientModsDir=build/forge-jei/server/mods `
+  -PforgeClientProbe=true -PclientProbeFrames=120 -PclientHeap=4g
+```
+
+probe 在 Render thread 验证 TitleScreen、资源 overlay 已完成、有效窗口、原生加载状态与三个模组对象的 G 身份，并截图主菜单。NF 的 Mods 按钮复用原生 Forge 预留的半宽位置，保留 Realms / Options / Quit 的原始布局；probe 检查按钮都在屏幕内、恰好一个 Mods 按钮且所有按钮矩形不相交。2026-10-07 实测 PASS，截图已人工检查，120 帧后退出码 0。证据为 `build/forge-client-ui/run/forge-client-report.json`、`forge-main-menu.png` 和 `audit.json`。
 
 证据写入 `build/forge-baseline/client/`、`build/forge-baseline/server/`、`build/forge-mod-probe/` 和 `build/forge-jei/server/` 的 `report.json` / `audit.json`。原生 `ForgeContractProbe` 实际调用固定 `VersionSupportMatrix` 和 `ModSorter` 断言接受 / 拒绝案例；kernel 单测覆盖相同范围、audit 依据、输入哈希和转换顺序。负向 Dist probe 会输出预期 ERROR，以整体 PASS 及拒绝断言判断。
