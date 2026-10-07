@@ -7,6 +7,8 @@ import org.objectweb.asm.tree.*;
 
 /** Replace only FML's native discovery/launch handoff; keep real containers and events. */
 public final class NeoForgeHostHook implements TransformPipeline.Transformer {
+    private static final String REGISTRY_SESSION = "neoforbric$registrySession";
+    private static final String HOOK_SESSION = "org/neoforbric/api/GameHooks$Session";
     private final boolean registryContract;
     public NeoForgeHostHook() { this(false); }
     public NeoForgeHostHook(boolean registryContract) { this.registryContract = registryContract; }
@@ -68,6 +70,16 @@ public final class NeoForgeHostHook implements TransformPipeline.Transformer {
         if (context.name().equals("net.minecraft.client.gui.screens.TitleScreen")) return titleScreen(bytes);
         if (context.name().equals("net.neoforged.neoforge.internal.CommonModLoader")) {
             ClassNode node = new ClassNode(); new ClassReader(bytes).accept(node, 0);
+            var begin = node.methods.stream().filter(m -> m.name.equals("begin") && m.desc.equals("(Ljava/lang/Runnable;Z)V")).toList();
+            if (begin.size() != 1 || node.fields.stream().anyMatch(field -> field.name.equals(REGISTRY_SESSION)))
+                throw new Failure("NEOFORGE_ANCHOR", "Expected one uncaptured NeoForge registry session anchor");
+            // begin runs on the owning launch thread. Registration and resource-reload
+            // setup run on different native workers, so explicitly retain this session.
+            node.fields.add(new FieldNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, REGISTRY_SESSION, "L" + HOOK_SESSION + ";", null, null));
+            InsnList capture = new InsnList();
+            capture.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/neoforbric/api/GameHooks", "captureSession", "()L" + HOOK_SESSION + ";", false));
+            capture.add(new FieldInsnNode(Opcodes.PUTSTATIC, node.name, REGISTRY_SESSION, "L" + HOOK_SESSION + ";"));
+            begin.getFirst().instructions.insert(capture);
             var methods = node.methods.stream().filter(m -> m.name.equals("load")
                     && m.desc.equals("(Ljava/util/concurrent/Executor;Ljava/util/concurrent/Executor;)V")).toList();
             if (methods.size() != 1) throw new Failure("NEOFORGE_ANCHOR", "Expected one pinned NeoForge common setup anchor");
@@ -76,7 +88,7 @@ public final class NeoForgeHostHook implements TransformPipeline.Transformer {
                     "org/neoforbric/neoforge/runtime/NativeNeoForgeRuntime", "loadServerDefaults", "()V", false));
             // Config loading and the native registry freeze are complete at this point;
             // client entrypoints must register callbacks before setup / model-loading events.
-            setup.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/neoforbric/api/GameHooks", "afterRegistryFreeze", "()V", false));
+            setup.add(registryCallback(node.name, "afterRegistryFreeze"));
             methods.getFirst().instructions.insert(setup);
             registryWindow(node);
             ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS); node.accept(writer); return writer.toByteArray();
@@ -142,11 +154,16 @@ public final class NeoForgeHostHook implements TransformPipeline.Transformer {
             if (calls.stream().noneMatch(call -> call.name.equals("unfreezeData"))) continue;
             if (!calls.stream().map(call -> call.name).toList().equals(java.util.List.of("unfreezeData", "postRegisterEvents", "freezeData")))
                 throw new Failure("NEOFORGE_ANCHOR", "Unexpected NeoForge registry initialization sequence");
-            method.instructions.insert(calls.getFirst(), new MethodInsnNode(Opcodes.INVOKESTATIC,
-                    "org/neoforbric/api/GameHooks", "beforeRegistryFreeze", "()V", false));
+            method.instructions.insert(calls.getFirst(), registryCallback(node.name, "beforeRegistryFreeze"));
             windows++;
         }
         if (windows != 1) throw new Failure("NEOFORGE_ANCHOR", "Expected one NeoForge registry initialization window, got " + windows);
+    }
+    private static InsnList registryCallback(String owner, String name) {
+        InsnList callback = new InsnList();
+        callback.add(new FieldInsnNode(Opcodes.GETSTATIC, owner, REGISTRY_SESSION, "L" + HOOK_SESSION + ";"));
+        callback.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, HOOK_SESSION, name, "()V", false));
+        return callback;
     }
     private static byte[] passiveLauncher(byte[] bytes) {
         ClassNode node = new ClassNode(); new ClassReader(bytes).accept(node, 0); int anchors = 0;

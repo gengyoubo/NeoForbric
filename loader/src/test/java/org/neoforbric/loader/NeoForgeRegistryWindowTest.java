@@ -3,6 +3,7 @@ package org.neoforbric.loader;
 import java.util.*;
 import java.nio.file.*;
 import java.util.jar.JarFile;
+import java.util.concurrent.*;
 import org.junit.jupiter.api.Test;
 import org.neoforbric.api.GameHooks;
 import org.neoforbric.neoforge.NeoForgeHostHook;
@@ -31,6 +32,8 @@ public class NeoForgeRegistryWindowTest {
     private byte[] commonLoader(List<String> sequence) {
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         writer.visit(V21, ACC_PUBLIC, TARGET.replace('.', '/'), null, "java/lang/Object", null);
+        var begin = writer.visitMethod(ACC_PUBLIC | ACC_STATIC, "begin", "(Ljava/lang/Runnable;Z)V", null, null);
+        begin.visitCode(); begin.visitInsn(RETURN); begin.visitMaxs(0, 2); begin.visitEnd();
         var load = writer.visitMethod(ACC_PUBLIC | ACC_STATIC, "load", "(Ljava/util/concurrent/Executor;Ljava/util/concurrent/Executor;)V", null, null);
         load.visitCode(); load.visitMethodInsn(INVOKESTATIC, Type.getInternalName(RegistryState.class), "commonSetup", "()V", false);
         load.visitInsn(RETURN); load.visitMaxs(0, 2); load.visitEnd();
@@ -59,7 +62,7 @@ public class NeoForgeRegistryWindowTest {
         method.visitInsn(RETURN); method.visitMaxs(0, 0); method.visitEnd(); writer.visitEnd(); return writer.toByteArray();
     }
 
-    @Test void mixedEntriesRegisterAfterConstructionAndBeforeNativeFreeze() throws Exception {
+    @Test void mixedEntriesRegisterOnNativeWorkersAfterConstructionAndBeforeFreeze() throws Exception {
         byte[] original = commonLoader(List.of("unfreezeData", "postRegisterEvents", "freezeData"));
         byte[] transformed = new NeoForgeHostHook().transform(new TransformPipeline.Context(TARGET, ignored -> original), original);
         class Definer extends ClassLoader {
@@ -69,13 +72,24 @@ public class NeoForgeRegistryWindowTest {
         var loader = new Definer(); loader.define(DATA.replace('/', '.'), gameData());
         loader.define(RUNTIME.replace('/', '.'), runtime());
         var common = loader.define(TARGET, transformed);
-        try (var hooks = GameHooks.attach(RegistryState::register, RegistryState::client)) {
+        try (var registryWorker = Executors.newSingleThreadExecutor(); var reloadWorker = Executors.newSingleThreadExecutor();
+             var hooks = GameHooks.attach(RegistryState::register, RegistryState::client)) {
             // Vanilla's first freeze happens before containers exist and must not dispatch entries.
             assertTrue(RegistryState.events.isEmpty());
+            common.getMethod("begin", Runnable.class, boolean.class).invoke(null, null, false);
             RegistryState.constructed = true; RegistryState.events.add("construct");
-            common.getMethod("register").invoke(null);
+            registryWorker.submit(() -> {
+                assertThrows(IllegalStateException.class, GameHooks::beforeRegistryFreeze, "The native worker must not inherit launch thread state");
+                common.getMethod("register").invoke(null);
+                assertThrows(IllegalStateException.class, GameHooks::captureSession, "Captured callbacks must not leak thread context");
+                return null;
+            }).get(10, TimeUnit.SECONDS);
             assertFalse(RegistryState.configs);
-            common.getMethod("load", java.util.concurrent.Executor.class, java.util.concurrent.Executor.class).invoke(null, null, null);
+            reloadWorker.submit(() -> {
+                common.getMethod("load", Executor.class, Executor.class).invoke(null, null, null);
+                assertThrows(IllegalStateException.class, GameHooks::captureSession);
+                return null;
+            }).get(10, TimeUnit.SECONDS);
             hooks.verifyComplete();
         }
         assertEquals(List.of("construct", "unfreeze", "fabric-main", "native-register", "freeze", "configs", "fabric-client-model-registration", "common-setup"), RegistryState.events);
@@ -107,12 +121,15 @@ public class NeoForgeRegistryWindowTest {
         var registry = node.methods.stream().filter(method -> Arrays.stream(method.instructions.toArray())
                 .anyMatch(instruction -> instruction instanceof MethodInsnNode call && call.owner.equals(DATA) && call.name.equals("unfreezeData"))).findFirst().orElseThrow();
         var calls = Arrays.stream(registry.instructions.toArray()).filter(MethodInsnNode.class::isInstance)
-                .map(MethodInsnNode.class::cast).filter(call -> call.owner.equals(DATA) || call.owner.equals("org/neoforbric/api/GameHooks"))
+                .map(MethodInsnNode.class::cast).filter(call -> call.owner.equals(DATA) || call.owner.equals("org/neoforbric/api/GameHooks$Session"))
                 .map(call -> call.name).toList();
         assertEquals(List.of("unfreezeData", "beforeRegistryFreeze", "postRegisterEvents", "freezeData"), calls);
         var load = node.methods.stream().filter(method -> method.name.equals("load")).findFirst().orElseThrow();
         var setupCalls = Arrays.stream(load.instructions.toArray()).filter(MethodInsnNode.class::isInstance)
                 .map(MethodInsnNode.class::cast).limit(2).map(call -> call.name).toList();
         assertEquals(List.of("loadServerDefaults", "afterRegistryFreeze"), setupCalls);
+        var begin = node.methods.stream().filter(method -> method.name.equals("begin")).findFirst().orElseThrow();
+        assertEquals("captureSession", Arrays.stream(begin.instructions.toArray()).filter(MethodInsnNode.class::isInstance)
+                .map(MethodInsnNode.class::cast).findFirst().orElseThrow().name);
     }
 }

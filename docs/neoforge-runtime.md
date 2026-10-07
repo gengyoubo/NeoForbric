@@ -60,4 +60,6 @@ Minecraft、NeoForge 和用户模组的命名 module 绑定到同一个 G。modu
 
 此 profile 可运行有限的 plain Fabric Java 入口探针。其 main 入口在 NeoForge 模组构造完成、`GameData.unfreezeData()` 之后、`postRegisterEvents()` 之前执行；client 入口在注册表冻结、配置加载完成后、公共及客户端 setup 事件前执行，早于模型及资源加载，避免在 vanilla 初次冻结时提前初始化。vanilla 注册表契约探针保留原有窗口。混合 profile 的 Fabric 和 NeoForge 顶层 JAR 都在审计中记录最终选择的 `descriptor`、`ecosystem` 和原始哈希。
 
+`CommonModLoader.begin` 在启动线程捕获当前 `GameHooks.Session`，随后原生注册 worker 和资源 reload worker 显式使用该会话执行两个回调；不能在 worker 上直接读取启动线程的 `ThreadLocal`。会话串行检查注册阶段、保留入口异常并拒绝关闭后的回调。无界面回归测试覆盖两条 worker 路径及配置 / 注册顺序，不需要启动客户端。
+
 完整 Fabric Mixin runtime 与 NeoForge 补丁游戏的混装尚未实现，依赖 Fabric API / Mixin 的模组仍受准入限制。仅有 `Model loader ... not found` 不能证明注册失败：例如 Porting Lib 和 Moonlight 使用不同的 geometry 注册表，需要结合最终模型及对应入口审计确认。空 custom registry 也需要核对是否有消费该 API 的模组注册内容；不能由库存在推断其注册表必然非空。Forge 原生执行和 NeoForge 独立服务端也尚未接入。
