@@ -14,5 +14,5 @@ deepseek4.1flash（编程）：主要担任整合包的高压测试。
 # MC版本
 1.21.1
 # 测试对象
-fabric:Slime Advanture. 
-neoforge:ATM10. 
+fabric:Slime Advanture<br>
+neoforge:ATM10<br>
