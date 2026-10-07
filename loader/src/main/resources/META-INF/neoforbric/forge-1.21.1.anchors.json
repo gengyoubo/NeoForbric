@@ -779,6 +779,25 @@
         "lambda$static$0()Ljava/lang/IllegalStateException;",
         "<clinit>()V"
       ]
+    },
+    "cpw.mods.modlauncher.LaunchPluginHandler": {
+      "sha256": "440f7d8cb3320314e54b1c96be942bde16b9f3aaca7a2b4c3b94c499eab7bacd",
+      "methods": [
+        "<init>(Lcpw/mods/modlauncher/ModuleLayerHandler;)V",
+        "get(Ljava/lang/String;)Ljava/util/Optional;",
+        "computeLaunchPluginTransformerSet(Lorg/objectweb/asm/Type;ZLjava/lang/String;Lcpw/mods/modlauncher/TransformerAuditTrail;)Ljava/util/EnumMap;",
+        "offerScanResultsToPlugins(Ljava/util/List;)V",
+        "offerClassNodeToPlugins(Lcpw/mods/modlauncher/serviceapi/ILaunchPluginService$Phase;Ljava/util/List;Lorg/objectweb/asm/tree/ClassNode;Lorg/objectweb/asm/Type;Lcpw/mods/modlauncher/TransformerAuditTrail;Ljava/lang/String;)I",
+        "announceLaunch(Lcpw/mods/modlauncher/TransformingClassLoader;[Lcpw/mods/modlauncher/api/NamedPath;)V",
+        "lambda$announceLaunch$6(Lcpw/mods/modlauncher/TransformingClassLoader;[Lcpw/mods/modlauncher/api/NamedPath;Ljava/lang/String;Lcpw/mods/modlauncher/serviceapi/ILaunchPluginService;)V",
+        "lambda$announceLaunch$5(Lcpw/mods/modlauncher/TransformingClassLoader;Ljava/lang/String;Ljava/lang/String;)[B",
+        "lambda$computeLaunchPluginTransformerSet$4(Ljava/util/EnumMap;)Ljava/lang/Object;",
+        "lambda$computeLaunchPluginTransformerSet$3(Lcpw/mods/modlauncher/TransformerAuditTrail;Lorg/objectweb/asm/Type;Lcpw/mods/modlauncher/serviceapi/ILaunchPluginService;[Ljava/lang/String;)V",
+        "lambda$computeLaunchPluginTransformerSet$2(Lcpw/mods/modlauncher/serviceapi/ILaunchPluginService$Phase;)Ljava/util/List;",
+        "lambda$new$1()Ljava/lang/Object;",
+        "lambda$new$0()Ljava/lang/IllegalStateException;",
+        "<clinit>()V"
+      ]
     }
   }
 }

@@ -11,7 +11,7 @@ public final class ForgeHostHook implements TransformPipeline.Transformer {
     private static final String BRIDGE = "org/neoforbric/forge/runtime/ForgeBridge";
     public String id() { return "forge-native-host"; }
     public byte[] transform(TransformPipeline.Context context, byte[] bytes) {
-        if (!Set.of("cpw.mods.modlauncher.Launcher", "cpw.mods.modlauncher.TransformingClassLoader", "net.minecraftforge.fml.loading.FMLLoader", "net.minecraftforge.fml.Bindings").contains(context.name())) return bytes;
+        if (!Set.of("cpw.mods.modlauncher.Launcher", "cpw.mods.modlauncher.LaunchPluginHandler", "cpw.mods.modlauncher.TransformingClassLoader", "net.minecraftforge.fml.loading.FMLLoader", "net.minecraftforge.fml.Bindings").contains(context.name())) return bytes;
         ForgeAnchors.verifyClass(context.name(), bytes);
         ClassNode node = new ClassNode(); new ClassReader(bytes).accept(node, 0);
         for (var method : node.methods) {
@@ -22,6 +22,9 @@ public final class ForgeHostHook implements TransformPipeline.Transformer {
                     method.instructions.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false));
                     initializeField(method, node.name, "blackboard", "cpw/mods/modlauncher/api/TypesafeMap", false);
                     initializeField(method, node.name, "environment", "cpw/mods/modlauncher/Environment", true);
+                    method.instructions.add(new VarInsnNode(ALOAD, 0)); method.instructions.add(new TypeInsnNode(NEW, "cpw/mods/modlauncher/LaunchPluginHandler")); method.instructions.add(new InsnNode(DUP)); method.instructions.add(new InsnNode(ACONST_NULL));
+                    method.instructions.add(new MethodInsnNode(INVOKESPECIAL, "cpw/mods/modlauncher/LaunchPluginHandler", "<init>", "(Lcpw/mods/modlauncher/ModuleLayerHandler;)V", false));
+                    method.instructions.add(new FieldInsnNode(PUTFIELD, node.name, "launchPlugins", "Lcpw/mods/modlauncher/LaunchPluginHandler;"));
                     method.instructions.add(new InsnNode(RETURN));
                 } else if (Set.of("main([Ljava/lang/String;)V", "run([Ljava/lang/String;)V").contains(signature)) refuse(method);
                 else if (Set.of("findLaunchPlugin", "findLaunchHandler", "findNameMapping", "findLayerManager").contains(method.name)) {
@@ -30,6 +33,12 @@ public final class ForgeHostHook implements TransformPipeline.Transformer {
                     method.instructions.add(new MethodInsnNode(INVOKESTATIC, BRIDGE, method.name, method.desc, false));
                     method.instructions.add(new InsnNode(ARETURN));
                 }
+            } else if (context.name().equals("cpw.mods.modlauncher.LaunchPluginHandler")) {
+                if (signature.equals("<init>(Lcpw/mods/modlauncher/ModuleLayerHandler;)V")) {
+                    clear(method); method.instructions.add(new VarInsnNode(ALOAD, 0)); method.instructions.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false));
+                    method.instructions.add(new VarInsnNode(ALOAD, 0)); method.instructions.add(new MethodInsnNode(INVOKESTATIC, BRIDGE, "launchPluginsView", "()Ljava/util/Map;", false));
+                    method.instructions.add(new FieldInsnNode(PUTFIELD, node.name, "plugins", "Ljava/util/Map;")); method.instructions.add(new InsnNode(RETURN));
+                } else if (Set.of("computeLaunchPluginTransformerSet", "offerScanResultsToPlugins", "offerClassNodeToPlugins", "announceLaunch").contains(method.name)) refuse(method);
             } else if (context.name().equals("cpw.mods.modlauncher.TransformingClassLoader")) {
                 if (method.name.equals("<init>")) refuse(method);
             } else if (context.name().equals("net.minecraftforge.fml.Bindings")) {

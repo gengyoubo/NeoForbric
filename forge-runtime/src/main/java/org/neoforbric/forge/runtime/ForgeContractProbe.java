@@ -58,6 +58,14 @@ public final class ForgeContractProbe {
         require(ForgeContractProbe.class.getClassLoader() == ModContainer.class.getClassLoader(), "Forge classes must share G");
         require(Launcher.INSTANCE.environment().getProperty(IEnvironment.Keys.NAMING.get()).orElseThrow().equals("mojang"), "Missing launcher environment");
         require(Launcher.INSTANCE.blackboard() != null, "Missing launcher blackboard");
+        var pluginHandlerField = Launcher.class.getDeclaredField("launchPlugins"); pluginHandlerField.setAccessible(true);
+        var pluginHandler = Objects.requireNonNull(pluginHandlerField.get(Launcher.INSTANCE), "Missing passive launch plugin handler");
+        var pluginsField = pluginHandler.getClass().getDeclaredField("plugins"); pluginsField.setAccessible(true);
+        @SuppressWarnings("unchecked") var pluginState = (Map<String, cpw.mods.modlauncher.serviceapi.ILaunchPluginService>)pluginsField.get(pluginHandler);
+        require(pluginState.get("eventbus") == Launcher.INSTANCE.environment().findLaunchPlugin("eventbus").orElseThrow(), "Reflected plugin state differs from the adapter");
+        try { pluginState.put("unadapted", pluginState.get("eventbus")); throw new IllegalStateException("Dynamic plugin takeover was admitted"); }
+        catch (UnsupportedOperationException expected) { require(expected.getMessage().startsWith("FORGE_PLUGIN_REGISTRATION"), "Wrong dynamic plugin rejection"); }
+        report.put("launcher", "environment / blackboard / reflected plugin state available; dynamic plugin insertion and native launch refused");
         try { Launcher.main(); throw new IllegalStateException("Native launcher was admitted"); }
         catch (UnsupportedOperationException expected) { require(expected.getMessage().startsWith("FORGE_LAUNCH_OWNERSHIP"), "Wrong launcher refusal"); }
         var container = new Container();
@@ -94,6 +102,15 @@ public final class ForgeContractProbe {
         }
         report.put("threads", threads); report.put("eventBus", "separate identities, listeners isolated, exceptions preserved");
         report.put("configs", configs(directory, container));
+        String optionsClass = "net.minecraft.client.Options";
+        try (var input = ForgeContractProbe.class.getClassLoader().getResourceAsStream(optionsClass.replace('.', '/') + ".class")) {
+            byte[] original = Objects.requireNonNull(input).readAllBytes(), transformed = ForgeBridge.access(optionsClass, original);
+            var node = new org.objectweb.asm.tree.ClassNode(); new org.objectweb.asm.ClassReader(transformed).accept(node, 0);
+            var field = node.fields.stream().filter(candidate -> candidate.name.equals("keyMappings")).findFirst().orElseThrow();
+            require((field.access & org.objectweb.asm.Opcodes.ACC_PUBLIC) != 0 && (field.access & org.objectweb.asm.Opcodes.ACC_FINAL) == 0, "Forge public-f AT did not modify keyMappings");
+            require(!Arrays.equals(original, transformed), "Forge AT did not change its pinned target");
+            report.put("accessTransformer", "SRG public-f rule changed Options.keyMappings without defining the client class");
+        }
         var registryResult = new AtomicReference<Map<String, Object>>();
         sync.execute(() -> {
             threads.put("registryThread", thread());

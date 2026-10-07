@@ -37,6 +37,14 @@ public final class ForgeBridge {
     public static boolean secureJarsEnabled() { return false; }
     public static Path gamePath() { return directory; }
     public static Optional<ILaunchPluginService> findLaunchPlugin(String name) { return Optional.ofNullable(plugins.get(name)); }
+    public static Map<String, ILaunchPluginService> launchPluginsView() {
+        return new AbstractMap<>() {
+            public Set<Entry<String, ILaunchPluginService>> entrySet() { return Collections.unmodifiableMap(plugins).entrySet(); }
+            public ILaunchPluginService put(String name, ILaunchPluginService plugin) {
+                throw new UnsupportedOperationException("FORGE_PLUGIN_REGISTRATION: Launch plugins require a kernel feature adapter: " + name);
+            }
+        };
+    }
     public static Optional<?> findLaunchHandler(String name) { return Optional.empty(); }
     public static Optional<?> findLayerManager() { return Optional.empty(); }
     public static Optional<BiFunction<INameMappingService.Domain, String, String>> findNameMapping(String namespace) {

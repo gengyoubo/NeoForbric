@@ -29,6 +29,7 @@ public final class ForgeRuntime {
         for (JsonElement value : plan.getAsJsonArray("files")) {
             var file = value.getAsJsonObject(); String role = file.get("role").getAsString(), coordinate = file.get("coordinate").getAsString();
             Path path = root.resolve(file.get("path").getAsString());
+            audit.record("PREPARE", "runtime-input", coordinate, Map.of("ecosystem", "FORGE", "role", role, "path", path.toString(), "sha256", file.get("sha256").getAsString()));
             if (role.equals("game")) game = path;
             if (Set.of("library", "forge").contains(role) && !coordinate.startsWith("org.ow2.asm:")) libraries.put(key(coordinate), path);
         }
