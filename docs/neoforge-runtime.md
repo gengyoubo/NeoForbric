@@ -72,6 +72,8 @@ Minecraft、NeoForge 和用户模组的命名 module 绑定到同一个 G。modu
 
 被原生模块替代的原始 Fabric API 签名仍进入重映射的分析类路径，使消费者的继承方法正确转换；这些分析快照不定义游戏类。编译器改动引起的 lambda 编号只在原映射和补丁游戏中均有唯一同名语义前缀、同描述符候选时协调，歧义和缺失继续报错。
 
+原生资源加载端口把基础模组资源交给 FML，因此内核额外使用端口自身的 `ModResourcePackCreator` 注册被动 Fabric 容器的隐藏基础包，并保留 `fabric` 父包选择、资源覆盖排序、子包和原生包。原生容器在 Fabric facade 中是 builtin，不重复注册资源；已有基础包注册时也不重复添加。这修复了 Fabric Jade 的 `Missing default theme`，适用于其他 Fabric 模组内的资源和数据文件，不修改 Jade 的主题校验。已验证 Jade Fabric 15.10.6 与 Fabric API 0.116.17、NeoForge AppleSkin 3.0.9：默认主题 `jade:waila` 的 JSON 可读取，四个主题加载完成，主菜单及退出正常。开发主菜单探针检测到 Jade 时输出 `JADE_RESOURCES_OK`。
+
 针对这个组合适配了补丁移动的方法、额外参数和旧版交互注入，包括 Carpet 更新控制、破坏取消及实体事件，Continuity 掉落方块渲染和 ViaFabricPlus 初始化 / 重生 / 铲子行为。旧 Fabric 标签移除 API 通过接口桥接使用 NeoForge 原生标签移除，探针实际验证 codec、API 返回和最终构建的标签值。ViaFabricPlus 的配置保存回调在 G 关闭前完成；字体尚未构造时只省去不存在的缓存清理，设置仍完整读取。必要注入继续检查，其他补丁差异仍会终止启动。
 
 重跑上述模组组合的世界探针（测试世界必须使用独立目录，不传 `clientProbeFrames`）：

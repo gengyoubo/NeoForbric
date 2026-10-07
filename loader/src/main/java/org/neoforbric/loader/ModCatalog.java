@@ -24,7 +24,7 @@ public final class ModCatalog implements AutoCloseable {
         for (var candidate : candidates) {
             Metadata mod = candidate.metadata();
             ModEcosystem source = switch (mod.ecosystem()) { case FABRIC -> ModEcosystem.FABRIC; case FORGE -> ModEcosystem.FORGE; case NEOFORGE -> ModEcosystem.NEOFORGE; case PROTOTYPE -> ModEcosystem.NEOFORBRIC; };
-            String adapter = switch (source) { case FABRIC -> "NeoForbric Fabric Adapter"; case FORGE -> forge ? "NeoForbric Forge Adapter" : "Unavailable"; case NEOFORGE -> neoforge ? "NeoForbric NeoForge Adapter" : "Unavailable"; case NEOFORBRIC -> "Native"; };
+            String adapter = switch (source) { case FABRIC -> "NeoForbric Fabric Adapter"; case FORGE -> forge ? "NeoForbric Forge Adapter" : neoforge ? "NeoForbric Forge → NeoForge Adapter" : "Unavailable"; case NEOFORGE -> neoforge ? "NeoForbric NeoForge Adapter" : "Unavailable"; case NEOFORBRIC -> "Native"; };
             byte[] icon = null;
             if (mod.iconPath() != null && !mod.iconPath().startsWith("/") && !mod.iconPath().contains("\\")
                     && Arrays.stream(mod.iconPath().split("/", -1)).noneMatch(part -> part.isEmpty() || part.equals(".") || part.equals(".."))) {
@@ -32,7 +32,7 @@ public final class ModCatalog implements AutoCloseable {
                 if (bytes != null && bytes.length <= 256 * 1024) icon = bytes;
             }
             entries.add(new LoadedModInfo(mod.id(), mod.name(), mod.version(), source, mod.description(), candidate.archive().path(), candidate.archive().hash(),
-                    LoadStatus.DISABLED, adapter, source == ModEcosystem.FORGE && forge ? "SRG → Mojang" : source == ModEcosystem.FABRIC ? "intermediary → Mojang" : source == ModEcosystem.NEOFORBRIC || (neoforge && source == ModEcosystem.NEOFORGE) ? "Mojang" : "Not transformed", "Not yet initialized", icon));
+                    LoadStatus.DISABLED, adapter, source == ModEcosystem.FORGE && (forge || neoforge) ? "SRG / Mojang → Mojang" : source == ModEcosystem.FABRIC ? "intermediary → Mojang" : source == ModEcosystem.NEOFORBRIC || (neoforge && source == ModEcosystem.NEOFORGE) ? "Mojang" : "Not transformed", "Not yet initialized", icon));
         }
         publisher = LoadedMods.install(entries);
     }
@@ -47,13 +47,16 @@ public final class ModCatalog implements AutoCloseable {
         for (var candidate : candidates) {
             Metadata mod = candidate.metadata();
             if (!mod.available("client")) { state(candidate, LoadStatus.DISABLED, "Excluded on client: environment=" + mod.environment()); continue; }
-            if ((mod.ecosystem() == Metadata.Ecosystem.FORGE && !forge) || (mod.ecosystem() == Metadata.Ecosystem.NEOFORGE && !neoforge)) {
+            if ((mod.ecosystem() == Metadata.Ecosystem.FORGE && !forge && !neoforge) || (mod.ecosystem() == Metadata.Ecosystem.NEOFORGE && !neoforge)) {
                 String ecosystem = mod.ecosystem() == Metadata.Ecosystem.FORGE ? "Forge" : "NeoForge";
                 String reason = "This mod requires the " + ecosystem + " runtime, which is not enabled for this launch; its native lifecycle and game patches are unavailable";
                 state(candidate, LoadStatus.UNSUPPORTED, reason, List.of(new ModDiagnostic(ModDiagnostic.Kind.UNSUPPORTED_FEATURE, "runtime", ecosystem, reason))); continue;
             }
             try {
-                if (forge) org.neoforbric.forge.ForgeAdmission.admit(candidate);
+                if (mod.ecosystem() == Metadata.Ecosystem.FORGE) {
+                    if (neoforge) org.neoforbric.neoforge.ForgeNeoForgeCompatibility.admit(candidate);
+                    else if (forge) org.neoforbric.forge.ForgeAdmission.admit(candidate);
+                }
                 if (neoforge) org.neoforbric.neoforge.NeoForgeAdmission.admit(candidate);
                 var executable = FabricAdmission.admit(candidate);
                 candidate.archive().requireSupportedLayout();

@@ -28,6 +28,40 @@ class NeoForgeFabricCompatibilityTest {
         method.visitVarInsn(Opcodes.ALOAD, 0); method.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
         method.visitInsn(Opcodes.RETURN); method.visitMaxs(1, 1); method.visitEnd();
     }
+    @Test void nativeResourceDiscoveryRestoresBasePacksOnceAndKeepsParentAndOtherPacks() throws Exception {
+        String owner = "net/fabricmc/fabric/impl/resource/loader/ModResourcePackCreator";
+        ClassWriter writer = new ClassWriter(0); writer.visit(Opcodes.V21, Opcodes.ACC_PUBLIC, owner, null, "java/lang/Object", null); constructor(writer);
+        writer.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "BASE_PARENT", "Ljava/util/function/Predicate;", null, null).visitEnd();
+        writer.visitField(Opcodes.ACC_PUBLIC, "seenParent", "Ljava/util/function/Predicate;", null, null).visitEnd();
+        var register = writer.visitMethod(Opcodes.ACC_PRIVATE, "registerModPack", "(Ljava/util/function/Consumer;Ljava/lang/String;Ljava/util/function/Predicate;)V", null, null);
+        register.visitCode(); register.visitVarInsn(Opcodes.ALOAD, 0); register.visitVarInsn(Opcodes.ALOAD, 3);
+        register.visitFieldInsn(Opcodes.PUTFIELD, owner, "seenParent", "Ljava/util/function/Predicate;");
+        register.visitVarInsn(Opcodes.ALOAD, 1); register.visitVarInsn(Opcodes.ALOAD, 2); register.visitLdcInsn("base");
+        register.visitMethodInsn(Opcodes.INVOKESTATIC, "java/util/Objects", "toString", "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/String;", false);
+        register.visitMethodInsn(Opcodes.INVOKEINTERFACE, "java/util/function/Consumer", "accept", "(Ljava/lang/Object;)V", true);
+        register.visitInsn(Opcodes.RETURN); register.visitMaxs(3, 4); register.visitEnd();
+        var load = writer.visitMethod(Opcodes.ACC_PUBLIC, "loadPacks", "(Ljava/util/function/Consumer;)V", null, null); load.visitCode();
+        load.visitVarInsn(Opcodes.ALOAD, 1); load.visitLdcInsn("programmer_art");
+        load.visitMethodInsn(Opcodes.INVOKEINTERFACE, "java/util/function/Consumer", "accept", "(Ljava/lang/Object;)V", true);
+        load.visitInsn(Opcodes.RETURN); load.visitMaxs(2, 2); load.visitEnd(); writer.visitEnd();
+        ClassNode node = new ClassNode(); new ClassReader(writer.toByteArray()).accept(node, ClassReader.EXPAND_FRAMES);
+        byte[] adapted = transform(node);
+        ClassNode again = new ClassNode(); new ClassReader(adapted).accept(again, ClassReader.EXPAND_FRAMES);
+        class Types extends ClassLoader { Class<?> define(byte[] bytes) { return defineClass(null, bytes, 0, bytes.length); } }
+        Class<?> type = new Types().define(transform(again));
+        java.util.function.Predicate<Set<String>> parent = enabled -> enabled.contains("fabric");
+        type.getField("BASE_PARENT").set(null, parent); Object source = type.getConstructor().newInstance();
+        List<String> packs = new ArrayList<>(); java.util.function.Consumer<String> collect = packs::add;
+        type.getMethod("loadPacks", java.util.function.Consumer.class).invoke(source, collect);
+        assertEquals(List.of("programmer_art", "base"), packs);
+        assertSame(parent, type.getField("seenParent").get(source));
+    }
+    @Test void changedNativeResourceContractFailsExplicitly() {
+        ClassNode node = mixin("example/Unused"); node.name = "net/fabricmc/fabric/impl/resource/loader/ModResourcePackCreator";
+        MethodNode load = new MethodNode(Opcodes.ACC_PUBLIC, "loadPacks", "(Ljava/util/function/Consumer;)V", null, null);
+        load.instructions.add(new InsnNode(Opcodes.RETURN)); node.methods.add(load);
+        assertEquals("FABRIC_RESOURCE_CONTRACT", assertThrows(Failure.class, () -> transform(node)).code());
+    }
     @Test void settingsBeforeFontConstructionSkipOnlyCacheInvalidationAndKeepValidFrames() throws Exception {
         String clientName = "net/minecraft/client/Minecraft", fontName = "net/minecraft/client/gui/font/FontManager";
         ClassWriter font = new ClassWriter(0); font.visit(Opcodes.V21, Opcodes.ACC_PUBLIC, fontName, null, "java/lang/Object", null); constructor(font);

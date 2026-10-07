@@ -17,6 +17,7 @@ public final class NeoForgeFabricCompatibility implements TransformPipeline.Tran
     public Set<String> after() { return Set.of("fabric-runtime-access-and-environment"); }
     public byte[] transform(TransformPipeline.Context context, byte[] bytes) {
         ClassNode node = new ClassNode(); new ClassReader(bytes).accept(node, ClassReader.EXPAND_FRAMES);
+        if (node.name.equals("net/fabricmc/fabric/impl/resource/loader/ModResourcePackCreator")) return fabricResourcePacks(node, bytes);
         if (node.name.equals("de/florianmichael/viafabricplus/save/SaveManager")) return viaSaving(node);
         if (node.name.equals("de/florianmichael/viafabricplus/settings/impl/VisualSettings$1")) return viaFontCache(node);
         if (node.name.equals("net/fabricmc/fabric/mixin/tag/TagFileMixin")) return nativeTagFile(node);
@@ -71,6 +72,31 @@ public final class NeoForgeFabricCompatibility implements TransformPipeline.Tran
         }
         if (!changed) return bytes;
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS); node.accept(writer); return writer.toByteArray();
+    }
+    private byte[] fabricResourcePacks(ClassNode node, byte[] original) {
+        MethodNode load = node.methods.stream().filter(method -> method.name.equals("loadPacks") && method.desc.equals("(Ljava/util/function/Consumer;)V"))
+                .findFirst().orElseThrow(() -> new Failure("FABRIC_RESOURCE_CONTRACT", "Missing Fabric pack discovery method"));
+        for (AbstractInsnNode instruction : load.instructions)
+            if (instruction instanceof FieldInsnNode field && field.owner.equals(node.name) && field.name.equals("BASE_PARENT")) return original;
+        String register = "(Ljava/util/function/Consumer;Ljava/lang/String;Ljava/util/function/Predicate;)V";
+        if (node.methods.stream().noneMatch(method -> method.name.equals("registerModPack") && method.desc.equals(register))
+                || node.fields.stream().noneMatch(field -> field.name.equals("BASE_PARENT") && field.desc.equals("Ljava/util/function/Predicate;")))
+            throw new Failure("FABRIC_RESOURCE_CONTRACT", "Fabric resource pack registration contract differs");
+        boolean inserted = false;
+        for (AbstractInsnNode instruction : load.instructions.toArray()) if (instruction.getOpcode() == Opcodes.RETURN) {
+            // The native API port delegates base mod resources to FML's ModList.
+            // Fabric roots belong to our passive facade, so restore their normal
+            // hidden base packs using the port's own discovery and parent sorting.
+            InsnList base = new InsnList();
+            base.add(new VarInsnNode(Opcodes.ALOAD, 0)); base.add(new VarInsnNode(Opcodes.ALOAD, 1)); base.add(new InsnNode(Opcodes.ACONST_NULL));
+            base.add(new FieldInsnNode(Opcodes.GETSTATIC, node.name, "BASE_PARENT", "Ljava/util/function/Predicate;"));
+            base.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, node.name, "registerModPack", register, false));
+            load.instructions.insertBefore(instruction, base); inserted = true;
+        }
+        if (!inserted) throw new Failure("FABRIC_RESOURCE_CONTRACT", "Fabric pack discovery has no completion point");
+        load.maxStack = Math.max(load.maxStack, 4);
+        audit.record("PREPARE", "fabric-native-base-resource-packs", node.name, Map.of("source", "passive Fabric mod containers", "parent", "fabric", "nativePacks", "preserved"));
+        ClassWriter writer = new ClassWriter(0); node.accept(writer); return writer.toByteArray();
     }
     private byte[] viaBootstrap(ClassNode node) {
         for (AnnotationNode annotation : annotations(node.visibleAnnotations, node.invisibleAnnotations)) if (annotation.desc.equals("Lorg/spongepowered/asm/mixin/Mixin;")) {

@@ -13,6 +13,7 @@ public final class NeoForgeProbe {
         long buttons = minecraft.screen.children().stream().filter(child -> child.getClass().getName().equals("org.neoforbric.client.NeoForbricClientUi$ModsButton")).count();
         if (buttons != 1) throw new IllegalStateException("Expected one NeoForbric Mods button, found " + buttons);
         System.out.println("NEOFORGE_TITLE_UI_OK neoforbricButtons=" + buttons + " nativeButtons=0");
+        verifyJadeResources(minecraft);
         if (Boolean.getBoolean("neoforbric.probe.mods")) {
             try (var image = net.minecraft.client.Screenshot.takeScreenshot(minecraft.getMainRenderTarget())) {
                 image.writeToFile(minecraft.gameDirectory.toPath().resolve("neoforge-title-probe.png"));
@@ -45,6 +46,24 @@ public final class NeoForgeProbe {
         System.out.println("NEOFORGE_PROBE_OK target=" + namespace + " items=" + items + " blocks=" + blocks + " entityTypes=" + entities
                 + " gameLoader=" + client.getClass().getClassLoader().getName() + " itemIdentity=" + (net.minecraft.world.item.Item.class.getClassLoader() == client.getClass().getClassLoader()));
         if (Boolean.getBoolean("neoforbric.neoforge.worldProbe")) NeoForgeWorldProbe.start((net.minecraft.client.Minecraft)client);
+    }
+    private static void verifyJadeResources(net.minecraft.client.Minecraft minecraft) {
+        try {
+            Class<?> helper;
+            try { helper = Class.forName("snownee.jade.impl.theme.ThemeHelper"); }
+            catch (ClassNotFoundException absent) { return; }
+            var id = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("jade", "jade_themes/waila.json");
+            var resource = minecraft.getResourceManager().getResource(id).orElseThrow(() -> new IllegalStateException("Jade default theme resource is not mounted"));
+            try (var reader = resource.openAsReader()) {
+                if (!com.google.gson.JsonParser.parseReader(reader).isJsonObject()) throw new IllegalStateException("Invalid Jade default theme resource");
+            }
+            Object instance = helper.getField("INSTANCE").get(null);
+            var fallback = helper.getDeclaredField("fallback"); fallback.setAccessible(true);
+            var themes = helper.getDeclaredField("themes"); themes.setAccessible(true);
+            int count = ((java.util.Map<?, ?>)themes.get(instance)).size();
+            if (fallback.get(instance) == null || count < 4) throw new IllegalStateException("Jade themes did not finish resource reload");
+            System.out.println("JADE_RESOURCES_OK defaultTheme=jade:waila themes=" + count + " pack=" + resource.sourcePackId());
+        } catch (ReflectiveOperationException | java.io.IOException error) { throw new IllegalStateException("Jade resource verification failed", error); }
     }
     private static void verifyMixedTagRemoval() {
         var file = net.minecraft.tags.TagFile.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE,

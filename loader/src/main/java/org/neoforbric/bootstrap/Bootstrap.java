@@ -126,7 +126,23 @@ public final class Bootstrap {
                 catalog.selectFabricRuntime(candidates.stream().filter(c -> c.metadata().ecosystem() == Metadata.Ecosystem.FABRIC).toList(), mods, exclusions);
             }
             phase("PREPARE");
-            if (neoForgeRuntime != null) neoForgeRuntime.transformers(pipeline, mods);
+            Map<String, Archive> bridgedForge = new HashMap<>();
+            if (neoForgeRuntime != null && mods.stream().anyMatch(mod -> mod.metadata().ecosystem() == Metadata.Ecosystem.FORGE)) {
+                List<Archive> target = new ArrayList<>(); target.add(Archive.readRuntimeGame(runtime.game()));
+                for (Path library : runtime.libraries()) target.add(neoForgeRuntime.library(library));
+                target.add(Archive.read(neoForgeRuntime.bridge()));
+                var names = ForgeNeoForgeCompatibility.names(mods, options.runtime().toAbsolutePath().getParent(),
+                        Path.of(System.getProperty("neoforbric.forge.compat.root", options.runtime().toAbsolutePath().getParent().resolve("forge-compat-runtime").toString())));
+                var compatibility = new ForgeNeoForgeCompatibility(target, names, audit);
+                Path directory = options.runtime().toAbsolutePath().getParent().resolve("forge-compat-mods"); Files.createDirectories(directory);
+                for (var mod : mods) if (mod.metadata().ecosystem() == Metadata.Ecosystem.FORGE && !bridgedForge.containsKey(mod.archive().hash())) {
+                    Path mapped = directory.resolve("mod-" + UUID.randomUUID() + ".jar"); remapArtifacts.add(mapped);
+                    bridgedForge.put(mod.archive().hash(), compatibility.remap(mod.archive(), mapped));
+                }
+            }
+            var nativePreparedMods = mods.stream().map(mod -> bridgedForge.containsKey(mod.archive().hash())
+                    ? new Discovery.Candidate(bridgedForge.get(mod.archive().hash()), mod.metadata()) : mod).toList();
+            if (neoForgeRuntime != null) neoForgeRuntime.transformers(pipeline, nativePreparedMods);
             if (runtime == null && options.minecraft()) {
                 phase("RUNTIME_INPUTS");
                 runtime = RuntimeInputs.read(options.runtime(), audit);
@@ -175,7 +191,7 @@ public final class Bootstrap {
                 if (neoForgeRuntime != null) {
                     List<Path> compileLibraries = new ArrayList<>(runtime.libraries());
                     List<Archive> compileSources = new ArrayList<>(fabricRuntime.providedCompileSources());
-                    mods.stream().filter(mod -> mod.metadata().ecosystem() != Metadata.Ecosystem.FABRIC).map(Discovery.Candidate::archive).forEach(compileSources::add);
+                    nativePreparedMods.stream().filter(mod -> mod.metadata().ecosystem() != Metadata.Ecosystem.FABRIC).map(Discovery.Candidate::archive).forEach(compileSources::add);
                     Path compileDirectory = options.runtime().toAbsolutePath().getParent().resolve("remapped-mods/compile"); Files.createDirectories(compileDirectory);
                     for (Archive source : compileSources) {
                         Path snapshot = compileDirectory.resolve(UUID.randomUUID() + ".jar"); remapArtifacts.add(snapshot); source.writeSnapshot(snapshot); compileLibraries.add(snapshot);
@@ -195,8 +211,9 @@ public final class Bootstrap {
                 }
                 fabricRuntime.install(preparedMods, runtime, pipeline, neoForgeRuntime != null);
                 if (neoForgeRuntime != null) pipeline.add(new NeoForgeFabricCompatibility(audit));
-                preparedMods.addAll(mods.stream().filter(mod -> mod.metadata().ecosystem() != Metadata.Ecosystem.FABRIC).toList());
+                preparedMods.addAll(nativePreparedMods.stream().filter(mod -> mod.metadata().ecosystem() != Metadata.Ecosystem.FABRIC).toList());
             } else for (var mod : mods) {
+                if (bridgedForge.containsKey(mod.archive().hash())) { preparedMods.add(new Discovery.Candidate(bridgedForge.get(mod.archive().hash()), mod.metadata())); continue; }
                 if (runtime != null && mod.metadata().ecosystem() == Metadata.Ecosystem.FABRIC) {
                     // Remap the immutable discovered snapshot, never a later disk revision of the mod.
                     Path cache = options.runtime().toAbsolutePath().getParent().resolve("remapped-mods").resolve(mod.archive().hash()); Files.createDirectories(cache);
