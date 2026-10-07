@@ -1,0 +1,74 @@
+import groovy.json.JsonOutput
+
+def benchmarkProfiles = providers.gradleProperty('benchmarkProfiles').getOrElse('fabric,neoforge,forge')
+        .split(',').collect { it.trim() }.toSet()
+if (benchmarkProfiles.isEmpty() || !['fabric', 'neoforge', 'forge'].containsAll(benchmarkProfiles))
+    throw new GradleException('benchmarkProfiles must contain fabric, neoforge and/or forge')
+
+tasks.register('prepareBenchmarkRuntime') {
+    group = 'verification'
+    description = 'Build shared client inputs once and export direct JVM commands for the mod benchmark.'
+    dependsOn 'prepareMinecraftClient', 'prepareClientUi', ':loader:jar'
+    if (benchmarkProfiles.contains('neoforge')) dependsOn 'prepareNeoForgeClient', ':neoforge-runtime:jar'
+    if (benchmarkProfiles.contains('forge')) dependsOn 'prepareForgeClient', ':forge-runtime:jar'
+    doLast {
+        def loaderProject = project(':loader')
+        def java = loaderProject.javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }.get()
+        def profiles = [:]
+        benchmarkProfiles.each { profile ->
+            profiles[profile] = profile == 'fabric' ? [:] : [
+                    runtime: layout.buildDirectory.file("${profile}-client/${profile}-runtime.json").get().asFile.absolutePath,
+                    bridge: project(":${profile}-runtime").tasks.named('jar').get().archiveFile.get().asFile.absolutePath]
+        }
+        def manifest = [schema_version: 1, java: java.executablePath.asFile.absolutePath,
+                classpath: [loaderProject.tasks.named('jar').get().archiveFile.get().asFile.absolutePath] +
+                        loaderProject.configurations.runtimeClasspath.files.collect { it.absolutePath }.sort(),
+                runtime: layout.buildDirectory.file('minecraft-client/runtime.json').get().asFile.absolutePath,
+                client_ui: layout.buildDirectory.file('minecraft-client/client-ui.jar').get().asFile.absolutePath,
+                assets: layout.buildDirectory.dir('minecraft-client/assets').get().asFile.absolutePath,
+                forge_compat_root: layout.buildDirectory.dir('forge-client').get().asFile.absolutePath,
+                profiles: profiles]
+        def output = layout.buildDirectory.file('benchmark/runtime.json').get().asFile
+        output.parentFile.mkdirs()
+        output.setText(JsonOutput.prettyPrint(JsonOutput.toJson(manifest)) + '\n', 'UTF-8')
+        logger.lifecycle("Benchmark runtime: ${output}")
+    }
+}
+
+tasks.register('benchmarkMods', Exec) {
+    group = 'verification'
+    description = 'Serial mod admission/menu/world regression, with clean directories and CSV/JSON evidence.'
+    // A continuation must keep the batch's pinned artifacts instead of rebuilding them.
+    if (!providers.gradleProperty('benchmarkResume').isPresent()) dependsOn 'prepareBenchmarkRuntime'
+    workingDir rootDir
+    executable providers.gradleProperty('benchmarkPython').getOrElse('python')
+    args file('tools/benchmark_mods.py').absolutePath,
+            '--runtime', layout.buildDirectory.file('benchmark/runtime.json').get().asFile.absolutePath,
+            '--cases', file(providers.gradleProperty('benchmarkCases').getOrElse('benchmark/mods.csv')).absolutePath,
+            '--output', file(providers.gradleProperty('benchmarkOutput').getOrElse('build/benchmark/runs')).absolutePath,
+            '--stages', providers.gradleProperty('benchmarkStages').getOrElse('admission,menu'),
+            '--timeout', providers.gradleProperty('benchmarkTimeout').getOrElse('180'),
+            '--heap', providers.gradleProperty('benchmarkHeap').getOrElse('4g'),
+            '--frames', providers.gradleProperty('benchmarkFrames').getOrElse('10')
+    if (providers.gradleProperty('benchmarkDryRun').getOrElse('false') == 'true') args '--dry-run'
+    if (providers.gradleProperty('benchmarkResume').isPresent())
+        args '--resume', file(providers.gradleProperty('benchmarkResume').get()).absolutePath
+    if (providers.gradleProperty('benchmarkDiscardModCopies').getOrElse('false') == 'true') args '--discard-mod-copies'
+    args '--min-free-mib', providers.gradleProperty('benchmarkMinFreeMiB').getOrElse('512')
+    providers.gradleProperty('benchmarkModPools').getOrElse('mods/test-set;benchmark/dependencies').split(';').each { pool ->
+        args '--mod-pool', file(pool.trim()).absolutePath
+    }
+    ignoreExitValue = true
+    doLast {
+        int code = executionResult.get().exitValue
+        if (code != 0) throw new GradleException("benchmarkMods exited ${code}; per-case evidence and summary are preserved in the printed batch directory.")
+    }
+}
+
+tasks.register('benchmarkHarnessTest', Exec) {
+    group = 'verification'
+    description = 'Verify benchmark verdicts, stage gating, input validation and process-tree cleanup without Minecraft.'
+    workingDir rootDir
+    executable providers.gradleProperty('benchmarkPython').getOrElse('python')
+    args '-m', 'unittest', 'discover', '-s', 'tools/tests', '-p', 'test_benchmark*.py', '-v'
+}
