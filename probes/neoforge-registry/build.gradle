@@ -1,0 +1,6 @@
+dependencies {
+    compileOnly files(rootProject.layout.buildDirectory.file('neoforge-client/client-neoforge.jar'))
+    compileOnly fileTree(rootProject.layout.buildDirectory.dir('neoforge-client/libraries')) { include '**/*.jar' }
+    compileOnly fileTree(rootProject.layout.buildDirectory.dir('minecraft-client/libraries')) { include '*.jar' }
+}
+tasks.named('compileJava') { dependsOn ':prepareNeoForgeClient' }

@@ -4,6 +4,7 @@ import java.nio.file.*;
 import java.net.JarURLConnection;
 import java.util.Map;
 import java.util.List;
+import java.util.Set;
 import java.util.Collections;
 import java.net.URL;
 import org.objectweb.asm.ClassReader;
@@ -12,6 +13,25 @@ import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;
 
 class GameResourcesTest {
+    @Test void namedModuleClassesAndResourcesUseTheSameImmutableGameDomain() throws Exception {
+        Path source = TestJars.jar(temporary.resolve("namedgame.jar"), Map.of(
+                "demo/ModuleOwner.class", TestJars.type("demo.ModuleOwner"), "demo/builtins.bin", TestJars.text("original")));
+        Archive archive = Archive.read(source); AuditLog audit = new AuditLog();
+        TransformPipeline pipeline = new TransformPipeline(); pipeline.seal(audit);
+        try (var resources = new GameResources(audit);
+             var loader = new GameClassLoader(ClassIndex.prepare(List.of(archive), getClass().getClassLoader(), audit), pipeline, getClass().getClassLoader(), audit, resources)) {
+            var configuration = ModuleLayer.boot().configuration().resolve(java.lang.module.ModuleFinder.of(source), java.lang.module.ModuleFinder.of(), Set.of("namedgame"));
+            Module module = ModuleLayer.defineModules(configuration, List.of(ModuleLayer.boot()), name -> loader).layer().findModule("namedgame").orElseThrow();
+            loader.moduleNames(Set.of("namedgame")); loader.open();
+            Class<?> type = Class.forName(module, "demo.ModuleOwner"); assertNotNull(type);
+            assertSame(loader, type.getClassLoader()); assertSame(module, type.getModule());
+            TestJars.jar(source, Map.of("demo/builtins.bin", TestJars.text("changed")));
+            try (var stream = type.getResourceAsStream("builtins.bin")) {
+                assertNotNull(stream); assertEquals("original", new String(stream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+            }
+            assertNull(loader.findResource("unowned.module", "demo/builtins.bin"));
+        }
+    }
     @TempDir Path temporary;
     @Test void moduleResourceLookupReadsOwnedSnapshotWithoutParentFallback() throws Exception {
         Path source = TestJars.jar(temporary.resolve("module.jar"), Map.of(

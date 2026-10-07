@@ -56,6 +56,18 @@ tasks.register('prepareMinecraftClient', JavaExec) {
     args layout.buildDirectory.dir('minecraft-client').get().asFile.absolutePath
 }
 
+tasks.register('prepareNeoForgeClient', JavaExec) {
+    group = 'application'
+    description = 'Prepare pinned NeoForge 21.1.244 patched client inputs under NeoForbric ownership.'
+    dependsOn 'prepareMinecraftClient', ':loader:classes'
+    javaLauncher = project(':loader').javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+    classpath = project(':loader').sourceSets.main.runtimeClasspath
+    mainClass = 'org.neoforbric.minecraft.NeoForgePreparation'
+    maxHeapSize = '2g'
+    args layout.buildDirectory.dir('minecraft-client').get().asFile.absolutePath,
+            layout.buildDirectory.dir('neoforge-client').get().asFile.absolutePath
+}
+
 tasks.register('prepareJeiInputs', JavaExec) {
     group = 'verification'
     description = 'Verify the fixed Fabric JEI / Fabric API compatibility test inputs.'
@@ -71,9 +83,19 @@ tasks.register('prepareFabricClientProbe', Sync) {
     from project(':probes:fabric-client').layout.buildDirectory.file('libs/fabric-client-intermediary.jar')
     into layout.buildDirectory.dir('minecraft-client/mods')
 }
-def clientDirectory = layout.projectDirectory.dir('run/client').asFile
+def clientDirectory = providers.gradleProperty('neoForgeWorldProbe').getOrElse('false') == 'true'
+        ? layout.buildDirectory.dir('neoforge-world/run').get().asFile : layout.projectDirectory.dir('run/client').asFile
 def clientModsDirectory = providers.gradleProperty('clientModsDir').isPresent()
         ? file(providers.gradleProperty('clientModsDir').get()) : new File(clientDirectory, 'mods')
+def neoForgeProfile = providers.gradleProperty('neoForgeProfile').isPresent()
+        ? providers.gradleProperty('neoForgeProfile').get() == 'true'
+        : (clientModsDirectory.listFiles()?.any { mod ->
+            if (!mod.isFile() || !mod.name.endsWith('.jar')) return false
+            new java.util.jar.JarFile(mod).withCloseable { archive ->
+                archive.getJarEntry('META-INF/neoforge.mods.toml') != null
+                        && archive.getJarEntry('fabric.mod.json') == null && archive.getJarEntry('neoforbric.mod.json') == null
+            }
+        } ?: false)
 tasks.register('prepareClientUi') {
     dependsOn ':client-ui:jar'
     def uiJar = project(':client-ui').tasks.named('jar').flatMap { it.archiveFile }
@@ -99,6 +121,14 @@ tasks.register('runClient', JavaExec) {
     description = 'Run a Windows x64 Minecraft 1.21.1 client with an offline development profile.'
     group = 'application'
     dependsOn 'prepareClient', ':loader:classes'
+    if (neoForgeProfile) {
+        dependsOn 'prepareNeoForgeClient', ':neoforge-runtime:jar'
+        systemProperty 'neoforbric.neoforge.runtime', layout.buildDirectory.file('neoforge-client/neoforge-runtime.json').get().asFile.absolutePath
+        systemProperty 'neoforbric.neoforge.bridge', project(':neoforge-runtime').tasks.named('jar').get().archiveFile.get().asFile.absolutePath
+        systemProperty 'neoforbric.neoforge.worldProbe', providers.gradleProperty('neoForgeWorldProbe').getOrElse('false')
+        jvmArgs '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED', '--add-opens=java.base/java.util.jar=ALL-UNNAMED',
+                '--add-exports=java.base/sun.security.util=ALL-UNNAMED'
+    }
     javaLauncher = project(':loader').javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
     classpath = project(':loader').sourceSets.main.runtimeClasspath
     mainClass = 'org.neoforbric.bootstrap.Main'
@@ -106,7 +136,7 @@ tasks.register('runClient', JavaExec) {
     workingDir = clientDirectory
     args '--minecraft-client', '--runtime', layout.buildDirectory.file('minecraft-client/runtime.json').get().asFile.absolutePath,
             '--mods', clientModsDirectory.absolutePath, '--client-ui', layout.buildDirectory.file('minecraft-client/client-ui.jar').get().asFile.absolutePath,
-            '--verify', providers.gradleProperty('sscRenderProbe').isPresent() ? 'org.neoforbric.client.SscRenderProbe' : 'demo.clientprobe.ClientProbe', '--audit', new File(clientDirectory, 'audit.json').absolutePath
+            '--verify', neoForgeProfile ? 'org.neoforbric.neoforge.runtime.NeoForgeProbe' : providers.gradleProperty('sscRenderProbe').isPresent() ? 'org.neoforbric.client.SscRenderProbe' : 'demo.clientprobe.ClientProbe', '--audit', new File(clientDirectory, 'audit.json').absolutePath
     if (providers.gradleProperty('clientProbeFrames').isPresent() && !providers.gradleProperty('sscRenderProbe').isPresent()) args '--stop-after-frames', providers.gradleProperty('clientProbeFrames').get()
     if (providers.gradleProperty('clientModsProbe').getOrElse('false') == 'true') systemProperty 'neoforbric.probe.mods', 'true'
     if (providers.gradleProperty('fabricPlainProfile').getOrElse('false') == 'true') systemProperty 'neoforbric.fabric.plain', 'true'
@@ -118,6 +148,37 @@ tasks.register('runClient', JavaExec) {
             '--accessToken', '0', '--userType', 'legacy', '--version', '1.21.1', '--versionType', 'release',
             '--gameDir', clientDirectory.absolutePath, '--assetsDir', layout.buildDirectory.dir('minecraft-client/assets').get().asFile.absolutePath,
             '--assetIndex', '17', '--width', '960', '--height', '540'
+}
+
+tasks.register('runNeoForgeRegistryProbe', JavaExec) {
+    group = 'verification'
+    description = 'Verify javafml constructor injection and DeferredRegister in the vanilla canonical registry window.'
+    dependsOn 'prepareNeoForgeClient', 'prepareClientUi', ':neoforge-runtime:jar', ':probes:neoforge-registry:jar'
+    javaLauncher = project(':loader').javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+    classpath = project(':loader').sourceSets.main.runtimeClasspath
+    mainClass = 'org.neoforbric.bootstrap.Main'
+    maxHeapSize = '3g'
+    def directory = layout.buildDirectory.dir('neoforge-registry/run').get().asFile
+    workingDir = directory
+    systemProperty 'neoforbric.neoforge.runtime', layout.buildDirectory.file('neoforge-client/neoforge-runtime.json').get().asFile.absolutePath
+    systemProperty 'neoforbric.neoforge.bridge', project(':neoforge-runtime').tasks.named('jar').get().archiveFile.get().asFile.absolutePath
+    systemProperty 'neoforbric.neoforge.registryContract', 'true'
+    systemProperty 'neoforbric.debug', 'true'
+    jvmArgs '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED', '--add-opens=java.base/java.util.jar=ALL-UNNAMED',
+            '--add-exports=java.base/sun.security.util=ALL-UNNAMED', '-Dfile.encoding=UTF-8'
+    args '--minecraft-client', '--runtime', layout.buildDirectory.file('minecraft-client/runtime.json').get().asFile.absolutePath,
+            '--mods', new File(directory, 'mods').absolutePath, '--client-ui', layout.buildDirectory.file('minecraft-client/client-ui.jar').get().asFile.absolutePath,
+            '--verify', 'demo.neoprobe.RegistryProbe', '--stop-after-frames', '5', '--audit', new File(directory, 'audit.json').absolutePath,
+            '--', '--username', 'NeoRegistryTest', '--uuid', '00000000-0000-0000-0000-000000000004', '--accessToken', '0',
+            '--version', '1.21.1', '--gameDir', directory.absolutePath, '--assetsDir', layout.buildDirectory.dir('minecraft-client/assets').get().asFile.absolutePath,
+            '--assetIndex', '17', '--width', '960', '--height', '540'
+    doFirst {
+        new File(directory, 'mods').mkdirs()
+        java.nio.file.Files.copy(project(':probes:neoforge-registry').tasks.named('jar').get().archiveFile.get().asFile.toPath(),
+                new File(directory, 'mods/neoforge-registry-probe.jar').toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        def options = new File(directory, 'options.txt')
+        if (!options.exists()) options.setText('onboardAccessibility:false\nrenderDistance:4\n', 'UTF-8')
+    }
 }
 
 def jeiDirectory = layout.buildDirectory.dir('jei-compat/run').get().asFile

@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "minecraft": "1.21.1",
+  "neoforge": "21.1.244",
+  "fml": "4.0.43",
+  "installerUrl": "https://maven.neoforged.net/releases/net/neoforged/neoforge/21.1.244/neoforge-21.1.244-installer.jar",
+  "installerSha256": "ac7bea8f5c8a1d64f8787d177cc890e3b9abf67ede800f999fe05386d46fcaa8"
+}

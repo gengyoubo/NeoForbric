@@ -8,7 +8,9 @@ public final class ClientLifecycleHook implements TransformPipeline.Transformer 
     public static final String CLIENT = "net.minecraft.client.Minecraft", MAIN = "net.minecraft.client.main.Main";
     private static final String HOOK = "org/neoforbric/api/ClientHooks";
     private final String clientSha256, mainSha256;
-    public ClientLifecycleHook(String clientSha256, String mainSha256) { this.clientSha256 = clientSha256; this.mainSha256 = mainSha256; }
+    private final int expectedExitAnchors;
+    public ClientLifecycleHook(String clientSha256, String mainSha256) { this(clientSha256, mainSha256, false); }
+    public ClientLifecycleHook(String clientSha256, String mainSha256, boolean neoforge) { this.clientSha256 = clientSha256; this.mainSha256 = mainSha256; expectedExitAnchors = neoforge ? 2 : 5; }
     @Override public String id() { return "minecraft-1.21.1-client-lifecycle"; }
     @Override public byte[] transform(TransformPipeline.Context context, byte[] bytes) {
         boolean client = context.name().equals(CLIENT), main = context.name().equals(MAIN);
@@ -43,7 +45,7 @@ public final class ClientLifecycleHook implements TransformPipeline.Transformer 
                 };
             }
         }, 0);
-        if (client ? anchors[0] != 1 || anchors[1] != 5 || anchors[3] != 1 : anchors[2] != 1) throw new Failure("HOOK_ANCHOR", "Unexpected client lifecycle anchors: " + java.util.Arrays.toString(anchors));
+        if (client ? anchors[0] != 1 || anchors[1] != expectedExitAnchors || anchors[3] != 1 : anchors[2] != 1) throw new Failure("HOOK_ANCHOR", "Unexpected client lifecycle anchors: " + java.util.Arrays.toString(anchors));
         return output.toByteArray();
     }
 }

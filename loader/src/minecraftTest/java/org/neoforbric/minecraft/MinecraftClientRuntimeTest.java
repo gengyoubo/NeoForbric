@@ -43,7 +43,7 @@ class MinecraftClientRuntimeTest {
         for (String ecosystem : List.of("forge", "neoforge")) {
             try (var output = new JarOutputStream(Files.newOutputStream(mods.resolve(ecosystem + ".jar")))) {
                 output.putNextEntry(new JarEntry("META-INF/" + (ecosystem.equals("forge") ? "mods.toml" : "neoforge.mods.toml")));
-                output.write(("[[mods]]\nmodId=\"" + ecosystem + "_ui_probe\"\nversion=\"1.0.0\"\ndisplayName=\"" + ecosystem + " Adapter Probe\"\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                output.write(("modLoader=\"javafml\"\nloaderVersion=\"[4,)\"\nlicense=\"Test\"\n[[mods]]\nmodId=\"" + ecosystem + "_ui_probe\"\nversion=\"1.0.0\"\ndisplayName=\"" + ecosystem + " Adapter Probe\"\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
                 output.closeEntry();
             }
         }

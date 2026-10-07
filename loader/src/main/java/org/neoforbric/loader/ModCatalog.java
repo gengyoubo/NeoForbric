@@ -12,13 +12,16 @@ public final class ModCatalog implements AutoCloseable {
     private final AuditLog audit;
     private final LoadedMods.Publisher publisher;
     public ModCatalog(List<Discovery.Candidate> candidates, AuditLog audit) {
+        this(candidates, audit, false);
+    }
+    public ModCatalog(List<Discovery.Candidate> candidates, AuditLog audit, boolean neoforge) {
         this.audit = audit;
         entries.add(new LoadedModInfo("neoforbric", "NeoForbric", LoaderVersion.VERSION, ModEcosystem.NEOFORBRIC,
                 "One loader. Multiple mod ecosystems.", null, "", LoadStatus.LOADED, "Native", "Mojang", "Built-in loader", null));
         for (var candidate : candidates) {
             Metadata mod = candidate.metadata();
             ModEcosystem source = switch (mod.ecosystem()) { case FABRIC -> ModEcosystem.FABRIC; case FORGE -> ModEcosystem.FORGE; case NEOFORGE -> ModEcosystem.NEOFORGE; case PROTOTYPE -> ModEcosystem.NEOFORBRIC; };
-            String adapter = switch (source) { case FABRIC -> "NeoForbric Fabric Adapter"; case NEOFORBRIC -> "Native"; default -> "Unavailable"; };
+            String adapter = switch (source) { case FABRIC -> "NeoForbric Fabric Adapter"; case NEOFORGE -> neoforge ? "NeoForbric NeoForge Adapter" : "Unavailable"; case NEOFORBRIC -> "Native"; default -> "Unavailable"; };
             byte[] icon = null;
             if (mod.iconPath() != null && !mod.iconPath().startsWith("/") && !mod.iconPath().contains("\\")
                     && Arrays.stream(mod.iconPath().split("/", -1)).noneMatch(part -> part.isEmpty() || part.equals(".") || part.equals(".."))) {
@@ -26,24 +29,28 @@ public final class ModCatalog implements AutoCloseable {
                 if (bytes != null && bytes.length <= 256 * 1024) icon = bytes;
             }
             entries.add(new LoadedModInfo(mod.id(), mod.name(), mod.version(), source, mod.description(), candidate.archive().path(), candidate.archive().hash(),
-                    LoadStatus.DISABLED, adapter, source == ModEcosystem.FABRIC ? "intermediary → Mojang" : source == ModEcosystem.NEOFORBRIC ? "Mojang" : "Not transformed", "Not yet initialized", icon));
+                    LoadStatus.DISABLED, adapter, source == ModEcosystem.FABRIC ? "intermediary → Mojang" : source == ModEcosystem.NEOFORBRIC || (neoforge && source == ModEcosystem.NEOFORGE) ? "Mojang" : "Not transformed", "Not yet initialized", icon));
         }
         publisher = LoadedMods.install(entries);
     }
     public List<Discovery.Candidate> selectClient(List<Discovery.Candidate> candidates) {
+        return selectClient(candidates, false);
+    }
+    public List<Discovery.Candidate> selectClient(List<Discovery.Candidate> candidates, boolean neoforge) {
         List<Discovery.Candidate> active = new ArrayList<>();
         for (var candidate : candidates) {
             Metadata mod = candidate.metadata();
             if (!mod.available("client")) { state(candidate, LoadStatus.DISABLED, "Excluded on client: environment=" + mod.environment()); continue; }
-            if (mod.ecosystem() == Metadata.Ecosystem.FORGE || mod.ecosystem() == Metadata.Ecosystem.NEOFORGE) {
+            if (mod.ecosystem() == Metadata.Ecosystem.FORGE || (mod.ecosystem() == Metadata.Ecosystem.NEOFORGE && !neoforge)) {
                 state(candidate, LoadStatus.UNSUPPORTED, (mod.ecosystem() == Metadata.Ecosystem.FORGE ? "Forge" : "NeoForge") + " adapter not implemented"); continue;
             }
             try {
+                if (neoforge) org.neoforbric.neoforge.NeoForgeAdmission.admit(candidate);
                 var executable = FabricAdmission.admit(candidate);
                 candidate.archive().requireSupportedLayout();
                 active.add(executable); admitted.add(candidate.archive().path());
             } catch (Failure failed) {
-                if (!Set.of("FABRIC_FEATURE_UNSUPPORTED", "UNSUPPORTED_LAYOUT").contains(failed.code())) throw failed;
+                if (!Set.of("FABRIC_FEATURE_UNSUPPORTED", "NEOFORGE_FEATURE_UNSUPPORTED", "UNSUPPORTED_LAYOUT").contains(failed.code())) throw failed;
                 state(candidate, LoadStatus.UNSUPPORTED, failed.getMessage(), failed.diagnostics());
             }
         }

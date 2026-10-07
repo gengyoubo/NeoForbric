@@ -24,6 +24,9 @@ class ModCatalogTest {
                 displayName="Forge Sample"
                 """)));
         TestJars.jar(directory.resolve("neo.jar"), Map.of("META-INF/neoforge.mods.toml", TestJars.text("""
+                modLoader="javafml"
+                loaderVersion="[4,)"
+                license="Test"
                 [[mods]]
                 modId="neo_sample"
                 version="1.0.0"

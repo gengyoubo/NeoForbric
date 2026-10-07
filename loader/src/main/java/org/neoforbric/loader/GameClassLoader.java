@@ -29,6 +29,8 @@ public final class GameClassLoader extends URLClassLoader implements Closeable {
     private final ThreadLocal<Deque<String>> transforming = ThreadLocal.withInitial(ArrayDeque::new);
     private volatile boolean ready;
     private volatile boolean closed;
+    private volatile Set<String> moduleNames = Set.of();
+    public synchronized void moduleNames(Set<String> names) { moduleNames = Set.copyOf(names); }
     public record Generated(byte[] bytes, Archive owner, String generator) {}
     private java.util.function.Function<String, Generated> generator;
     public synchronized void generatedClasses(java.util.function.Function<String, Generated> source) {
@@ -55,6 +57,11 @@ public final class GameClassLoader extends URLClassLoader implements Closeable {
         audit.record("SEALED", "definition-gate", "G", Map.of("state", "open"));
     }
     public boolean hasDefined(String name) { return findLoadedClass(name) != null; }
+
+    @Override protected Class<?> findClass(String moduleName, String name) {
+        try { return loadClass(name); }
+        catch (ClassNotFoundException absent) { return null; }
+    }
 
     /** Fabric-ASM reflects for exactly this signature to register its generated Mixin byte source. */
     public void addURL(URL url) { if (url != null) addedInputs.add(url); }
@@ -128,7 +135,7 @@ public final class GameClassLoader extends URLClassLoader implements Closeable {
             if (separator > 0) definePackage(name.substring(0, separator), owner);
             CodeSource source = new CodeSource(owner.codeSource(), (java.security.cert.Certificate[]) null);
             Class<?> type = defineClass(name, bytes, 0, bytes.length, source);
-            audit.record("GAME", "class-defined", name, Map.of("loader", "G", "module", "unnamed", "source", owner.path().toString(),
+            audit.record("GAME", "class-defined", name, Map.of("loader", "G", "module", type.getModule().isNamed() ? type.getModule().getName() : "unnamed", "source", owner.path().toString(),
                     "archiveSha256", owner.hash(), "finalSha256", Archive.sha256(bytes)));
             return type;
         } catch (Exception | Error failed) {
@@ -189,9 +196,9 @@ public final class GameClassLoader extends URLClassLoader implements Closeable {
         return resources.isEmpty() ? addedResource(name) : resources.getFirst();
     }
     // Module.getResourceAsStream uses this overload, bypassing getResource.
-    // All admitted types belong to this loader's unnamed module.
+    // NeoForge's named modules use the same admitted resource ownership index.
     @Override protected URL findResource(String moduleName, String name) {
-        return moduleName == null ? getResource(name) : null;
+        return moduleName == null || moduleNames.contains(moduleName) ? getResource(name) : null;
     }
     @Override public Enumeration<URL> getResources(String name) {
         if (closed) return Collections.emptyEnumeration();

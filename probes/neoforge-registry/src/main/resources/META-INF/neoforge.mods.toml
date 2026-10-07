@@ -1,0 +1,23 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+[[accessTransformers]]
+file="META-INF/access-one.cfg"
+[[accessTransformers]]
+file="META-INF/access-two.cfg"
+[[mods]]
+modId="nf_registry_probe"
+version="1.0.0"
+displayName="NeoForbric NeoForge Registry Probe"
+[[dependencies.nf_registry_probe]]
+modId="minecraft"
+versionRange="[1.21.1]"
+type="required"
+ordering="NONE"
+side="BOTH"
+[[dependencies.nf_registry_probe]]
+modId="neoforge"
+versionRange="[21.1.244]"
+type="required"
+ordering="NONE"
+side="BOTH"

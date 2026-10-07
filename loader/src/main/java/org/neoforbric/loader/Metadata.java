@@ -9,7 +9,12 @@ import org.tomlj.*;
 
 public record Metadata(String id, String version, Ecosystem ecosystem, String environment, String entrypoint,
                        Map<String, String> depends, Map<String, String> optionalDepends, Set<String> after,
-                       String name, String description, String iconPath) {
+                       String name, String description, String iconPath, List<Dependency> constraints) {
+    public Metadata(String id, String version, Ecosystem ecosystem, String environment, String entrypoint,
+                    Map<String, String> depends, Map<String, String> optionalDepends, Set<String> after,
+                    String name, String description, String iconPath) {
+        this(id, version, ecosystem, environment, entrypoint, depends, optionalDepends, after, name, description, iconPath, List.of());
+    }
     private static final List<String> DESCRIPTOR_PRIORITY = List.of(
             "neoforbric.mod.json", "fabric.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml");
     public Metadata(String id, String version, Ecosystem ecosystem, String environment, String entrypoint,
@@ -21,6 +26,7 @@ public record Metadata(String id, String version, Ecosystem ecosystem, String en
         depends = Map.copyOf(depends);
         optionalDepends = Map.copyOf(optionalDepends);
         after = Set.copyOf(after);
+        constraints = List.copyOf(constraints);
         name = name == null || name.isBlank() ? id : name;
         description = description == null ? "" : description;
     }
@@ -39,6 +45,7 @@ public record Metadata(String id, String version, Ecosystem ecosystem, String en
             String text = StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
                     .decode(ByteBuffer.wrap(archive.read(name))).toString();
             if (name.endsWith(".toml")) {
+                if (name.equals("META-INF/neoforge.mods.toml")) return org.neoforbric.neoforge.NeoForgeMetadata.read(archive).mods();
                 TomlParseResult toml = Toml.parse(text);
                 if (toml.hasErrors()) throw new Failure("METADATA_INVALID", archive.path() + ": " + toml.errors());
                 TomlArray mods = toml.getArray("mods");

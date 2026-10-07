@@ -1,6 +1,6 @@
 # Minecraft 1.21.1 客户端与 Mods 列表
 
-`runClient` 使用 NeoForbric 自主 bootstrap、Mojang 命名游戏 JAR 和单一游戏类加载器，启动真实 Minecraft 窗口。`mods` 目录含 Fabric 模组时默认进入 NeoForbric Fabric runtime（Mixin、AW、nested JAR、依赖图、Fabric Loader API 与 Fabric API 模块）；`-PfabricPlainProfile` 可切回有限的 plain Fabric Java 入口 profile 用于回归测试。平台暂限定 **Windows x64 / JDK 21**，需要桌面会话及可用 OpenGL 驱动。
+`runClient` 使用 NeoForbric 自主 bootstrap、Mojang 命名游戏 JAR 和单一游戏类加载器，启动真实 Minecraft 窗口。`mods` 目录含原生 NeoForge 模组时自动选择实验性的 NeoForge profile，固定版本与 EcologicalGarden 世界实测见 [NeoForge 运行说明](neoforge-runtime.md)。其余 Fabric 客户端默认进入 NeoForbric Fabric runtime（Mixin、AW、nested JAR、依赖图、Fabric Loader API 与 Fabric API 模块）；`-PfabricPlainProfile` 可切回有限的 plain Fabric Java 入口 profile 用于回归测试。平台暂限定 **Windows x64 / JDK 21**，需要桌面会话及可用 OpenGL 驱动。
 
 ```powershell
 $env:JAVA_HOME = 'C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot' # 换成自己的 JDK 21
@@ -19,7 +19,7 @@ Kotlin 模组在字节码重映射后，通过固定 `kotlin-metadata-jvm:2.2.20
 
 目标命名空间可能使原本不同的父子方法重名，例如 UniLib 开放 `EditBox.method_20316()` 后转换为 final `isEditable()`，与 Konkrete 自定义的 `AdvancedTextField.isEditable()` 相撞。重映射前扫描游戏祖先方法，给这类独立模组方法及其字节码引用分配 `neoforbric$distinct$` 名称；保留游戏方法的访问 / final 规则和原有覆盖关系。Mixin 声明由 Mixin 专项重映射处理。回归测试加载实际转换后的父子类并验证两种方法的独立返回值及组合调用结果。
 
-同一个 JAR 可以包含多平台描述文件，统一按 `neoforbric.mod.json → fabric.mod.json → META-INF/neoforge.mods.toml → META-INF/mods.toml` 选择第一份，只发现和加载一次，不合并各平台入口。Explorify 等同时携带 Fabric / Forge / NeoForge 描述的模组会选择 Fabric。选中描述文件无效时直接报错，不回退到其他平台；审计 `mod-discovered.details.descriptor` 记录选择结果。该优先级决定模组使用哪个适配器，不改变依赖版本检查或让尚不支持的 Forge / NeoForge 入口执行。
+同一个 JAR 可以包含多平台描述文件，统一按 `neoforbric.mod.json → fabric.mod.json → META-INF/neoforge.mods.toml → META-INF/mods.toml` 选择第一份，只发现和加载一次，不合并各平台入口。Explorify 等同时携带 Fabric / Forge / NeoForge 描述的模组会选择 Fabric。选中描述文件无效时直接报错，不回退到其他平台；审计 `mod-discovered.details.descriptor` 记录选择结果。该优先级决定模组使用哪个适配器；是否执行仍取决于所选 profile 的准入和依赖验证。
 
 Fabric Loader 被动组件已升级到 **0.19.5**；构建依赖与两个 Fabric 探针共用根构建中的版本配置，默认 runtime、plain profile 和启动审计均从实际依赖的 `FabricLoaderImpl.VERSION` 获取内建身份。Mixin 0.17.4+mixin.0.8.7、ASM 9.10.1 和 MixinExtras 0.5.5 对齐 [Loader 0.19.5 的上游配置](https://github.com/FabricMC/fabric-loader/blob/0.19.5/gradle.properties)。默认 runtime 使用新版 `loadClassTweakers()` 读取已转换到 Mojang 的 AW，并通过 GameProvider 声明运行命名空间和转换范围。`fabricloader >=0.17` 不再被旧的 0.16.10 身份阻挡；更高且未满足的版本要求仍由解析器拒绝。
 
@@ -63,7 +63,7 @@ Fabric remap 缓存依然以输入字节、访问规则、游戏、映射、库�
 - **状态**：Loaded、Disabled、Failed、Unsupported。内置 NeoForbric 表示当前内核运行；发现 Forge / NeoForge JAR 不意味着已加载。
 - **原始来源**：保留发现时 JAR 路径、SHA-256 和图标字节快照，Fabric remap 后仍指向原始 JAR。
 
-客户端 profile 把 side 排除的候选标为 Disabled，把尚无适配器的 Forge / NeoForge 及已识别但不支持的 Fabric 特性标为 Unsupported，不执行这些候选。活动模组依赖被跳过的候选时，依赖解析仍失败。无效元数据、入口失败、类冲突和运行崩溃仍终止实例；Failed 状态写入审计，失败实例不会强行进入菜单。
+客户端 profile 把 side 排除的候选标为 Disabled，把 Forge、未启用 NeoForge profile 的 NeoForge 候选及当前 profile 不支持的特性标为 Unsupported，不执行这些候选。活动模组依赖被跳过的候选时，依赖解析仍失败。无效元数据、入口失败、类冲突和运行崩溃仍终止实例；Failed 状态写入审计，失败实例不会强行进入菜单。NeoForge profile 保留 NeoForbric 的 Mods 按钮，去掉上游额外添加的模组按钮及布局行。
 
 ## Unsupported 诊断
 
@@ -101,4 +101,4 @@ Loader 将每项诊断作为不可变的 `ModDiagnostic(kind, subject, value, ex
 
 探针验证实际 OpenGL 窗口、资源加载、主菜单、Fabric main / client 各执行一次、注册物品身份和原生清理。Mods 专项点击实际按钮，验证 Loaded / Unsupported / Disabled 决策、完整结构化诊断、实际悬停提示中的配置名、详情实际滚动、渲染截图和返回主菜单后按钮无重复；失败探针验证 vanilla 崩溃仍回到内核审计。客户端测试截图保存在 `loader/build/client-evidence`（包括 `neoforbric-mod-diagnostics.png` 和 `neoforbric-mod-tooltip.png`）；运行任务截图在 `run/client/screenshots`。
 
-完整 Fabric API、Forge / NeoForge 原生执行、资源包与物品模型接入、联网握手及三生态整合包兼容尚未实现。默认 Fabric runtime 目前验证固定 Fabric API / JEI 依赖链；JAR package sealing 由内核在重映射时保留并按 JVM 语义执行（sealed package 拒绝其他 archive 的类），Mixin 注入到已 sealed 包之外的生成类仍按源 archive 归属。
+完整 Fabric API、Forge 原生执行、原生远程服务器互联及三生态整合包兼容尚未验证。默认 Fabric runtime 目前验证固定 Fabric API / JEI 依赖链；NeoForge profile 已完成 EcologicalGarden 1.3.2 的构造、内容注册、资源加载与集成世界实测，更多模组及完整 Fabric / NeoForge 混装仍待验证。JAR package sealing 由内核在重映射时保留并按 JVM 语义执行（sealed package 拒绝其他 archive 的类），Mixin 注入到已 sealed 包之外的生成类仍按源 archive 归属。

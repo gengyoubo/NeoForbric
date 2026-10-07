@@ -23,12 +23,19 @@ public final class NeoForbricClientUi {
     public static void onTitleScreen(Object instance) {
         TitleScreen screen = (TitleScreen) instance;
         if (screen.children().stream().anyMatch(child -> child instanceof ModsButton)) return;
-        int original = screen.height / 4 + 48, base = Math.max(54, Math.min(screen.height / 4 + 36, screen.height - 128));
-        for (var child : screen.children()) if (child instanceof AbstractWidget widget && widget.getY() >= original) {
-            int delta = widget.getY() - original;
-            widget.setY(base + delta + (delta >= 48 ? 24 : 0));
-        }
-        ModsButton button = new ModsButton(screen.width / 2 - 100, base + 48, screen);
+        var mainButtons = screen.children().stream().filter(child -> child instanceof Button)
+                .map(child -> (Button) child).filter(button -> !(button instanceof PlainTextButton) && button.getWidth() == 200)
+                .sorted(Comparator.comparingInt(AbstractWidget::getY)).toList();
+        int originalBottom = mainButtons.stream().mapToInt(AbstractWidget::getY).max().orElse(0);
+        int rowStep = 28;
+        int layoutHeight = (mainButtons.size() + 1) * rowStep + 32;
+        int base = Math.max(54, Math.min(screen.height / 4 + 32, screen.height - layoutHeight - 20));
+        int controlsY = base + (mainButtons.size() + 1) * rowStep + 12;
+        for (var child : screen.children()) if (child instanceof AbstractWidget widget
+                && !(widget instanceof PlainTextButton) && !mainButtons.contains(widget) && widget.getY() > originalBottom)
+            widget.setY(controlsY);
+        for (int row = 0; row < mainButtons.size(); row++) mainButtons.get(row).setY(base + row * rowStep);
+        ModsButton button = new ModsButton(screen.width / 2 - 100, base + mainButtons.size() * rowStep, screen);
         try {
             Method add = Screen.class.getDeclaredMethod("addRenderableWidget", GuiEventListener.class); add.setAccessible(true); add.invoke(screen, button);
         } catch (ReflectiveOperationException error) { throw new IllegalStateException("Cannot attach Mods button to 1.21.1 TitleScreen", error); }
