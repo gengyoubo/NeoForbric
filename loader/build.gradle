@@ -46,6 +46,9 @@ tasks.named('test', Test) {
     def neoForgeUniversal = rootProject.layout.buildDirectory.file('neoforge-client/libraries/neoforge-universal.jar').get().asFile
     systemProperty 'neoforge.testUniversal', neoForgeUniversal.absolutePath
     if (neoForgeUniversal.exists()) inputs.file(neoForgeUniversal).withPropertyName('preparedNeoForgeUniversal')
+    def forgeRoot = rootProject.layout.buildDirectory.dir('forge-client').get().asFile
+    systemProperty 'forge.testDirectory', forgeRoot.absolutePath
+    if (forgeRoot.exists()) inputs.dir(new File(forgeRoot, 'libraries')).withPropertyName('preparedForgeLibraries')
 }
 
 sourceSets {

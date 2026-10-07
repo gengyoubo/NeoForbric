@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "minecraft": "1.21.1",
+  "forge": "52.1.0",
+  "fml": "1.21.1-52.1.0",
+  "modlauncher": "10.2.4",
+  "mixin": "0.8.7",
+  "namespace": "mojang",
+  "installerUrl": "https://maven.minecraftforge.net/net/minecraftforge/forge/1.21.1-52.1.0/forge-1.21.1-52.1.0-installer.jar",
+  "installerSha256": "f1b620f2879ad6a5bbe15daba4d8f81eab9f5e08004967604960b98996bdebc4",
+  "preparedFiles": [
+    {
+      "coordinate": "forge-installer",
+      "role": "installer",
+      "sha256": "f1b620f2879ad6a5bbe15daba4d8f81eab9f5e08004967604960b98996bdebc4"
+    },
+    {
+      "coordinate": "net.minecraftforge:forge:1.21.1-52.1.0:client",
+      "role": "game",
+      "sha256": "42db59a65fc01bf37a85e790e1173bfa0f01eca9b71fe5d6eb3678a1806c33c8"
+    },
+    {
+      "coordinate": "net.minecraftforge:JarJarFileSystems:0.3.26",
+      "role": "library",
+      "sha256": "0c14e8a3812c9e8e6e173f0b28b8bd86d54226ef6ebdb1278053a36c482331cf"
+    },
+    {
+      "coordinate": "com.google.guava:guava:32.1.2-jre",
+      "role": "library",
+      "sha256": "1eab11b07138406a95bf211817358622e8262446d326ddd22645a619ae269e8f"
+    },
+    {
+      "coordinate": "com.google.guava:failureaccess:1.0.1",
+      "role": "library",
+      "sha256": "a65d880bb7e3ec464d04af384b8c6e6c27d8472d8a82a43e9bc19c1b00d8a9cd"
+    },
+    {
+      "coordinate": "net.minecraftforge:securemodules:2.2.21",
+      "role": "library",
+      "sha256": "c1257ac38913e2d3d394017fc784ef7ffc7ba804001153c91dbbef61488a76bc"
+    },
+    {
+      "coordinate": "net.minecraftforge:unsafe:0.9.2",
+      "role": "library",
+      "sha256": "50dc08a2b7f5aa16dc13df50d92c6d48c47bf8d8373c8756a6a65b533e89c755"
+    },
+    {
+      "coordinate": "org.ow2.asm:asm:9.7.1",
+      "role": "library",
+      "sha256": "0b8f8c8da57bd357892c987ad51d5a1e14b47ff8941537a9ad410e622b7c0c81"
+    },
+    {
+      "coordinate": "org.ow2.asm:asm-tree:9.7.1",
+      "role": "library",
+      "sha256": "1f8ca4a13297dbdddb10cc45b3bdc139ca439804d70a47f16e24c1f4da4ece19"
+    },
+    {
+      "coordinate": "org.ow2.asm:asm-util:9.7.1",
+      "role": "library",
+      "sha256": "6d6550cc813fbc3ef58ae74dcaea2d7441879e21b9db7e50ce2d934b30c0c963"
+    },
+    {
+      "coordinate": "org.ow2.asm:asm-commons:9.7.1",
+      "role": "library",
+      "sha256": "0982bb250f66bdcaee50e6cf40b7148c5e0ce4ecb848c97b582fdadfb1571ab3"
+    },
+    {
+      "coordinate": "org.ow2.asm:asm-analysis:9.7.1",
+      "role": "library",
+      "sha256": "5b1c5ee24d81dd0a29a1fcb7684794d275dc929f1cb8e6c6b58a3e615b12ffde"
+    },
+    {
+      "coordinate": "net.minecraftforge:bootstrap:2.1.8",
+      "role": "library",
+      "sha256": "94ac00696d1ebf606c4edfccb6cb0fc441183fefc32e94a0ebc2f5a1c247c5e2"
+    },
+    {
+      "coordinate": "net.minecraftforge:bootstrap-api:2.1.8",
+      "role": "library",
+      "sha256": "3bebb2c8a1eab21dff80690a92dc06f7ac30d81ff813b4476dca5deeaa22bd07"
+    },
+    {
+      "coordinate": "net.minecraftforge:accesstransformers:8.2.2",
+      "role": "library",
+      "sha256": "5ece60ebb0e155d230d225cb2407bbe303b6554ab855d55ab1a75a8186c613d6"
+    },
+    {
+      "coordinate": "net.minecraftforge:eventbus:6.2.27",
+      "role": "library",
+      "sha256": "e05baf6178dc81b7efd4aeaf24a25dbc21965d53365e190661a02230b55e9390"
+    },
+    {
+      "coordinate": "net.jodah:typetools:0.6.3",
+      "role": "library",
+      "sha256": "119ceae7ef016f9c96746fbf3115c2940c8c7fb12704161ea5b166b472748ea8"
+    },
+    {
+      "coordinate": "net.minecraftforge:forgespi:7.1.5",
+      "role": "library",
+      "sha256": "1c5c9462f21ca21b95d8bcc3a0f4f9e64e653503579c60a0cea90ec42669eb93"
+    },
+    {
+      "coordinate": "net.minecraftforge:coremods:5.2.6",
+      "role": "library",
+      "sha256": "38a6ccbdf0c52bf2ccffd9803fa684824b3d8406e71e129ba01c7b0151023477"
+    },
+    {
+      "coordinate": "org.openjdk.nashorn:nashorn-core:15.4",
+      "role": "library",
+      "sha256": "7939ad2abd2b4e53615331dcbbefc76435bf88182ca6c3b7cb65f008a8570381"
+    },
+    {
+      "coordinate": "net.minecraftforge:modlauncher:10.2.4",
+      "role": "library",
+      "sha256": "c26eb721a3a768da9cc0f95ea3c69cfca22fb9c2b359201c147563359965c9a4"
+    },
+    {
+      "coordinate": "net.minecraftforge:mergetool-api:1.0",
+      "role": "library",
+      "sha256": "7f01930d742d818483fcdae1fa4d28dc89af3a3ff84f3c0e3d76b06459a722c1"
+    },
+    {
+      "coordinate": "com.electronwill.night-config:toml:3.7.4",
+      "role": "library",
+      "sha256": "6deb067bf3e05d4465a55f59e57cc0a12ca0cbcbb64358def8612d8036cec244"
+    },
+    {
+      "coordinate": "com.electronwill.night-config:core:3.7.4",
+      "role": "library",
+      "sha256": "c4c986e06aa311d3ae486d257416195619a28a248d7b175b19d3698685282162"
+    },
+    {
+      "coordinate": "org.apache.maven:maven-artifact:3.8.8",
+      "role": "library",
+      "sha256": "9c1f123c2b1f7a45aaa1c93a96a29cf23c3d57ed2a620b46f1a9dbb5e87badb8"
+    },
+    {
+      "coordinate": "net.minecrell:terminalconsoleappender:1.2.0",
+      "role": "library",
+      "sha256": "2305fc0aaae593514586fe76a1ca8ad75298a3047b68dbcbf4a60c16c028cda1"
+    },
+    {
+      "coordinate": "org.jline:jline-reader:3.25.1",
+      "role": "library",
+      "sha256": "6128d4f76927540149896f63c51c1d5e79cd4b660a82a1c285203624954eb168"
+    },
+    {
+      "coordinate": "org.jline:jline-terminal:3.25.1",
+      "role": "library",
+      "sha256": "c3ce5b5c2fe9f4061aa97367230b58f38ae65324cfa8d01d3fb8a150e000f7d6"
+    },
+    {
+      "coordinate": "org.jline:jline-terminal-jna:3.25.1",
+      "role": "library",
+      "sha256": "088e134cc929119b435adc29d2db4894dd98a4ef70c01bef6904180cebacca67"
+    },
+    {
+      "coordinate": "org.spongepowered:mixin:0.8.7",
+      "role": "library",
+      "sha256": "717f3dbb219f1ed90d8d33e69c118cf4751907541ffd2b588fe5690565ac0beb"
+    },
+    {
+      "coordinate": "net.minecraftforge:JarJarSelector:0.3.26",
+      "role": "library",
+      "sha256": "3ee4b3ef4622485de2ee69a687488a81fcd5e1e129485bf55d4abb7eee337e38"
+    },
+    {
+      "coordinate": "net.minecraftforge:JarJarMetadata:0.3.26",
+      "role": "library",
+      "sha256": "539643f793298b9a86f397e63f093ce3009658d6ed2bb3d954e2c5ce5663db10"
+    },
+    {
+      "coordinate": "net.minecraftforge:fmlcore:1.21.1-52.1.0",
+      "role": "library",
+      "sha256": "7fd90788b882dec896c0e2681297bb03affe02c62376969129dc6725a730f4ad"
+    },
+    {
+      "coordinate": "net.minecraftforge:fmlloader:1.21.1-52.1.0",
+      "role": "library",
+      "sha256": "51de91bd82e2ff838e5df5026eb5fde6d62487da84941051e0a4e9d08deee62c"
+    },
+    {
+      "coordinate": "net.minecraftforge:fmlearlydisplay:1.21.1-52.1.0",
+      "role": "library",
+      "sha256": "373a7559ed0f6b7d519d2ea060cf7d621263c7d8f155f653210d3e63df6f22c5"
+    },
+    {
+      "coordinate": "net.minecraftforge:javafmllanguage:1.21.1-52.1.0",
+      "role": "library",
+      "sha256": "97063fcb36143165abe53a87f52756577360d5363df9aef5a1974b68ac0bb8dd"
+    },
+    {
+      "coordinate": "net.minecraftforge:lowcodelanguage:1.21.1-52.1.0",
+      "role": "library",
+      "sha256": "69c12f11251146622b3ddc45309a72cd1099f2fddeeb99a06707a8a4347686b4"
+    },
+    {
+      "coordinate": "net.minecraftforge:mclanguage:1.21.1-52.1.0",
+      "role": "library",
+      "sha256": "f5d89d46f4af850edefabab81a86ba33aa9e40222844cd8c50c63b13efd774a1"
+    },
+    {
+      "coordinate": "net.minecraftforge:forge:1.21.1-52.1.0:universal",
+      "role": "forge",
+      "sha256": "da79769cb356905594813a76a8600667f3d05c7eaa5edd0a3f4366fc1203df3d"
+    }
+  ],
+  "srg2offSha256": "95a92957e05314dbdb01ec69d74dcf0ca651c5ce3cabd78a52900956d15fc9c9"
+}

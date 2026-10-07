@@ -68,6 +68,34 @@ tasks.register('prepareNeoForgeClient', JavaExec) {
             layout.buildDirectory.dir('neoforge-client').get().asFile.absolutePath
 }
 
+tasks.register('prepareForgeClient', JavaExec) {
+    group = 'verification'
+    description = 'Prepare the pinned Forge 52.1.0 game and tooling without launching Minecraft or ModLauncher.'
+    dependsOn 'prepareMinecraftClient', ':loader:classes'
+    javaLauncher = project(':loader').javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+    classpath = project(':loader').sourceSets.main.runtimeClasspath
+    mainClass = 'org.neoforbric.minecraft.ForgePreparation'
+    maxHeapSize = '2g'
+    args layout.buildDirectory.dir('minecraft-client').get().asFile.absolutePath,
+            layout.buildDirectory.dir('forge-client').get().asFile.absolutePath
+}
+
+['client', 'server'].each { probeSide ->
+    tasks.register("forge${probeSide.capitalize()}Baseline", JavaExec) {
+        group = 'verification'
+        description = "Run pinned Forge native contract probes in G (${probeSide} Dist), without starting a client or server."
+        dependsOn 'prepareForgeClient', ':forge-runtime:jar', ':loader:classes'
+        javaLauncher = project(':loader').javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+        classpath = project(':loader').sourceSets.main.runtimeClasspath
+        mainClass = 'org.neoforbric.forge.ForgeBaseline'
+        maxHeapSize = '2g'
+        args layout.buildDirectory.file('forge-client/forge-runtime.json').get().asFile.absolutePath,
+                layout.buildDirectory.file('minecraft-client/runtime.json').get().asFile.absolutePath,
+                project(':forge-runtime').tasks.named('jar').get().archiveFile.get().asFile.absolutePath,
+                layout.buildDirectory.dir("forge-baseline/${probeSide}").get().asFile.absolutePath, probeSide
+    }
+}
+
 tasks.register('prepareJeiInputs', JavaExec) {
     group = 'verification'
     description = 'Verify the fixed Fabric JEI / Fabric API compatibility test inputs.'

@@ -48,7 +48,7 @@ public final class ClassIndex {
                 if (!resource.endsWith(".class")) continue;
                 String name = resource.substring(0, resource.length() - 6).replace('/', '.');
                 if (libraries.contains(archive.path()) && shared(name)) continue;
-                boolean ownedUi = clientUi.contains(archive.path()) && (name.startsWith("org.neoforbric.client.") || name.startsWith("org.neoforbric.neoforge.runtime."));
+                boolean ownedUi = clientUi.contains(archive.path()) && (name.startsWith("org.neoforbric.client.") || name.startsWith("org.neoforbric.neoforge.runtime.") || name.startsWith("org.neoforbric.forge.runtime."));
                 if (clientUi.contains(archive.path()) && !ownedUi) throw new Failure("CLIENT_UI_PACKAGE", "First-party UI JAR contains an unexpected class " + name);
                 if (name.startsWith("java.") || name.startsWith("jdk.") || name.startsWith("sun.")
                         || (name.startsWith("org.neoforbric.") && !ownedUi) || shared(name) || mixinSynthetic(name))

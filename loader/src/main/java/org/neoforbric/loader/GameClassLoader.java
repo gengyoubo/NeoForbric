@@ -98,7 +98,8 @@ public final class GameClassLoader extends URLClassLoader implements Closeable {
             // their helpers. Each dependency still runs the complete transformation plan;
             // Mixin enforces its own target preparation rules. Cycles never define twice.
             boolean metadataTool = ((NativeFabricRuntime.active() && "fabric-runtime-mixin".equals(transforms.activeRule()))
-                    || (org.neoforbric.neoforge.NeoForgeMixins.active() && Set.of("neoforge-mixin", "neoforge-enum-extension").contains(transforms.activeRule()))) && !targets.contains(name);
+                    || (org.neoforbric.neoforge.NeoForgeMixins.active() && Set.of("neoforge-mixin", "neoforge-enum-extension").contains(transforms.activeRule()))
+                    || Set.of("forge-native-plugins", "forge-coremods").contains(transforms.activeRule())) && !targets.contains(name);
             if (!metadataTool) throw new Failure("REENTRANT_DEFINITION", "Transformer for " + targets.getLast() + " requested class " + name + "; use bytecode access");
             audit.record("PREPARE", "mixin-plugin-class", name, Map.of("requestingTarget", targets.getLast(), "loader", "G"));
         }
