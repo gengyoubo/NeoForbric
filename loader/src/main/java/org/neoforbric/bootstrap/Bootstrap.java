@@ -20,12 +20,15 @@ public final class Bootstrap {
     private final TransformPipeline pipeline;
     private final AtomicBoolean used = new AtomicBoolean();
     private String phase = "BOOTSTRAP";
+    private long launchStarted, phaseStarted;
     public Bootstrap() { this(new TransformPipeline()); }
     public Bootstrap(TransformPipeline pipeline) { this.pipeline = Objects.requireNonNull(pipeline); }
     public AuditLog audit() { return audit; }
 
     public void run(LaunchOptions options) {
         if (!used.compareAndSet(false, true)) throw new Failure("LAUNCH_ALREADY_USED", "Each Bootstrap owns one launch; create a new instance/process");
+        launchStarted = phaseStarted = System.nanoTime();
+        phase("BOOTSTRAP");
         Failure failure = null;
         String outcome = "FAILED";
         List<String> initialized = new ArrayList<>();
@@ -54,7 +57,9 @@ public final class Bootstrap {
             Map<Path, String> scopeExclusions = new HashMap<>();
             if (options.client() && hasFabricMods && !Boolean.getBoolean("neoforbric.fabric.plain")) {
                 fabricRuntime = new NativeFabricRuntime(options, audit);
+                phase("RUNTIME_INPUTS");
                 runtime = RuntimeInputs.read(options.runtime(), audit);
+                phase("FABRIC_DISCOVER");
                 List<Discovery.Candidate> fabricInputs = new ArrayList<>();
                 List<Discovery.Candidate> otherInputs = new ArrayList<>();
                 for (var candidate : discovered) {
@@ -84,7 +89,11 @@ public final class Bootstrap {
                 catalog.selectFabricRuntime(candidates, mods, exclusions);
             }
             phase("PREPARE");
-            if (runtime == null) runtime = options.minecraft() ? RuntimeInputs.read(options.runtime(), audit) : null;
+            if (runtime == null && options.minecraft()) {
+                phase("RUNTIME_INPUTS");
+                runtime = RuntimeInputs.read(options.runtime(), audit);
+                phase("PREPARE");
+            }
             if (runtime != null && !runtime.side().equals(options.side())) throw new Failure("GAME_SIDE", "Runtime inputs belong to " + runtime.side() + ", requested " + options.side());
             Archive game = runtime == null ? Archive.read(options.game()) : Archive.readRuntimeGame(runtime.game());
             audit.record(phase, "game-input", game.path().toString(), Map.of("sha256", game.hash()));
@@ -105,12 +114,13 @@ public final class Bootstrap {
             }
             List<Discovery.Candidate> preparedMods = new ArrayList<>();
             if (fabricRuntime != null) {
+                phase("REMAP");
                 List<GamePreparation.FabricInput> remapInputs = new ArrayList<>();
                 for (var mod : mods) {
                     Path cache = options.runtime().toAbsolutePath().getParent().resolve("remapped-mods").resolve(mod.archive().hash()); Files.createDirectories(cache);
                     String launch = UUID.randomUUID().toString(); Path source = cache.resolve("input-" + launch + ".jar"), mapped = cache.resolve("mod-" + launch + ".jar");
                     remapArtifacts.addAll(List.of(source, mapped, mapped.resolveSibling(mapped.getFileName() + ".remapping.jar"), mapped.resolveSibling(mapped.getFileName() + ".part")));
-                    Files.write(source, mod.archive().snapshot()); remapInputs.add(new GamePreparation.FabricInput(source, mapped, fabricRuntime.accessRules(mod)));
+                    remapInputs.add(new GamePreparation.FabricInput(source, mapped, fabricRuntime.accessRules(mod), mod.archive()));
                 }
                 GamePreparation.remapFabricMods(remapInputs, runtime, options.runtime().toAbsolutePath().getParent().resolve("fabric-remap-cache"));
                 for (int i = 0; i < mods.size(); i++) {
@@ -131,7 +141,7 @@ public final class Bootstrap {
                     Path source = cache.resolve("input-" + launch + ".jar"), mapped = cache.resolve("mod-" + launch + ".jar");
                     // Parallel client/server launches must never share a remapper's temporary output.
                     remapArtifacts.addAll(List.of(source, mapped, mapped.resolveSibling(mapped.getFileName() + ".remapping.jar"), mapped.resolveSibling(mapped.getFileName() + ".part")));
-                    mod.archive().requireSupportedLayout(); Files.write(source, mod.archive().snapshot());
+                    mod.archive().requireSupportedLayout(); mod.archive().writeSnapshot(source);
                     GamePreparation.remap(source, mapped, runtime, "intermediary", "mojang");
                     Archive archive = Archive.read(mapped);
                     audit.record(phase, "mod-remap", mod.metadata().id(), Map.of("sourceSha256", mod.archive().hash(), "outputSha256", archive.hash(), "from", "intermediary", "to", "mojang"));
@@ -140,6 +150,7 @@ public final class Bootstrap {
             }
             preparedMods.forEach(m -> inputs.add(m.archive()));
             ClassLoader parent = Bootstrap.class.getClassLoader();
+            phase("CLASS_INDEX");
             ClassIndex index = ClassIndex.prepare(inputs, parent, audit, libraries, clientUi, fabricRuntime != null);
             try (GameResources resources = options.minecraft() ? new GameResources(audit) : null;
                  GameClassLoader loader = new GameClassLoader(index, pipeline, parent, audit, resources)) {
@@ -159,7 +170,10 @@ public final class Bootstrap {
                 try {
                     thread.setContextClassLoader(loader);
                     if (options.client()) System.setProperty("org.lwjgl.librarypath", runtime.natives().toString());
-                    if (fabricRuntime != null) fabricRuntime.bindAndPrepare(index, loader, pipeline, inputs);
+                    if (fabricRuntime != null) {
+                        phase("FABRIC_PREPARE");
+                        fabricRuntime.bindAndPrepare(index, loader, pipeline, inputs);
+                    }
                     // Check every entrypoint shape before executing any candidate static initializer / constructor.
                     List<Initializer> initializers = new ArrayList<>();
                     if (fabricRuntime == null) for (var mod : preparedMods) {
@@ -344,7 +358,10 @@ public final class Bootstrap {
     }
 
     private void phase(String next) {
-        audit.record(next, "phase", next, Map.of("previous", phase));
+        long now = System.nanoTime(), elapsed = (now - launchStarted) / 1_000_000, duration = (now - phaseStarted) / 1_000_000;
+        audit.record(next, "phase", next, Map.of("previous", phase, "elapsedMs", Long.toString(elapsed), "previousPhaseMs", Long.toString(duration)));
+        System.out.println("[NeoForbric +" + elapsed + "ms] " + next + " (" + phase + ": " + duration + "ms)");
+        phaseStarted = now;
         phase = next;
     }
 }

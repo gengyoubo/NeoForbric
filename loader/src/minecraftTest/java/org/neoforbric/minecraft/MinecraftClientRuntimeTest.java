@@ -88,6 +88,9 @@ class MinecraftClientRuntimeTest {
         Path java = Path.of(System.getProperty("java.home"), "bin/java.exe");
         List<String> command = new ArrayList<>(List.of(java.toString(), "-Xmx2g", "-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8"));
         if (fail) command.add("-Dneoforbric.probe.client.fail=true");
+        // Diagnostic fixtures deliberately contain unsupported/missing Fabric inputs;
+        // this scenario verifies plain-profile admission and the resulting UI states.
+        if (mods != null) command.add("-Dneoforbric.fabric.plain=true");
         if (mods != null) command.add("-Dneoforbric.probe.mods=true");
         if (mods != null) command.add("-Dneoforbric.probe.diagnostics=true");
         command.addAll(List.of("-cp", System.getProperty("loader.runtimeClasspath"), "org.neoforbric.bootstrap.Main", "--minecraft-client", "--runtime", System.getProperty("minecraft.clientRuntime"),

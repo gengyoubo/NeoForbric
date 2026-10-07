@@ -43,6 +43,14 @@ Loom `static` 模组的 Mixin 注解中已烘焙的 intermediary 选择器也转
 
 首次运行下载锁定的官方客户端、映射、46 个 Java 库、Windows x64 natives、资源索引及完整资源对象。后续启动复核缓存。游戏、资源与库不提交到 Git。`audit.json` 位于游戏目录。
 
+### 启动前的耗时与缓存（issue #5）
+
+Minecraft 日志初始化前，bootstrap 会输出 `[NeoForbric +1234ms] 阶段 (上一阶段: 456ms)`，覆盖模组发现、运行输入校验、Fabric nested 发现、依赖解析、remap、类归属扫描及 Mixin 准备。审计的 `phase` 事件同时记录 `elapsedMs` 和 `previousPhaseMs`，可以区分 `runClient` 的准备任务、bootstrap 和游戏自身的耗时。
+
+客户端准备任务发现完整且有效的 `runtime.json` 时直接复用，避免每次重新规范化 Java 库、解压 natives 及逐个读取资源内容。游戏 JAR、映射、Java 库、native 文件和资源索引仍在每次校验时计算哈希。内容寻址的资源对象首次按 SHA-1 校验，成功后保存 `assets/.neoforbric-verified.json`；后续检查大小、修改时间、创建时间和文件身份，仅重新哈希发生变化的对象，同一对象的多个资源名称只校验一次。资源删除、普通修改会被发现，缺失或损坏的校验记录会触发全量校验。该记录是本地性能缓存，不能检测刻意保留全部文件属性的内容修改；需要全量复核时使用 `./gradlew.bat runClient -PclientFullAssetVerification=true`，已安装客户端在 JVM 参数中添加 `-Dneoforbric.assets.fullVerification=true`，或删除上述记录文件。
+
+Fabric remap 缓存依然以输入字节、访问规则、游戏、映射、库和工具实现作为指纹，保持解析顺序以保留重复类的 first-wins 语义。每次启动的 UUID 路径不参与指纹。命中时直接使用已发现快照的 SHA-256，不再先把全部原始模组写出、再读回计算哈希；只有未命中时才写出 remapper 的私有输入。缓存输出仍逐个检查 SHA-256，损坏时重新生成。日志明确报告命中或未命中。
+
 ## 主菜单与模组列表
 
 主菜单新增带图形图标的 `Mods` 按钮，保留原版菜单功能。按钮由固定 1.21.1 `TitleScreen.init` ASM Hook 添加，渲染代码位于独立 `client-ui` 模块，随 Minecraft 在游戏类加载器 G 中加载。

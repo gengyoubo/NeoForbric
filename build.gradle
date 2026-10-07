@@ -111,6 +111,7 @@ tasks.register('runClient', JavaExec) {
     if (providers.gradleProperty('clientModsProbe').getOrElse('false') == 'true') systemProperty 'neoforbric.probe.mods', 'true'
     if (providers.gradleProperty('fabricPlainProfile').getOrElse('false') == 'true') systemProperty 'neoforbric.fabric.plain', 'true'
     systemProperty 'neoforbric.debug', providers.gradleProperty('clientDebug').getOrElse('false')
+    systemProperty 'neoforbric.assets.fullVerification', providers.gradleProperty('clientFullAssetVerification').getOrElse('false')
     jvmArgs '-Dfile.encoding=UTF-8', '-Dstdout.encoding=UTF-8', '-Dstderr.encoding=UTF-8'
     def username = providers.gradleProperty('clientUsername').getOrElse('NeoForbricDev')
     args '--', '--username', username, '--uuid', java.util.UUID.nameUUIDFromBytes(('OfflinePlayer:' + username).getBytes('UTF-8')).toString(),

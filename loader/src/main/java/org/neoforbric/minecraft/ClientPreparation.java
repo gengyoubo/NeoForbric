@@ -54,6 +54,15 @@ public final class ClientPreparation {
     }
     public static void prepare(Path directory) throws Exception {
         platform(); Path root = directory.toAbsolutePath().normalize(); Files.createDirectories(root.resolve("downloads"));
+        if (Files.isRegularFile(root.resolve("runtime.json"))) {
+            try {
+                RuntimeInputs.read(root.resolve("runtime.json"), new AuditLog());
+                System.out.println("Minecraft client inputs already verified: " + root);
+                return;
+            } catch (Failure | java.io.IOException invalid) {
+                System.out.println("Rebuilding prepared client inputs: " + invalid.getMessage());
+            }
+        }
         JsonObject manifestLock = GamePreparation.lock();
         GamePreparation.fetch(root.resolve("downloads/version.json"), manifestLock.get("versionUrl").getAsString(), manifestLock.get("versionSha1").getAsString(), "SHA-1");
         JsonObject version = version(root);

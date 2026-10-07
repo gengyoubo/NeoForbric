@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
+import org.neoforbric.loader.Archive;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.objectweb.asm.Opcodes.*;
 
@@ -66,6 +67,16 @@ class FabricRemapCacheTest {
         Files.write(source, original); Files.delete(output);
         FabricRemapCache.remap(mods, inputs, cache);
         assertArrayEquals(first, Files.readAllBytes(output));
+        // Bootstrap uses immutable snapshots and new UUID paths every launch.
+        // A cache hit must not materialize or read those input paths at all.
+        Archive snapshot = Archive.read(source);
+        Files.writeString(source, "later disk revision must not replace the discovered snapshot");
+        Path nextSource = temporary.resolve("input-" + UUID.randomUUID() + ".jar");
+        Path nextOutput = temporary.resolve("mod-" + UUID.randomUUID() + ".jar");
+        FabricRemapCache.remap(List.of(new GamePreparation.FabricInput(nextSource, nextOutput, null, snapshot)), inputs, cache);
+        assertFalse(Files.exists(nextSource), "Cache hit wrote a redundant source snapshot");
+        assertArrayEquals(first, Files.readAllBytes(nextOutput));
+        try (var directories = Files.list(cache)) { assertEquals(1, directories.count(), "UUID paths changed the cache key"); }
         Path cached;
         try (var files = Files.walk(cache)) { cached = files.filter(p -> p.getFileName().toString().equals("0.jar")).findFirst().orElseThrow(); }
         Files.writeString(cached, "tampered derived archive");
@@ -77,5 +88,6 @@ class FabricRemapCacheTest {
         Files.write(source, original);
         FabricRemapCache.remap(mods, inputs, cache);
         assertEquals("total", remappedField(output));
+        try (var directories = Files.list(cache)) { assertEquals(2, directories.count(), "Changed mappings must invalidate the cache"); }
     }
 }

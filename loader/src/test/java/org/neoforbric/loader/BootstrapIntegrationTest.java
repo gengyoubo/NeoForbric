@@ -21,6 +21,8 @@ class BootstrapIntegrationTest {
         assertSame(previous, Thread.currentThread().getContextClassLoader());
         JsonObject audit = report(report);
         assertEquals("SUCCESS", audit.get("outcome").getAsString());
+        assertTrue(bootstrap.audit().events().stream().filter(e -> e.type().equals("phase"))
+                .allMatch(e -> Long.parseLong(e.details().get("elapsedMs")) >= 0 && Long.parseLong(e.details().get("previousPhaseMs")) >= 0));
         assertEquals(List.of("probe_a", "probe_b", "probe_c"), subjects(bootstrap, "entrypoint-complete"));
         assertEquals(List.of("demo.game.GameMain"), subjects(bootstrap, "main-complete"));
         assertTrue(bootstrap.audit().events().stream().filter(e -> e.type().equals("class-defined"))

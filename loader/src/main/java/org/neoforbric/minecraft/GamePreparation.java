@@ -188,12 +188,15 @@ public final class GamePreparation {
         try (JarFile jar = new JarFile(input.toFile())) { return Archive.sealingDirectives(jar.getManifest()); }
     }
 
-    public record FabricInput(Path source, Path output, String accessRules) {}
+    public record FabricInput(Path source, Path output, String accessRules, Archive snapshot) {
+        public FabricInput(Path source, Path output, String accessRules) { this(source, output, accessRules, null); }
+    }
     public static void remapFabricMods(List<FabricInput> mods, RuntimeInputs inputs, Path cache) throws IOException {
         FabricRemapCache.remap(mods, inputs, cache);
     }
     /** A single symbol graph prevents repeated game scans and resolves cross-module inherited references. */
     public static void remapFabricMods(List<FabricInput> mods, RuntimeInputs inputs) throws IOException {
+        for (FabricInput mod : mods) if (mod.snapshot() != null) mod.snapshot().writeSnapshot(mod.source());
         MemoryMappingTree tree = mappings(inputs.mappings(), inputs.intermediaryMappings());
         FabricRemapAccess access = new FabricRemapAccess(tree);
         // Fabric permits the same class in more than one input (shaded libraries such as

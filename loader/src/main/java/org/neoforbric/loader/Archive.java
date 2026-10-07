@@ -46,6 +46,14 @@ public final class Archive {
         this.source = source;
     }
 
+    /** Policy views share immutable storage instead of rebuilding large resource indexes. */
+    private Archive(Archive original) {
+        path = original.path; hash = original.hash; entries = original.entries; directories = original.directories;
+        manifest = original.manifest; source = original.source;
+        permittedNested = original.permittedNested; inertNestedResources = original.inertNestedResources;
+        verifiedSignatures = original.verifiedSignatures;
+    }
+
     public static Archive read(Path path) throws IOException {
         Path actual = path.toRealPath();
         int maxArchive = maxArchiveBytes();
@@ -97,6 +105,7 @@ public final class Archive {
     public Path path() { return path; }
     public String hash() { return hash; }
     public byte[] snapshot() { return source.clone(); }
+    public void writeSnapshot(Path target) throws IOException { Files.write(target, source); }
     public Set<String> names() { return entries.keySet(); }
     /** ZIPs need not store directory entries for their packages to be discoverable. */
     public boolean hasResource(String name) { return entries.containsKey(name) || directories.contains(name.isEmpty() || name.endsWith("/") ? name : name + "/"); }
@@ -112,7 +121,7 @@ public final class Archive {
     /** The Fabric plan verifies declared nested inputs; other embedded JARs stay inert resources. */
     public Archive permitDeclaredNested(Set<String> names) {
         for (String name : names) if (!entries.containsKey(name) || !name.endsWith(".jar")) throw new Failure("NESTED_INPUT", path + " missing declared nested JAR " + name);
-        Archive view = new Archive(path, hash, entries, manifest, source);
+        Archive view = new Archive(this);
         view.permittedNested = Set.copyOf(names); view.inertNestedResources = true;
         view.verifiedSignatures = verifiedSignatures; return view;
     }
@@ -125,7 +134,7 @@ public final class Archive {
             while ((entry = jar.getNextJarEntry()) != null) { jar.transferTo(OutputStream.nullOutputStream()); if (entry.getCodeSigners() != null) verified++; }
         } catch (SecurityException invalid) { throw new Failure("JAR_SIGNATURE", "Invalid signed input " + path, invalid); }
         if (verified == 0) throw new Failure("JAR_SIGNATURE", "Signature metadata could not be verified: " + path);
-        Archive view = new Archive(path, hash, entries, manifest, source); view.permittedNested = permittedNested;
+        Archive view = new Archive(this);
         view.inertNestedResources = inertNestedResources; view.verifiedSignatures = true;
         audit.record("DISCOVER", "jar-signature-verified", path.toString(), Map.of("sourceSha256", hash, "signedEntries", Integer.toString(verified), "derivedPolicy", "unsigned-remapped-artifact"));
         return view;

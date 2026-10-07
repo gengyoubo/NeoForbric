@@ -57,12 +57,10 @@ public record RuntimeInputs(Path game, Path intermediaryGame, Path mappings, Pat
                     String indexHash = clientVersion.getAsJsonObject("assetIndex").get("sha1").getAsString();
                     if (!GamePreparation.hash(Files.readAllBytes(unique.get("asset-index")), "SHA-1").equals(indexHash)) throw new Failure("INPUT_CHECKSUM", "Client asset index differs from manifest");
                     JsonObject objects = JsonParser.parseString(Files.readString(unique.get("asset-index"))).getAsJsonObject().getAsJsonObject("objects");
-                    for (var value : objects.entrySet()) {
-                        String hash = value.getValue().getAsJsonObject().get("hash").getAsString();
-                        Path object = root.resolve("assets/objects/" + hash.substring(0, 2) + "/" + hash);
-                        if (!Files.isRegularFile(object) || !GamePreparation.hash(Files.readAllBytes(object), "SHA-1").equals(hash)) throw new Failure("INPUT_CHECKSUM", "Client asset differs: " + value.getKey());
-                    }
-                    audit.record("PREPARE", "client-assets", "assets", Map.of("entries", Integer.toString(objects.size()), "indexSha1", indexHash));
+                    var verification = ClientAssets.verify(root.resolve("assets"), unique.get("asset-index"), indexHash,
+                            Boolean.getBoolean("neoforbric.assets.fullVerification"));
+                    audit.record("PREPARE", "client-assets", "assets", Map.of("entries", Integer.toString(objects.size()), "indexSha1", indexHash,
+                            "hashed", Integer.toString(verification.hashed()), "reused", Integer.toString(verification.reused())));
                 } catch (IOException | Failure error) { throw error; }
                 catch (Exception error) { throw new IOException("Could not verify assets", error); }
             }

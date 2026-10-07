@@ -31,7 +31,7 @@ final class FabricRemapCache {
             } else context.add(code);
         } catch (java.net.URISyntaxException invalid) { throw new IOException("Cannot fingerprint remapping code", invalid); }
         for (Path path : context) fingerprint.append(hash(path)).append('\n');
-        for (var mod : mods) fingerprint.append(hash(mod.source())).append(' ').append(mod.accessRules()).append('\n');
+        for (var mod : mods) fingerprint.append(mod.snapshot() == null ? hash(mod.source()) : mod.snapshot().hash()).append(' ').append(mod.accessRules()).append('\n');
         Path directory = cache.resolve(Archive.sha256(fingerprint.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         Path manifest = directory.resolve("sha256.txt");
         if (Files.isRegularFile(manifest)) {
@@ -49,6 +49,7 @@ final class FabricRemapCache {
             }
             System.out.println("Fabric remap cache differs; rebuilding derived files");
         }
+        System.out.println("Fabric remap cache miss: " + mods.size() + " inputs; remapping");
         GamePreparation.remapFabricMods(mods, inputs);
         Files.createDirectories(directory);
         List<String> hashes = new ArrayList<>();
