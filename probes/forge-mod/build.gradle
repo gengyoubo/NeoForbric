@@ -1,9 +1,7 @@
 dependencies {
-    compileOnly files(project(':loader').sourceSets.main.output)
     compileOnly files(rootProject.layout.buildDirectory.file('forge-client/client-forge.jar'))
     compileOnly fileTree(rootProject.layout.buildDirectory.dir('forge-client/libraries')) { include '**/*.jar'; exclude 'org/ow2/asm/**' }
     compileOnly fileTree(rootProject.layout.buildDirectory.dir('minecraft-client/libraries')) { include '*.jar' }
-    compileOnly 'org.ow2.asm:asm:9.10.1'
-    compileOnly 'org.ow2.asm:asm-tree:9.10.1'
 }
-tasks.named('compileJava') { dependsOn ':prepareForgeClient', ':loader:classes' }
+tasks.named('compileJava') { dependsOn ':prepareForgeClient' }
+tasks.named('jar') { manifest { attributes('MixinConfigs': 'nf-forge-probe.mixins.json') } }

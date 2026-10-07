@@ -4,6 +4,7 @@ import com.google.gson.*;
 import java.nio.file.*;
 import java.util.*;
 import org.neoforbric.loader.*;
+import org.neoforbric.minecraft.*;
 
 /** Headless native contract probe; never calls Minecraft Main or a native launcher. */
 public final class ForgeBaseline {
@@ -15,8 +16,12 @@ public final class ForgeBaseline {
         var audit = new AuditLog(); audit.mode("forge-headless-contract"); Map<String, Object> report = new LinkedHashMap<>();
         report.put("scope", "Native contracts in G; Minecraft/FML game loading lifecycle is not started");
         try {
-            var runtime = new ForgeRuntime(Path.of(arguments[0]), Path.of(arguments[2])); var pipeline = new TransformPipeline(); runtime.install(pipeline);
+            var runtime = new ForgeRuntime(Path.of(arguments[0]), Path.of(arguments[2])); var pipeline = new TransformPipeline();
             var archives = runtime.inputs(Path.of(arguments[1]), audit); Set<Path> libraries = new HashSet<>();
+            var game = archives.getFirst();
+            pipeline.add(new ClientLifecycleHook(Archive.sha256(game.read("net/minecraft/client/Minecraft.class")), Archive.sha256(game.read("net/minecraft/client/main/Main.class"))));
+            pipeline.add(new TitleScreenHook(Archive.sha256(game.read("net/minecraft/client/gui/screens/TitleScreen.class"))));
+            runtime.install(pipeline);
             for (var archive : archives) if (archive != archives.getFirst() && !archive.path().equals(runtime.bridge())) libraries.add(archive.path());
             ClassLoader parent = ForgeBaseline.class.getClassLoader();
             var index = ClassIndex.prepare(archives, parent, audit, libraries, Set.of(runtime.bridge()));
@@ -24,10 +29,13 @@ public final class ForgeBaseline {
             report.put("upstreamStructure", ForgeAnchors.verify(index, audit));
             pipeline.seal(audit);
             try (var loader = new GameClassLoader(index, pipeline, parent, audit)) {
-                loader.open();
+                runtime.packageMetadata(loader); loader.open();
                 var previous = Thread.currentThread().getContextClassLoader(); Thread.currentThread().setContextClassLoader(loader);
                 try {
                     report.put("nativeServices", runtime.prepare(loader, output.resolve("run"), arguments[4]));
+                    // Transform the real client entrypoint bytes, without defining or invoking them.
+                    for (String name : List.of(ClientLifecycleHook.MAIN, ClientLifecycleHook.CLIENT, TitleScreenHook.TARGET)) pipeline.apply(name, index.original(name), index::original, audit);
+                    report.put("clientHookBytecode", "PASS; original-byte hooks precede native plugins; no class definition");
                     var probe = Class.forName("org.neoforbric.forge.runtime.ForgeContractProbe", true, loader);
                     report.put("contracts", ForgeRuntime.invoke(probe.getMethod("run", Path.class), output.resolve("run")));
                     if (loader.hasDefined("net.minecraft.client.Minecraft")) throw new Failure("FORGE_CLIENT_DEFINITION", "Headless probe defined Minecraft client");

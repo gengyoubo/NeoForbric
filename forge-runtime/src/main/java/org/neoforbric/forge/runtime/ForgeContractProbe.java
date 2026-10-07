@@ -21,6 +21,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.resources.*;
 
 /** Internal contracts, not a reference mod or a substitute for native loading order. */
+@SuppressWarnings("removal")
 public final class ForgeContractProbe {
     public static class ProbeEvent extends Event implements IModBusEvent {}
     public static final class ProbeValue {}
@@ -40,6 +41,30 @@ public final class ForgeContractProbe {
         public Object getMod() { return this; }
         protected <T extends Event & IModBusEvent> void acceptEvent(T event) { bus.post(event); }
     }
+    public static Map<String, Object> versionSupport() throws Exception {
+        require(net.minecraftforge.fml.loading.FMLLoader.versionInfo().mcVersion().equals("1.21.1"), "Wrong pinned Minecraft version");
+        Map<String, Object> report = new LinkedHashMap<>();
+        var nativeLookup = net.minecraftforge.fml.loading.ModSorter.class.getDeclaredMethod("modVersionContained", IModInfo.ModVersion.class, Map.class); nativeLookup.setAccessible(true);
+        for (String[] query : List.of(new String[]{"mod", "minecraft", "[1.21,1.21.1)", "1.21.1", "true"},
+                new String[]{"mod", "forge", "[51,52)", "52.1.0", "true"},
+                new String[]{"languageloader", "javafml", "[51,52)", "52.1.0", "true"},
+                new String[]{"mod", "minecraft", "[1.22,)", "1.21.1", "false"},
+                new String[]{"mod", "javafml", "[51,52)", "52.1.0", "false"},
+                new String[]{"languageloader", "lowcodefml", "[51,52)", "52.1.0", "false"})) {
+            var range = org.apache.maven.artifact.versioning.VersionRange.createFromVersionSpec(query[2]);
+            boolean expected = Boolean.parseBoolean(query[4]);
+            boolean accepted = net.minecraftforge.fml.loading.VersionSupportMatrix.testVersionSupportMatrix(range, query[1], query[0]);
+            require(accepted == expected, "Native VersionSupportMatrix differs: " + Arrays.toString(query));
+            if (query[0].equals("mod")) {
+                var dependency = (IModInfo.ModVersion)Proxy.newProxyInstance(ForgeContractProbe.class.getClassLoader(), new Class<?>[]{IModInfo.ModVersion.class}, (proxy, method, args) -> switch (method.getName()) {
+                    case "getModId" -> query[1]; case "getVersionRange" -> range; default -> throw new UnsupportedOperationException(method.getName());
+                });
+                require((boolean)nativeLookup.invoke(null, dependency, Map.of(query[1], new org.apache.maven.artifact.versioning.DefaultArtifactVersion(query[3]))) == expected, "Native ModSorter differs");
+            }
+            report.put(query[0] + "." + query[1] + " " + query[2], accepted);
+        }
+        return report;
+    }
     private static IModInfo info() {
         var loader = ForgeContractProbe.class.getClassLoader();
         var config = (IConfigurable)Proxy.newProxyInstance(loader, new Class<?>[]{IConfigurable.class}, (proxy, method, args) -> Optional.of("IGNORE_ALL_VERSION"));
@@ -51,6 +76,7 @@ public final class ForgeContractProbe {
     }
     public static Map<String, Object> run(Path directory) throws Exception {
         Map<String, Object> report = new LinkedHashMap<>(); report.put("ownerLaunchThread", thread());
+        report.put("versionSupportMatrix", versionSupport());
         List<Map<String, String>> states = new ArrayList<>();
         for (IModStateProvider provider : List.of(new net.minecraftforge.fml.core.ModStateProvider(), new ForgeStatesProvider()))
             for (var state : provider.getAllStates()) states.add(Map.of("name", state.name(), "previous", state.previous(), "nativePhase", state.phase().name()));

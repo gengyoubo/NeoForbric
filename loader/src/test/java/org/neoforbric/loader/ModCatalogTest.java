@@ -18,6 +18,9 @@ class ModCatalogTest {
     @Test void finalDecisionsKeepOriginalProvenanceAndDistinguishSourceFromAdapter() throws Exception {
         fabric("fabric.jar", "fabric_sample", "*"); fabric("server.jar", "server_sample", "server");
         TestJars.jar(directory.resolve("forge.jar"), Map.of("META-INF/mods.toml", TestJars.text("""
+                modLoader="javafml"
+                loaderVersion="[52,)"
+                license="Test"
                 [[mods]]
                 modId="forge_sample"
                 version="1.0.0"

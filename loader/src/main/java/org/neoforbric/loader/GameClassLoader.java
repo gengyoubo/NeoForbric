@@ -30,6 +30,14 @@ public final class GameClassLoader extends URLClassLoader implements Closeable {
     private volatile boolean ready;
     private volatile boolean closed;
     private volatile Set<String> moduleNames = Set.of();
+    private Map<java.nio.file.Path, java.util.jar.Manifest> packageManifests = Map.of();
+    /** Verified pre-normalization package metadata; never changes class/resource ownership. */
+    public synchronized void packageManifests(Map<java.nio.file.Path, byte[]> manifests) throws IOException {
+        if (ready) throw new Failure("LOADER_STATE", "Package metadata must be bound before opening G");
+        Map<java.nio.file.Path, java.util.jar.Manifest> parsed = new HashMap<>();
+        for (var entry : manifests.entrySet()) parsed.put(entry.getKey().toRealPath(), new java.util.jar.Manifest(new java.io.ByteArrayInputStream(entry.getValue())));
+        packageManifests = Map.copyOf(parsed);
+    }
     public synchronized void moduleNames(Set<String> names) { moduleNames = Set.copyOf(names); }
     public record Generated(byte[] bytes, Archive owner, String generator) {}
     private java.util.function.Function<String, Generated> generator;
@@ -99,6 +107,7 @@ public final class GameClassLoader extends URLClassLoader implements Closeable {
             // Mixin enforces its own target preparation rules. Cycles never define twice.
             boolean metadataTool = ((NativeFabricRuntime.active() && "fabric-runtime-mixin".equals(transforms.activeRule()))
                     || (org.neoforbric.neoforge.NeoForgeMixins.active() && Set.of("neoforge-mixin", "neoforge-enum-extension").contains(transforms.activeRule()))
+                    || (org.neoforbric.forge.ForgeMixins.active() && "forge-mixin".equals(transforms.activeRule()))
                     || Set.of("forge-native-plugins", "forge-coremods").contains(transforms.activeRule())) && !targets.contains(name);
             if (!metadataTool) throw new Failure("REENTRANT_DEFINITION", "Transformer for " + targets.getLast() + " requested class " + name + "; use bytecode access");
             audit.record("PREPARE", "mixin-plugin-class", name, Map.of("requestingTarget", targets.getLast(), "loader", "G"));
@@ -171,9 +180,9 @@ public final class GameClassLoader extends URLClassLoader implements Closeable {
             URL sealBase = owner.seals(packageName) ? owner.codeSource() : null;
             Package defined = getDefinedPackage(packageName);
             if (defined == null) {
-                definePackage(packageName, owner.packageAttribute(packageName, "Specification-Title"), owner.packageAttribute(packageName, "Specification-Version"),
-                        owner.packageAttribute(packageName, "Specification-Vendor"), owner.packageAttribute(packageName, "Implementation-Title"),
-                        owner.packageAttribute(packageName, "Implementation-Version"), owner.packageAttribute(packageName, "Implementation-Vendor"), sealBase);
+                definePackage(packageName, packageAttribute(owner, packageName, "Specification-Title"), packageAttribute(owner, packageName, "Specification-Version"),
+                        packageAttribute(owner, packageName, "Specification-Vendor"), packageAttribute(owner, packageName, "Implementation-Title"),
+                        packageAttribute(owner, packageName, "Implementation-Version"), packageAttribute(owner, packageName, "Implementation-Vendor"), sealBase);
                 return;
             }
             if (defined.isSealed()) {
@@ -183,6 +192,11 @@ public final class GameClassLoader extends URLClassLoader implements Closeable {
                 throw new Failure("PACKAGE_SEALED", "Package " + packageName + " is already loaded unsealed and cannot be sealed by " + owner.path());
             }
         }
+    }
+    private String packageAttribute(Archive owner, String name, String key) {
+        var manifest = packageManifests.get(owner.path()); if (manifest == null) return owner.packageAttribute(name, key);
+        var entry = manifest.getAttributes(name.replace('.', '/') + "/"); String value = entry == null ? null : entry.getValue(key);
+        return value == null ? manifest.getMainAttributes().getValue(key) : value;
     }
 
     private Failure definitionFailure(String name, Throwable failed) {

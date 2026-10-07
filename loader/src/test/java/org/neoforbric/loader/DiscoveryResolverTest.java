@@ -22,7 +22,7 @@ class DiscoveryResolverTest {
     @Test void nativeIdentityIsDiscoverableButNeverSilentlyExecuted() throws Exception {
         Map<String, String> nativeMetadata = Map.of(
                 "fabric.mod.json", "{\"id\":\"fabric_sample\",\"version\":\"1.0.0\",\"schemaVersion\":1}",
-                "META-INF/mods.toml", "modLoader=\"javafml\"\nloaderVersion=\"[52,)\"\n[[mods]]\nmodId=\"forge_sample\"\nversion=\"1.0.0\"\n",
+                "META-INF/mods.toml", "modLoader=\"javafml\"\nloaderVersion=\"[52,)\"\nlicense=\"Test\"\n[[mods]]\nmodId=\"forge_sample\"\nversion=\"1.0.0\"\n",
                 "META-INF/neoforge.mods.toml", "modLoader=\"javafml\"\nloaderVersion=\"[4,)\"\nlicense=\"Test\"\n[[mods]]\nmodId=\"neo_sample\"\nversion=\"1.0.0\"\n");
         int index = 0;
         for (var entry : nativeMetadata.entrySet()) TestJars.jar(temporary.resolve("native" + index++ + ".jar"), Map.of(entry.getKey(), TestJars.text(entry.getValue())));
@@ -60,7 +60,7 @@ class DiscoveryResolverTest {
                 "neoforbric.mod.json", TestJars.metadata("prototype_sample", "1.0.0", "demo.Sample", Map.of(), "*"),
                 "fabric.mod.json", TestJars.text("{\"id\":\"fabric_sample\",\"version\":\"1.0.0\"}"),
                 "META-INF/neoforge.mods.toml", TestJars.text("modLoader=\"javafml\"\nloaderVersion=\"[4,)\"\nlicense=\"Test\"\n[[mods]]\nmodId=\"neo_sample\"\nversion=\"1.0.0\"\n"),
-                "META-INF/mods.toml", TestJars.text("[[mods]]\nmodId=\"forge_sample\"\nversion=\"1.0.0\"\n")));
+                "META-INF/mods.toml", TestJars.text("modLoader=\"javafml\"\nloaderVersion=\"[52,)\"\nlicense=\"Test\"\n[[mods]]\nmodId=\"forge_sample\"\nversion=\"1.0.0\"\n")));
         List<String> priority = List.of("neoforbric.mod.json", "fabric.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml");
         List<Metadata.Ecosystem> ecosystems = List.of(Metadata.Ecosystem.PROTOTYPE, Metadata.Ecosystem.FABRIC, Metadata.Ecosystem.NEOFORGE, Metadata.Ecosystem.FORGE);
         for (int index = 0; index < priority.size(); index++) {

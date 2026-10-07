@@ -96,6 +96,46 @@ tasks.register('prepareForgeClient', JavaExec) {
     }
 }
 
+tasks.register('forgeJeiProbe', JavaExec) {
+    group = 'verification'
+    description = 'Load the specified Forge JEI and bundled config through native FML in a headless diagnostic process.'
+    dependsOn 'prepareForgeClient', ':forge-runtime:jar', ':loader:classes'
+    javaLauncher = project(':loader').javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+    classpath = project(':loader').sourceSets.main.runtimeClasspath
+    mainClass = 'org.neoforbric.forge.ForgeModProbe'
+    maxHeapSize = '3g'
+    def side = providers.gradleProperty('forgeProbeSide').getOrElse('server')
+    def input = file(providers.gradleProperty('forgeReferenceMod').getOrElse('run/client/mods/jei-1.21.1-forge-19.57.0.451.jar'))
+    def output = layout.buildDirectory.dir("forge-jei/${side}").get().asFile
+    def mods = new File(output, 'mods')
+    args layout.buildDirectory.file('forge-client/forge-runtime.json').get().asFile.absolutePath,
+            layout.buildDirectory.file('minecraft-client/runtime.json').get().asFile.absolutePath,
+            project(':forge-runtime').tasks.named('jar').get().archiveFile.get().asFile.absolutePath,
+            mods.absolutePath, output.absolutePath, side
+    doFirst {
+        if (!input.isFile()) throw new GradleException("Missing Forge reference JAR: ${input}")
+        mods.mkdirs()
+        java.nio.file.Files.copy(input.toPath(), new File(mods, input.name).toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+    }
+}
+
+tasks.register('forgeModProbe', JavaExec) {
+    group = 'verification'
+    description = 'Run native Forge lifecycle with an internal registry/config/Mixin mod, without starting Minecraft Main.'
+    dependsOn 'prepareForgeClient', ':forge-runtime:jar', ':probes:forge-mod:jar'
+    javaLauncher = project(':loader').javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+    classpath = project(':loader').sourceSets.main.runtimeClasspath
+    mainClass = 'org.neoforbric.forge.ForgeModProbe'
+    maxHeapSize = '3g'
+    def output = layout.buildDirectory.dir('forge-mod-probe').get().asFile
+    def mods = new File(output, 'mods')
+    args layout.buildDirectory.file('forge-client/forge-runtime.json').get().asFile.absolutePath,
+            layout.buildDirectory.file('minecraft-client/runtime.json').get().asFile.absolutePath,
+            project(':forge-runtime').tasks.named('jar').get().archiveFile.get().asFile.absolutePath,
+            mods.absolutePath, output.absolutePath, 'server'
+    doFirst { mods.mkdirs(); java.nio.file.Files.copy(project(':probes:forge-mod').tasks.named('jar').get().archiveFile.get().asFile.toPath(), new File(mods, 'nf-forge-probe.jar').toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING) }
+}
+
 tasks.register('prepareJeiInputs', JavaExec) {
     group = 'verification'
     description = 'Verify the fixed Fabric JEI / Fabric API compatibility test inputs.'
@@ -116,15 +156,21 @@ def clientDirectory = providers.gradleProperty('neoForgeWorldProbe').getOrElse('
 def clientModsDirectory = providers.gradleProperty('clientModsDir').isPresent()
         ? file(providers.gradleProperty('clientModsDir').get()) : new File(clientDirectory, 'mods')
 def clientTestMod = providers.gradleProperty('clientTestMod').getOrElse('false') == 'true'
+def forgeRequested = providers.gradleProperty('forgeProfile').getOrElse('false') == 'true'
 def neoForgeProfile = providers.gradleProperty('neoForgeProfile').isPresent()
         ? providers.gradleProperty('neoForgeProfile').get() == 'true'
-        : (clientModsDirectory.listFiles()?.any { mod ->
+        : (!forgeRequested && (clientModsDirectory.listFiles()?.any { mod ->
             if (!mod.isFile() || !mod.name.endsWith('.jar')) return false
             new java.util.jar.JarFile(mod).withCloseable { archive ->
                 archive.getJarEntry('META-INF/neoforge.mods.toml') != null
                         && archive.getJarEntry('fabric.mod.json') == null && archive.getJarEntry('neoforbric.mod.json') == null
             }
-        } ?: false)
+        } ?: false))
+def forgeProfile = providers.gradleProperty('forgeProfile').isPresent() ? forgeRequested : (!neoForgeProfile && (clientModsDirectory.listFiles()?.any { mod ->
+    if (!mod.isFile() || !mod.name.endsWith('.jar')) return false
+    new java.util.jar.JarFile(mod).withCloseable { jar -> jar.getJarEntry('META-INF/mods.toml') != null && jar.getJarEntry('META-INF/neoforge.mods.toml') == null && jar.getJarEntry('fabric.mod.json') == null }
+} ?: false))
+if (forgeProfile && neoForgeProfile) throw new GradleException('Choose one of forgeProfile and neoForgeProfile')
 tasks.register('prepareClientUi') {
     dependsOn ':client-ui:jar'
     def uiJar = project(':client-ui').tasks.named('jar').flatMap { it.archiveFile }
@@ -151,6 +197,11 @@ tasks.register('runClient', JavaExec) {
     description = 'Run a Windows x64 Minecraft 1.21.1 client with an offline development profile.'
     group = 'application'
     dependsOn 'prepareClient', ':loader:classes'
+    if (forgeProfile) {
+        dependsOn 'prepareForgeClient', ':forge-runtime:jar'
+        systemProperty 'neoforbric.forge.runtime', layout.buildDirectory.file('forge-client/forge-runtime.json').get().asFile.absolutePath
+        systemProperty 'neoforbric.forge.bridge', project(':forge-runtime').tasks.named('jar').get().archiveFile.get().asFile.absolutePath
+    }
     if (neoForgeProfile) {
         dependsOn 'prepareNeoForgeClient', ':neoforge-runtime:jar'
         systemProperty 'neoforbric.neoforge.runtime', layout.buildDirectory.file('neoforge-client/neoforge-runtime.json').get().asFile.absolutePath

@@ -28,7 +28,7 @@
 | [持续服务端](minecraft-server.md) | runServer、世界 / Tick、保存重载、正常停止与失败处理 |
 | [客户端与 Mods 列表](minecraft-client.md) | runClient、窗口 / 资源、来源生态与运行适配器、Loader 最终状态和官方图标 |
 | [NeoForge 客户端首个实测](neoforge-runtime.md) | 固定 NeoForge 21.1.248、被动 FML 宿主、EcologicalGarden 注册 / 世界验证与当前边界 |
-| [Forge 无参考模组基线](forge-runtime.md) | 固定 Forge 52.1.0、30 个字节码锚点、G 中的原生工具 / 注册 / 事件 / config / Dist 契约；不启动游戏 |
+| [Forge 模组运行适配](forge-runtime.md) | 固定 Forge 52.1.0、单 G 原生 FML 状态机、JarJar / AT / Mixin / 版本矩阵、内部模组与 JEI 无界面验证；未启动游戏 |
 | [01 — 可行性与参考项目](01-feasibility.md) | README 三个方向的判断；Forbric、Connector、Architectury 的边界 |
 | [02 — 生命周期、类加载与映射](02-runtime-model.md) | 三端差异、统一模型草案、注册与网络约束 |
 | [03 — Patch 审计](03-patch-audit.md) | 全量文件计数、七个 Patch 样本、Hook 化边界 |

@@ -25,7 +25,11 @@ public final class Resolver {
         return plan(candidates, side, audit, fabric, neoforge).mods();
     }
     public static Plan plan(List<Discovery.Candidate> candidates, String side, AuditLog audit, boolean fabric, boolean neoforge) {
+        return plan(candidates, side, audit, fabric, neoforge, false);
+    }
+    public static Plan plan(List<Discovery.Candidate> candidates, String side, AuditLog audit, boolean fabric, boolean neoforge, boolean forge) {
         Map<String, String> builtins = new HashMap<>(BUILTINS);
+        if (forge) { builtins.put("forge", "52.1.0"); builtins.put("javafml", "52.1.0"); builtins.put("lowcodefml", "52.1.0"); }
         if (neoforge) {
             try {
                 var contract = org.neoforbric.minecraft.NeoForgePreparation.lock();
@@ -44,13 +48,19 @@ public final class Resolver {
             var previous = selected.putIfAbsent(mod.id(), candidate);
             if (previous != null) throw new Failure("DUPLICATE_MOD_ID", mod.id() + " occurs in " + previous.archive().path() + " and " + candidate.archive().path());
         }
-        List<String> nativeMods = selected.values().stream().filter(c -> c.metadata().ecosystem() != Metadata.Ecosystem.PROTOTYPE && !(fabric && c.metadata().ecosystem() == Metadata.Ecosystem.FABRIC) && !(neoforge && c.metadata().ecosystem() == Metadata.Ecosystem.NEOFORGE))
+        List<String> nativeMods = selected.values().stream().filter(c -> c.metadata().ecosystem() != Metadata.Ecosystem.PROTOTYPE && !(fabric && c.metadata().ecosystem() == Metadata.Ecosystem.FABRIC) && !(neoforge && c.metadata().ecosystem() == Metadata.Ecosystem.NEOFORGE) && !(forge && c.metadata().ecosystem() == Metadata.Ecosystem.FORGE))
                 .map(c -> c.metadata().id() + " (" + c.metadata().ecosystem() + ", " + c.archive().path() + ")").toList();
         if (!nativeMods.isEmpty()) throw new Failure("NATIVE_RUNTIME_UNSUPPORTED", "Native metadata discovery only; entrypoint / ABI / transforms not implemented: " + nativeMods);
         Map<String, Set<String>> graph = new TreeMap<>(); selected.keySet().forEach(id -> graph.put(id, new TreeSet<>()));
         for (var candidate : selected.values()) {
             Metadata mod = candidate.metadata();
             Set<String> predecessors = graph.get(mod.id());
+            if (forge && mod.ecosystem() == Metadata.Ecosystem.FORGE) {
+                org.neoforbric.forge.ForgeAdmission.admit(candidate);
+                var file = org.neoforbric.forge.ForgeMetadata.read(candidate.archive());
+                // Pinned LanguageLoadingProvider checks the actual provider version directly.
+                if (!org.neoforbric.forge.ForgeVersionSupport.contains(file.loaderVersion(), "52.1.0")) throw new Failure("DEPENDENCY_VERSION", mod.id() + " requires " + file.modLoader() + " " + file.loaderVersion() + ", selected 52.1.0");
+            }
             validateDependencies(mod, mod.depends(), false, selected, predecessors, builtins);
             validateDependencies(mod, mod.optionalDepends(), true, selected, predecessors, builtins);
             mod.after().stream().filter(selected::containsKey).forEach(predecessors::add);
@@ -62,7 +72,9 @@ public final class Resolver {
             for (Dependency dependency : mod.constraints()) {
                 if (!dependency.side().applies(side)) continue;
                 String version = selected.containsKey(dependency.id()) ? selected.get(dependency.id()).metadata().version() : builtins.get(dependency.id());
-                boolean present = version != null, matches = present && (MavenVersions.matches(dependency.range(), version)
+                boolean present = version != null, matches = forge && mod.ecosystem() == Metadata.Ecosystem.FORGE
+                        ? org.neoforbric.forge.ForgeVersionSupport.modMatches(builtins.get("minecraft"), mod.id(), dependency.id(), dependency.range(), version, audit)
+                        : present && (MavenVersions.matches(dependency.range(), version)
                         || (neoforge && dependency.id().equals("minecraft") && MavenVersions.matches(dependency.range(), "1.21"))
                         || (neoforge && dependency.id().equals("neoforge") && MavenVersions.matches(dependency.range(), "21.0.166")));
                 switch (dependency.kind()) {

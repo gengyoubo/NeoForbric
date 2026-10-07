@@ -1,0 +1,12 @@
+modLoader="javafml"
+loaderVersion="[52,53)"
+license="MIT"
+[[mods]]
+modId="nf_forge_probe"
+version="1.0"
+[[dependencies.nf_forge_probe]]
+modId="forge"
+mandatory=true
+versionRange="[52.1.0]"
+ordering="NONE"
+side="BOTH"

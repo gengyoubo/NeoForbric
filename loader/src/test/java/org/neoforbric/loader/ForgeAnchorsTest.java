@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.jar.JarFile;
 import org.junit.jupiter.api.*;
 import org.neoforbric.forge.*;
+import org.neoforbric.minecraft.*;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,7 +26,7 @@ class ForgeAnchorsTest {
         return classes;
     }
     @Test void realPinnedClassesMatchHashesAndMethodDescriptors() throws Exception {
-        var classes = nativeClasses(); assertEquals(30, classes.size());
+        var classes = nativeClasses(); assertEquals(37, classes.size());
         classes.forEach(ForgeAnchors::verifyClass);
     }
     @Test void changedInstructionsAndMethodDescriptorsFailBeforeDefinition() throws Exception {
@@ -44,5 +45,24 @@ class ForgeAnchorsTest {
         var runtime = new ForgeRuntime(root.resolve("forge-runtime.json"), root.resolve("libraries/forge-universal.jar"));
         var pipeline = new TransformPipeline(); runtime.install(pipeline); var audit = new AuditLog(); pipeline.seal(audit);
         assertEquals("[forge-native-host, forge-native-plugins, forge-access-transformers, forge-coremods]", audit.events().getFirst().details().get("ids"));
+    }
+    @Test void clientLifecycleReadsOriginalForgeBytesBeforeNativePlugins() throws Exception {
+        Path root = Path.of(System.getProperty("forge.testDirectory", ""));
+        Assumptions.assumeTrue(Files.isRegularFile(root.resolve("client-forge.jar")));
+        var game = Archive.readRuntimeGame(root.resolve("client-forge.jar"));
+        byte[] main = game.read("net/minecraft/client/main/Main.class"), client = game.read("net/minecraft/client/Minecraft.class");
+        var hook = new ClientLifecycleHook(Archive.sha256(client), Archive.sha256(main));
+        try (var runtime = new ForgeRuntime(root.resolve("forge-runtime.json"), root.resolve("libraries/forge-universal.jar"))) {
+            var pipeline = new TransformPipeline(); pipeline.add(hook); var audit = new AuditLog(); runtime.install(pipeline, true); pipeline.seal(audit);
+            String order = audit.events().getFirst().details().get("ids");
+            assertTrue(order.indexOf(hook.id()) < order.indexOf("forge-native-plugins"), order);
+            // Read and transform only. Neither class is defined and Main is never invoked.
+            for (var entry : Map.of(ClientLifecycleHook.MAIN, main, ClientLifecycleHook.CLIENT, client).entrySet()) {
+                byte[] transformed = pipeline.apply(entry.getKey(), entry.getValue(), ignored -> null, audit);
+                var node = new ClassNode(); new ClassReader(transformed).accept(node, 0);
+                assertTrue(node.methods.stream().flatMap(m -> Arrays.stream(m.instructions.toArray())).anyMatch(i -> i instanceof MethodInsnNode call && call.owner.equals("org/neoforbric/api/ClientHooks")));
+            }
+            assertEquals("HOOK_INPUT", assertThrows(Failure.class, () -> hook.transform(new TransformPipeline.Context(ClientLifecycleHook.MAIN, ignored -> null), TestJars.type(ClientLifecycleHook.MAIN))).code());
+        }
     }
 }

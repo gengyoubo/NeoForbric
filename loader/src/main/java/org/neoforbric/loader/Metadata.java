@@ -46,6 +46,7 @@ public record Metadata(String id, String version, Ecosystem ecosystem, String en
                     .decode(ByteBuffer.wrap(archive.read(name))).toString();
             if (name.endsWith(".toml")) {
                 if (name.equals("META-INF/neoforge.mods.toml")) return org.neoforbric.neoforge.NeoForgeMetadata.read(archive).mods();
+                if (name.equals("META-INF/mods.toml")) return org.neoforbric.forge.ForgeMetadata.read(archive).mods();
                 TomlParseResult toml = Toml.parse(text);
                 if (toml.hasErrors()) throw new Failure("METADATA_INVALID", archive.path() + ": " + toml.errors());
                 TomlArray mods = toml.getArray("mods");

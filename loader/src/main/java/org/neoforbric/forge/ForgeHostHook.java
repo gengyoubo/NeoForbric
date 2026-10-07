@@ -9,7 +9,11 @@ import static org.objectweb.asm.Opcodes.*;
 /** A query facade only: native launcher entrypoints and classloader takeover remain closed. */
 public final class ForgeHostHook implements TransformPipeline.Transformer {
     private static final String BRIDGE = "org/neoforbric/forge/runtime/ForgeBridge";
+    private final Set<String> prerequisites;
+    public ForgeHostHook() { this(Set.of()); }
+    public ForgeHostHook(Set<String> prerequisites) { this.prerequisites = Set.copyOf(prerequisites); }
     public String id() { return "forge-native-host"; }
+    public Set<String> after() { return prerequisites; }
     public byte[] transform(TransformPipeline.Context context, byte[] bytes) {
         if (!Set.of("cpw.mods.modlauncher.Launcher", "cpw.mods.modlauncher.LaunchPluginHandler", "cpw.mods.modlauncher.TransformingClassLoader", "net.minecraftforge.fml.loading.FMLLoader", "net.minecraftforge.fml.Bindings").contains(context.name())) return bytes;
         ForgeAnchors.verifyClass(context.name(), bytes);
@@ -55,12 +59,13 @@ public final class ForgeHostHook implements TransformPipeline.Transformer {
                     case "isSecureJarEnabled()Z" -> "secureJarsEnabled";
                     case "getGamePath()Ljava/nio/file/Path;" -> "gamePath";
                     case "getNameFunction(Ljava/lang/String;)Ljava/util/Optional;" -> "findNameMapping";
+                    case "getGameLayer()Ljava/lang/ModuleLayer;" -> "gameLayer";
                     default -> null;
                 };
                 if (target != null) {
                     clear(method);
                     if (method.desc.startsWith("(Ljava/lang/String;")) method.instructions.add(new VarInsnNode(ALOAD, 0));
-                    method.instructions.add(new MethodInsnNode(INVOKESTATIC, BRIDGE, target, method.desc, false));
+                    method.instructions.add(new MethodInsnNode(INVOKESTATIC, target.equals("gameLayer") ? "org/neoforbric/forge/runtime/NativeForgeRuntime" : BRIDGE, target, method.desc, false));
                     method.instructions.add(new InsnNode(method.desc.endsWith("Z") ? IRETURN : ARETURN));
                 } else if (Set.of("onInitialLoad", "setupLaunchHandler", "beginModScan", "completeScan", "beforeStart").contains(method.name)) refuse(method);
             }

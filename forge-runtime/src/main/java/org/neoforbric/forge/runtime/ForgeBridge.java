@@ -115,6 +115,16 @@ public final class ForgeBridge {
         if (events.handlesClass(type)) events.processClass(node, type);
         return write(node);
     }
+    public static Map<String, Object> generated(String name) throws Exception {
+        var factory = net.minecraftforge.eventbus.ModLauncherFactory.class;
+        if (!net.minecraftforge.eventbus.ModLauncherFactory.hasPendingWrapperClass(name)) return null;
+        var field = factory.getDeclaredField("PENDING"); field.setAccessible(true); Object pending = field.get(null);
+        var get = pending.getClass().getMethod("get", Object.class); get.setAccessible(true);
+        var target = (java.lang.reflect.Method)get.invoke(pending, name);
+        if (target == null) throw new IllegalStateException("FORGE_EVENT_WRAPPER: Missing pending method " + name);
+        ClassNode node = new ClassNode(); net.minecraftforge.eventbus.ModLauncherFactory.processWrapperClass(name, node);
+        return Map.of("bytes", write(node), "owner", target.getDeclaringClass().getName());
+    }
     public static byte[] access(String name, byte[] bytes) {
         Type type = Type.getObjectType(name.replace('.', '/'));
         if (directory == null || !AccessTransformerEngine.INSTANCE.handlesClass(type)) return bytes;

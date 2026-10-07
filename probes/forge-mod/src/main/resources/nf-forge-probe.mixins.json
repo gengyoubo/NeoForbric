@@ -1,0 +1,1 @@
+{"required":true,"minVersion":"0.8.7","package":"demo.forgeprobe.mixin","compatibilityLevel":"JAVA_21","mixins":["TargetMixin"],"injectors":{"defaultRequire":1}}

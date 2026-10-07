@@ -19,7 +19,7 @@ public final class ClassIndex {
 
     public static boolean shared(String name) {
         return name.startsWith("org.neoforbric.api.") || name.startsWith("org.objectweb.asm.") || name.startsWith("net.fabricmc.api.")
-                || (org.neoforbric.neoforge.NeoForgeMixins.active() && ((name.startsWith("org.spongepowered.asm.") && !mixinSynthetic(name)) || name.startsWith("com.llamalad7.mixinextras.")))
+                || ((org.neoforbric.neoforge.NeoForgeMixins.active() || org.neoforbric.forge.ForgeMixins.active()) && ((name.startsWith("org.spongepowered.asm.") && !mixinSynthetic(name)) || name.startsWith("com.llamalad7.mixinextras.")))
                 || (NativeFabricRuntime.active() && (name.startsWith("net.fabricmc.loader.")
                 || (name.startsWith("org.spongepowered.asm.") && !mixinSynthetic(name)) || name.startsWith("com.llamalad7.mixinextras.")));
     }

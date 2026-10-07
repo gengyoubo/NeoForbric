@@ -13,6 +13,7 @@ import org.neoforbric.loader.*;
 import org.neoforbric.minecraft.*;
 import org.neoforbric.fabric.NativeFabricRuntime;
 import org.neoforbric.neoforge.*;
+import org.neoforbric.forge.*;
 import org.neoforbric.api.FabricRuntimeHooks;
 import java.nio.file.*;
 
@@ -39,6 +40,7 @@ public final class Bootstrap {
         List<Path> remapArtifacts = new ArrayList<>();
         NativeFabricRuntime fabricRuntime = null;
         NeoForgeRuntime neoForgeRuntime = null;
+        ForgeRuntime forgeRuntime = null;
         try {
             audit.mode(options.inspect() ? "metadata-inspect" : options.client() ? "minecraft-1.21.1-client" : options.runServer() ? "minecraft-1.21.1-server" : options.minecraft() ? "minecraft-1.21.1-server-settings" : "java-fixture");
             audit.record(phase, "runtime", "JVM", Map.of("javaVersion", Runtime.version().toString(),
@@ -52,18 +54,25 @@ public final class Bootstrap {
                 audit.record(phase, "eula", path.toString(), Map.of("accepted", "true"));
             }
             phase("DISCOVER");
+            boolean forgeProfile = options.client() && System.getProperty("neoforbric.forge.runtime") != null;
+            if (forgeProfile && System.getProperty("neoforbric.neoforge.runtime") != null) throw new Failure("RUNTIME_PROFILE", "Choose one patched native runtime");
+            ForgeDiscovery.Result forgeDiscovered = forgeProfile ? ForgeDiscovery.discover(options.mods(), audit) : null;
             NeoForgeDiscovery.Result neoForgeDiscovered = options.client() && System.getProperty("neoforbric.neoforge.runtime") != null ? NeoForgeDiscovery.discover(options.mods(), audit) : null;
-            var discovered = neoForgeDiscovered == null ? Discovery.discover(options.mods(), audit) : neoForgeDiscovered.mods();
+            var discovered = forgeDiscovered != null ? forgeDiscovered.mods() : neoForgeDiscovered == null ? Discovery.discover(options.mods(), audit) : neoForgeDiscovered.mods();
             boolean hasFabricMods = discovered.stream().anyMatch(candidate -> candidate.metadata().ecosystem() == Metadata.Ecosystem.FABRIC);
             RuntimeInputs runtime = null;
             List<Discovery.Candidate> candidates = discovered;
             Map<Path, String> scopeExclusions = new HashMap<>();
+            if (forgeProfile) {
+                forgeRuntime = new ForgeRuntime(Path.of(System.getProperty("neoforbric.forge.runtime")), Path.of(System.getProperty("neoforbric.forge.bridge")));
+                runtime = forgeRuntime.inputs(RuntimeInputs.read(options.runtime(), audit), options.runtime(), audit);
+            }
             if (options.client() && System.getProperty("neoforbric.neoforge.runtime") != null) {
                 neoForgeRuntime = new NeoForgeRuntime(Path.of(System.getProperty("neoforbric.neoforge.runtime")), Path.of(System.getProperty("neoforbric.neoforge.bridge")));
                 runtime = neoForgeRuntime.inputs(RuntimeInputs.read(options.runtime(), audit));
                 pipeline.add(new NeoForgeHostHook(neoForgeRuntime.registryContract()));
             }
-            if (neoForgeRuntime == null && options.client() && hasFabricMods && !Boolean.getBoolean("neoforbric.fabric.plain")) {
+            if (forgeRuntime == null && neoForgeRuntime == null && options.client() && hasFabricMods && !Boolean.getBoolean("neoforbric.fabric.plain")) {
                 fabricRuntime = new NativeFabricRuntime(options, audit);
                 phase("RUNTIME_INPUTS");
                 runtime = RuntimeInputs.read(options.runtime(), audit);
@@ -81,20 +90,20 @@ public final class Bootstrap {
                 candidates = new ArrayList<>(fabricRuntime.discover(fabricInputs, runtime));
                 candidates.addAll(otherInputs);
             }
-            if (options.client()) catalog = new ModCatalog(candidates, audit, neoForgeRuntime != null);
+            if (options.client()) catalog = new ModCatalog(candidates, audit, neoForgeRuntime != null, forgeRuntime != null);
             if (options.inspect()) {
                 phase("INSPECTED");
                 outcome = "INSPECTED";
                 return;
             }
             phase("RESOLVE");
-            if (options.client() && fabricRuntime == null) candidates = catalog.selectClient(candidates, neoForgeRuntime != null);
+            if (options.client() && fabricRuntime == null) candidates = catalog.selectClient(candidates, neoForgeRuntime != null, forgeRuntime != null);
             else if (options.minecraft() && fabricRuntime == null) candidates = candidates.stream().map(c -> c.metadata().available(options.side()) ? FabricAdmission.admit(c) : c).toList();
             if (neoForgeRuntime != null) {
                 int gameDir = options.gameArguments().indexOf("--gameDir");
                 candidates = NeoForgeOverrides.apply(candidates, gameDir >= 0 ? Path.of(options.gameArguments().get(gameDir + 1)) : options.mods().toAbsolutePath().getParent(), audit);
             }
-            var resolution = fabricRuntime == null ? Resolver.plan(candidates, options.side(), audit, options.minecraft(), neoForgeRuntime != null) : null;
+            var resolution = fabricRuntime == null ? Resolver.plan(candidates, options.side(), audit, options.minecraft() && forgeRuntime == null, neoForgeRuntime != null, forgeRuntime != null) : null;
             var mods = resolution == null ? fabricRuntime.resolve() : resolution.mods();
             if (fabricRuntime != null) {
                 Map<Path, String> exclusions = new HashMap<>(scopeExclusions);
@@ -118,13 +127,15 @@ public final class Bootstrap {
             if (runtime != null) {
                 for (Path library : runtime.libraries()) { Archive archive = neoForgeRuntime == null ? Archive.read(library) : neoForgeRuntime.library(library); inputs.add(archive); libraries.add(archive.path()); }
                 if (neoForgeDiscovered != null) for (Archive library : neoForgeDiscovered.libraries()) { inputs.add(library); libraries.add(library.path()); }
+                if (forgeDiscovered != null) for (Archive library : forgeDiscovered.libraries()) { inputs.add(library); libraries.add(library.path()); }
                 // Patched NeoForge owns a later registration pass, after mod construction.
                 // The vanilla bootstrap freeze is too early for mixed-profile Fabric entries.
-                if (neoForgeRuntime == null || neoForgeRuntime.registryContract())
+                if (forgeRuntime == null && (neoForgeRuntime == null || neoForgeRuntime.registryContract()))
                     pipeline.add(new RegistryWindowHook(runtime.registryClassSha256(), fabricRuntime != null && fabricRuntime.defersRegistries()));
                 if (neoForgeRuntime != null) {
                     Archive bridge = Archive.read(neoForgeRuntime.bridge()); inputs.add(bridge); clientUi.add(bridge.path());
                 }
+                if (forgeRuntime != null) { Archive bridge = Archive.read(forgeRuntime.bridge()); inputs.add(bridge); clientUi.add(bridge.path()); }
                 if (options.client()) pipeline.add(new ClientLifecycleHook(Archive.sha256(game.read("net/minecraft/client/Minecraft.class")), Archive.sha256(game.read("net/minecraft/client/main/Main.class")), neoForgeRuntime != null && !neoForgeRuntime.registryContract()));
                 if (options.clientUi() != null) {
                     Archive ui = Archive.read(options.clientUi()); inputs.add(ui); clientUi.add(ui.path());
@@ -133,6 +144,7 @@ public final class Bootstrap {
                 }
                 if (options.runServer()) pipeline.add(new ServerLifecycleHook(Archive.sha256(game.read("net/minecraft/server/MinecraftServer.class")), Archive.sha256(game.read("net/minecraft/server/Main.class"))));
             }
+            if (forgeRuntime != null) forgeRuntime.install(pipeline, true);
             List<Discovery.Candidate> preparedMods = new ArrayList<>();
             if (fabricRuntime != null) {
                 phase("REMAP");
@@ -169,11 +181,14 @@ public final class Bootstrap {
                     preparedMods.add(new Discovery.Candidate(archive, mod.metadata()));
                 } else preparedMods.add(mod);
             }
+            if (forgeRuntime != null) preparedMods = new ArrayList<>(forgeRuntime.remap(preparedMods, audit));
             preparedMods.forEach(m -> inputs.add(m.archive()));
             if (neoForgeRuntime != null) neoForgeRuntime.install(pipeline, audit);
+            if (forgeRuntime != null) forgeRuntime.mixins(pipeline, audit, options.side());
             ClassLoader parent = Bootstrap.class.getClassLoader();
             phase("CLASS_INDEX");
             ClassIndex index = ClassIndex.prepare(inputs, parent, audit, libraries, clientUi, fabricRuntime != null);
+            if (forgeRuntime != null) ForgeAnchors.verify(index, audit);
             try (GameResources resources = options.minecraft() ? new GameResources(audit) : null;
                  GameClassLoader loader = new GameClassLoader(index, pipeline, parent, audit, resources)) {
                 // Classpath scanners used by mods (Reflections, ClassGraph) read classloader URLs.
@@ -184,8 +199,11 @@ public final class Bootstrap {
                 } else if (neoForgeRuntime != null) {
                     NeoForgeRuntime generatedNeoForge = neoForgeRuntime;
                     loader.generatedClasses(name -> generatedNeoForge.generated(name, index));
+                } else if (forgeRuntime != null) {
+                    ForgeRuntime generatedForge = forgeRuntime; loader.generatedClasses(name -> generatedForge.generated(name, index));
                 }
                 pipeline.seal(audit);
+                if (forgeRuntime != null) forgeRuntime.packageMetadata(loader);
                 phase("SEALED");
                 loader.open();
                 Thread thread = Thread.currentThread();
@@ -200,6 +218,11 @@ public final class Bootstrap {
                         fabricRuntime.bindAndPrepare(index, loader, pipeline, inputs);
                     }
                     // Check every entrypoint shape before executing any candidate static initializer / constructor.
+                    if (forgeRuntime != null) {
+                        int gameDir = options.gameArguments().indexOf("--gameDir");
+                        forgeRuntime.prepareMods(index, loader, pipeline, inputs, gameDir >= 0 ? Path.of(options.gameArguments().get(gameDir + 1)) : options.mods().toAbsolutePath().getParent(), options.side(), preparedMods,
+                                state -> audit.record("FORGE", "native-state-complete", state, Map.of("thread", Thread.currentThread().getName())));
+                    }
                     if (neoForgeRuntime != null) {
                         neoForgeRuntime.bind(index, loader, pipeline, inputs);
                         int gameDir = options.gameArguments().indexOf("--gameDir");
@@ -232,18 +255,19 @@ public final class Bootstrap {
                         ModCatalog clientCatalog = catalog;
                         NativeFabricRuntime activeFabric = fabricRuntime;
                         NeoForgeRuntime activeNeoForge = neoForgeRuntime;
+                        ForgeRuntime activeForge = forgeRuntime;
                         try (GameHooks.Session hooks = GameHooks.attach(() -> {
                             phase("REGISTRY_OPEN"); audit.record(phase, "registry-window", "builtin", Map.of("state", "open", "anchor", activeNeoForge != null && !activeNeoForge.registryContract()
-                                    ? "neoforge-after-unfreeze-before-register" : activeFabric != null && activeFabric.defersRegistries() ? "minecraft-before-gameThread-fabric-deferred-freeze" : "createContents-before-freeze"));
+                                    ? "neoforge-after-unfreeze-before-register" : activeForge != null ? "forge-after-native-unfreeze" : activeFabric != null && activeFabric.defersRegistries() ? "minecraft-before-gameThread-fabric-deferred-freeze" : "createContents-before-freeze"));
                             if (activeNeoForge != null && activeNeoForge.registryContract()) activeNeoForge.phase(loader, "REGISTRY_OPEN");
                             if (activeFabric == null) initialize(initializers.stream().filter(i -> i.group().equals("main") || i.group().equals("prototype")).toList(), initialized);
                             else activeFabric.initializeMain();
                         }, () -> {
-                            phase("REGISTRY_FROZEN"); audit.record(phase, "registry-window", "builtin", Map.of("state", "frozen", "freeze", activeNeoForge != null && !activeNeoForge.registryContract() ? "neoforge" : "vanilla"));
+                            phase("REGISTRY_FROZEN"); audit.record(phase, "registry-window", "builtin", Map.of("state", "frozen", "freeze", activeForge != null ? "forge-complete" : activeNeoForge != null && !activeNeoForge.registryContract() ? "neoforge" : "vanilla"));
                             if (activeNeoForge != null && activeNeoForge.registryContract()) activeNeoForge.phase(loader, "REGISTRY_FROZEN");
                             if (activeFabric == null) {
                                 initialize(initializers.stream().filter(i -> i.group().equals(options.side())).toList(), initialized);
-                                if (clientCatalog != null && activeNeoForge == null) clientCatalog.loaded(mods);
+                                if (clientCatalog != null && activeNeoForge == null && activeForge == null) clientCatalog.loaded(mods);
                             }
                         })) {
                             if (options.client()) {
@@ -261,7 +285,7 @@ public final class Bootstrap {
                                         catch (IOException error) { throw new Failure("AUDIT_IO", "Could not write client audit", error); }
                                     }
                                 }, instance -> {
-                                    if (activeNeoForge != null) clientCatalog.loaded(mods);
+                                    if (activeNeoForge != null || activeForge != null) clientCatalog.loaded(mods);
                                     if (menuVerifier != null) {
                                         try { menuVerifier.invoke(null, menuVerifier.getParameterCount() == 0 ? new Object[0] : new Object[]{instance}); }
                                         catch (ReflectiveOperationException error) { throw new Failure("CLIENT_VERIFY", "Main menu verifier failed", error instanceof InvocationTargetException wrapper ? wrapper.getCause() : error); }
@@ -315,6 +339,7 @@ public final class Bootstrap {
                         }
                     }
                 } finally {
+                    if (forgeRuntime != null) try { forgeRuntime.close(); } catch (Exception cleanupError) { audit.record("CLEANUP", "forge-runtime-close-failed", "adapter", Map.of("message", cleanupError.toString())); }
                     if (options.client()) {
                         if (previousLwjgl == null) System.clearProperty("org.lwjgl.librarypath"); else System.setProperty("org.lwjgl.librarypath", previousLwjgl);
                     }
@@ -339,6 +364,7 @@ public final class Bootstrap {
             Failure.rethrowFatal(cause);
             throw failure;
         } finally {
+            if (forgeRuntime != null) try { forgeRuntime.close(); } catch (Exception error) { audit.record("CLEANUP", "forge-runtime-close-failed", "adapter", Map.of("message", error.toString())); }
             if (neoForgeRuntime != null) {
                 try { neoForgeRuntime.close(); }
                 catch (Exception error) { audit.record("CLEANUP", "neoforge-runtime-close-failed", "adapter", Map.of("message", error.toString())); }
