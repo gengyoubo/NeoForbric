@@ -1,6 +1,6 @@
 # Minecraft 1.21.1 客户端与 Mods 列表
 
-`runClient` 使用 NeoForbric 自主 bootstrap、Mojang 命名游戏 JAR 和单一游戏类加载器，启动真实 Minecraft 窗口。`mods` 目录含原生 NeoForge 模组时自动选择实验性的 NeoForge profile，固定版本与 EcologicalGarden 世界实测见 [NeoForge 运行说明](neoforge-runtime.md)。其余 Fabric 客户端默认进入 NeoForbric Fabric runtime（Mixin、AW、nested JAR、依赖图、Fabric Loader API 与 Fabric API 模块）；`-PfabricPlainProfile` 可切回有限的 plain Fabric Java 入口 profile 用于回归测试。平台暂限定 **Windows x64 / JDK 21**，需要桌面会话及可用 OpenGL 驱动。
+`runClient` 使用 NeoForbric 自主 bootstrap、Mojang 命名游戏 JAR 和单一游戏类加载器，启动真实 Minecraft 窗口。`mods` 目录含原生 NeoForge 模组时自动选择实验性的 NeoForge profile，并在存在 Fabric 模组时同时启用 Fabric runtime（Mixin、AW、nested JAR、依赖图、方法入口及 Fabric Loader API）。两套模组共享同一个游戏类加载器和 Mixin 转换器，固定版本和混合世界实测见 [NeoForge 运行说明](neoforge-runtime.md)。其余 Fabric 客户端默认进入独立 Fabric runtime；`-PfabricPlainProfile` 可切回有限的 plain Fabric Java 入口 profile 用于回归测试。平台暂限定 **Windows x64 / JDK 21**，需要桌面会话及可用 OpenGL 驱动。
 
 ```powershell
 $env:JAVA_HOME = 'C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot' # 换成自己的 JDK 21
@@ -67,16 +67,16 @@ Fabric remap 缓存依然以输入字节、访问规则、游戏、映射、库�
 
 ## Unsupported 诊断
 
-鼠标悬停在 Unsupported、Disabled 或 Failed 列表项上即可查看原因。长提示会引导选中模组查看完整报告；右侧详情支持鼠标滚轮、拖动滚动条，获得焦点后可使用方向键、Page Up / Page Down、Home / End。较窄的窗口点击列表项进入详情，Back / Esc 先返回列表。
+启动日志会输出每个 Unsupported 模组的名称、ID、原始 JAR 路径和完整拒绝原因。列表的 Unsupported 状态提示可悬停查看原因；选中模组后，详情顶部先显示状态、具体阻挡项及其解释，再显示适配器等信息，未评估的依赖要求单独列出。长提示会引导选中模组查看完整报告；右侧详情支持鼠标滚轮、拖动滚动条，获得焦点后可使用方向键、Page Up / Page Down、Home / End。较窄的窗口点击列表项进入详情，Back / Esc 先返回列表。
 
-Fabric 准入会一次收集所有已识别的阻挡项，而不是遇到第一项就结束。报告保留字段和具体值，包括 Mixin 配置文件、AW 路径、nested JAR 路径、语言适配器、未实现的依赖规则、依赖数组、自定义 entrypoint 组以及方法 / 字段入口。例如：
+有限的 plain Fabric 准入会一次收集所有已识别的阻挡项，而不是遇到第一项就结束。默认 Fabric runtime 和 Fabric / NeoForge 混合 runtime 执行这些特性，不因声明 Mixin、AW、nested 或自定义入口组直接拒绝模组。plain 报告保留字段和具体值，包括 Mixin 配置文件、AW 路径、nested JAR 路径、语言适配器、未实现的依赖规则、依赖数组、自定义 entrypoint 组以及方法 / 字段入口。例如：
 
 ```text
 Unsupported features:
 - mixins[0]: example.mixins.json
-  Requires Fabric Mixin support
+  The current limited Fabric profile does not apply this Mixin configuration to game classes
 - accessWidener: example.accesswidener
-  Requires Fabric access widening
+  The current limited Fabric profile does not apply this access widener to game classes and members
 Required dependencies (not evaluated):
 - fabric-api: >=0.102.0
 ```
@@ -93,6 +93,8 @@ Loader 将每项诊断作为不可变的 `ModDiagnostic(kind, subject, value, ex
 
 ## 实测命令与边界
 
+运行中的审计报告属于诊断输出。Windows 上 `audit.json` 被编辑器或其他读取程序占用、无法替换时，Loader 保留原文件，并将完整报告写到同目录的 `audit.json.fallback-<UUID>.json`；控制台打印实际保存路径。主菜单与退出报告分别保存。目录完全无法写入时打印警告，客户端和服务器继续正常运行及清理，审计错误不会覆盖游戏本身的异常。元数据检查及 Java fixture 的必需报告仍保持严格写入。
+
 ```powershell
 ./gradlew.bat :loader:test :loader:minecraftClientTest
 ./gradlew.bat runClient -PclientTestMod=true -PclientModsProbe=true -PclientProbeFrames=40
@@ -101,4 +103,4 @@ Loader 将每项诊断作为不可变的 `ModDiagnostic(kind, subject, value, ex
 
 探针验证实际 OpenGL 窗口、资源加载、主菜单、Fabric main / client 各执行一次、注册物品身份和原生清理。Mods 专项点击实际按钮，验证 Loaded / Unsupported / Disabled 决策、完整结构化诊断、实际悬停提示中的配置名、详情实际滚动、渲染截图和返回主菜单后按钮无重复；失败探针验证 vanilla 崩溃仍回到内核审计。客户端测试截图保存在 `loader/build/client-evidence`（包括 `neoforbric-mod-diagnostics.png` 和 `neoforbric-mod-tooltip.png`）；运行任务截图在 `run/client/screenshots`。
 
-完整 Fabric API、Forge 原生执行、原生远程服务器互联及三生态整合包兼容尚未验证。默认 Fabric runtime 目前验证固定 Fabric API / JEI 依赖链；NeoForge profile 已完成 EcologicalGarden 1.3.2 的构造、内容注册、资源加载与集成世界实测，更多模组及完整 Fabric / NeoForge 混装仍待验证。JAR package sealing 由内核在重映射时保留并按 JVM 语义执行（sealed package 拒绝其他 archive 的类），Mixin 注入到已 sealed 包之外的生成类仍按源 archive 归属。
+默认 Fabric runtime 目前验证固定 Fabric API / JEI 依赖链；NeoForge profile 已验证 EcologicalGarden 1.3.2，并新增 Continuity、Carpet、ViaFabricPlus、Fabric API 与 Sodium / Sophisticated Backpacks / Sophisticated Core 的混合启动、资源重载和集成世界测试。已验证版本、固定 API 端口与重跑命令见 [NeoForge 运行说明](neoforge-runtime.md)。原生远程服务器互联、所有模组版本及三生态整合包兼容仍未验证。JAR package sealing 由内核在重映射时保留并按 JVM 语义执行（sealed package 拒绝其他 archive 的类），Mixin 注入到已 sealed 包之外的生成类仍按源 archive 归属。

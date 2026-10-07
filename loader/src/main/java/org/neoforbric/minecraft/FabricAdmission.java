@@ -24,11 +24,11 @@ public final class FabricAdmission {
         for (String field : List.of("mixins", "accessWidener", "jars", "languageAdapters", "breaks", "conflicts", "recommends", "suggests")) {
             JsonElement value = json.get(field); if (value == null) continue;
             String explanation = switch (field) {
-                case "mixins" -> "Requires Fabric Mixin support";
-                case "accessWidener" -> "Requires Fabric access widening";
-                case "jars" -> "Requires nested Fabric JAR support";
-                case "languageAdapters" -> "Requires custom language adapter support";
-                default -> "Dependency rule is not implemented by this profile";
+                case "mixins" -> "The current limited Fabric profile does not apply this Mixin configuration to game classes";
+                case "accessWidener" -> "The current limited Fabric profile does not apply this access widener to game classes and members";
+                case "jars" -> "The current limited Fabric profile does not discover or load this bundled JAR";
+                case "languageAdapters" -> "The current limited Fabric profile cannot instantiate entrypoints through this custom language adapter";
+                default -> "The current limited Fabric profile does not evaluate the declared " + field + " dependency rule";
             };
             if (value.isJsonArray()) {
                 int index = 0;

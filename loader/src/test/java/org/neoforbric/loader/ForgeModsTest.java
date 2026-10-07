@@ -70,6 +70,12 @@ class ForgeModsTest {
     @Test void unadaptedTakeoverIsRejectedBeforeConstruction() throws Exception {
         Archive archive = Archive.read(TestJars.jar(root.resolve("service.jar"),Map.of("META-INF/mods.toml",TestJars.text(toml("service","")),"META-INF/services/cpw.mods.modlauncher.api.ITransformationService",TestJars.text("danger.Service"))));
         var mod=new Discovery.Candidate(archive,ForgeMetadata.read(archive).mods().getFirst()); assertEquals("FORGE_FEATURE_UNSUPPORTED",assertThrows(Failure.class,()->ForgeAdmission.admit(mod)).code());
+        try (var catalog = new ModCatalog(List.of(mod), new AuditLog(), false, true)) {
+            assertTrue(catalog.selectClient(List.of(mod), false, true).isEmpty());
+            var info = org.neoforbric.api.LoadedMods.snapshot().getLast();
+            assertEquals(org.neoforbric.api.LoadStatus.UNSUPPORTED, info.status());
+            assertTrue(info.reason().contains("META-INF/services/cpw.mods.modlauncher.api.ITransformationService"));
+        }
         var library = Archive.read(TestJars.jar(root.resolve("library.jar"), Map.of("META-INF/services/cpw.mods.modlauncher.serviceapi.ILaunchPluginService", TestJars.text("danger.Plugin"))));
         assertEquals("FORGE_FEATURE_UNSUPPORTED", assertThrows(Failure.class, () -> ForgeAdmission.library(library)).code());
     }

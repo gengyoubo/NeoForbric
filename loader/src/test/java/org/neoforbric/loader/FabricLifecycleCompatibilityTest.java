@@ -14,6 +14,18 @@ import static org.objectweb.asm.Opcodes.*;
 
 class FabricLifecycleCompatibilityTest {
     @TempDir Path temporary;
+    @Test void modSavingFinishesBeforeTheClientLifecycleIsDetached() throws Exception {
+        AtomicInteger saved = new AtomicInteger();
+        Thread hook = new Thread(saved::incrementAndGet, "mod save test");
+        try (var session = FabricRuntimeHooks.attachClient(ignored -> {})) {
+            FabricRuntimeHooks.addShutdownHook(Runtime.getRuntime(), hook);
+            assertThrows(IllegalArgumentException.class, () -> FabricRuntimeHooks.addShutdownHook(Runtime.getRuntime(), hook));
+            assertEquals(0, saved.get());
+        }
+        assertEquals(1, saved.get()); assertEquals(Thread.State.TERMINATED, hook.getState());
+        try (var next = FabricRuntimeHooks.attachClient(ignored -> {})) { assertEquals(1, saved.get()); }
+        assertThrows(IllegalStateException.class, () -> FabricRuntimeHooks.addShutdownHook(Runtime.getRuntime(), new Thread()));
+    }
     private byte[] client() {
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         writer.visit(V21, ACC_PUBLIC, "net/minecraft/client/Minecraft", null, "java/lang/Object", null);

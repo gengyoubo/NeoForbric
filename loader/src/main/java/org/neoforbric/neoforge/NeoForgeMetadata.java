@@ -16,6 +16,17 @@ public record NeoForgeMetadata(String modLoader, String loaderVersion, String li
         mods = List.copyOf(mods); mixins = List.copyOf(mixins); accessTransformers = List.copyOf(accessTransformers);
         enumExtensions = Set.copyOf(enumExtensions); fields = Map.copyOf(fields);
     }
+    /** Explicit cross-ecosystem aliases declared by a native mod, never guessed from its ID. */
+    public List<String> provides(String id) {
+        for (Object entry : (List<?>)fields.get("mods")) {
+            Map<?, ?> mod = (Map<?, ?>)entry;
+            if (id.equals(mod.get("modId"))) {
+                Object aliases = mod.get("provides");
+                return aliases instanceof List<?> values ? values.stream().map(value -> (String)value).toList() : List.of();
+            }
+        }
+        return List.of();
+    }
     public static NeoForgeMetadata read(Archive archive) {
         try {
             String text = StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
@@ -45,6 +56,13 @@ public record NeoForgeMetadata(String modLoader, String loaderVersion, String li
             List<Metadata> mods = new ArrayList<>();
             for (int i = 0; i < entries.size(); i++) {
                 TomlTable mod = entries.getTable(i); String id = mod.getString("modId");
+                if (mod.contains("provides")) {
+                    TomlArray aliases = mod.getArray("provides");
+                    for (int j = 0; j < aliases.size(); j++) {
+                        String alias = aliases.getString(j);
+                        if (!alias.matches("[a-z][a-z0-9_-]{1,63}")) throw new IllegalArgumentException("Invalid provided mod ID " + alias);
+                    }
+                }
                 List<Dependency> constraints = new ArrayList<>();
                 TomlArray deps = sharedDependencies != null ? sharedDependencies : dependencies == null ? null : dependencies.getArray(List.of(id));
                 if (deps != null) for (int j = 0; j < deps.size(); j++) {

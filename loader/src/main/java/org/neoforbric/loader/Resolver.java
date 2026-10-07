@@ -28,7 +28,13 @@ public final class Resolver {
         return plan(candidates, side, audit, fabric, neoforge, false);
     }
     public static Plan plan(List<Discovery.Candidate> candidates, String side, AuditLog audit, boolean fabric, boolean neoforge, boolean forge) {
+        return plan(candidates, side, audit, fabric, neoforge, forge, Map.of());
+    }
+    public static Plan plan(List<Discovery.Candidate> candidates, String side, AuditLog audit, boolean fabric, boolean neoforge, boolean forge, Map<String, String> externalVersions) {
         Map<String, String> builtins = new HashMap<>(BUILTINS);
+        externalVersions.forEach((id, version) -> {
+            if (builtins.putIfAbsent(id, version) != null) throw new Failure("RESERVED_MOD_ID", "Cannot replace builtin " + id);
+        });
         if (forge) { builtins.put("forge", "52.1.0"); builtins.put("javafml", "52.1.0"); builtins.put("lowcodefml", "52.1.0"); }
         if (neoforge) {
             try {

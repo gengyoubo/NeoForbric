@@ -20,6 +20,17 @@ public final class NeoForgeProbe {
         }
         String namespace = "ecologicalgarden";
         if (!ModList.get().isLoaded("neoforge")) throw new IllegalStateException("NeoForge did not construct successfully");
+        if (Boolean.getBoolean("neoforbric.neoforge.mixedWorldProbe")) {
+            try {
+                Class<?> facade = Class.forName("net.fabricmc.loader.api.FabricLoader"); Object fabric = facade.getMethod("getInstance").invoke(null);
+                for (String id : java.util.List.of("continuity", "carpet", "viafabricplus", "fabric-api"))
+                    if (!(boolean)facade.getMethod("isModLoaded", String.class).invoke(fabric, id)) throw new IllegalStateException("Missing Fabric mod " + id);
+            } catch (ReflectiveOperationException error) { throw new IllegalStateException("Passive Fabric API not available", error); }
+            for (String id : java.util.List.of("sodium", "sophisticatedbackpacks", "sophisticatedcore"))
+                if (!ModList.get().isLoaded(id)) throw new IllegalStateException("Missing native mod " + id);
+            verifyMixedTagRemoval();
+            NeoForgeWorldProbe.start(minecraft); return;
+        }
         if (!ModList.get().isLoaded(namespace)) {
             if (Boolean.getBoolean("neoforbric.neoforge.worldProbe")) throw new IllegalStateException("World probe requires EcologicalGarden");
             System.out.println("NEOFORGE_PROBE_OK mods=" + ModList.get().getMods().stream().map(mod -> mod.getModId()).toList());
@@ -34,5 +45,22 @@ public final class NeoForgeProbe {
         System.out.println("NEOFORGE_PROBE_OK target=" + namespace + " items=" + items + " blocks=" + blocks + " entityTypes=" + entities
                 + " gameLoader=" + client.getClass().getClassLoader().getName() + " itemIdentity=" + (net.minecraft.world.item.Item.class.getClassLoader() == client.getClass().getClassLoader()));
         if (Boolean.getBoolean("neoforbric.neoforge.worldProbe")) NeoForgeWorldProbe.start((net.minecraft.client.Minecraft)client);
+    }
+    private static void verifyMixedTagRemoval() {
+        var file = net.minecraft.tags.TagFile.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE,
+                com.google.gson.JsonParser.parseString("{\"values\":[\"minecraft:stone\",\"minecraft:dirt\"],\"remove\":[\"minecraft:stone\"]}")).getOrThrow();
+        if (file.remove().size() != 1) throw new IllegalStateException("Native tag codec did not decode remove entries");
+        try {
+            var api = Class.forName("net.fabricmc.fabric.api.tag.v1.FabricTagFile");
+            if (!api.isInstance(file) || !api.getMethod("remove").invoke(file).equals(file.remove())) throw new IllegalStateException("Fabric tag API does not expose native remove entries");
+        } catch (ReflectiveOperationException error) { throw new IllegalStateException(error); }
+        var loader = new net.minecraft.tags.TagLoader<net.minecraft.world.level.block.Block>(BuiltInRegistries.BLOCK::getOptional, "tags/block");
+        var entries = new java.util.ArrayList<net.minecraft.tags.TagLoader.EntryWithSource>();
+        file.entries().forEach(entry -> entries.add(new net.minecraft.tags.TagLoader.EntryWithSource(entry, "mixed probe", false)));
+        file.remove().forEach(entry -> entries.add(new net.minecraft.tags.TagLoader.EntryWithSource(entry, "mixed probe", true)));
+        var id = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("neoforbric", "probe");
+        var values = loader.build(java.util.Map.of(id, entries)).get(id);
+        if (values == null || values.size() != 1 || !values.contains(net.minecraft.world.level.block.Blocks.DIRT)) throw new IllegalStateException("Native tag removal did not preserve Fabric semantics");
+        System.out.println("MIXED_FABRIC_TAG_REMOVAL_OK codec=true api=true values=[minecraft:dirt]");
     }
 }

@@ -181,7 +181,11 @@ public final class GamePreparation {
     }
     public static void remap(Path input, Path output, RuntimeInputs inputs, String from, String to) throws IOException {
         List<Path> classpath = new ArrayList<>(inputs.libraries()); classpath.add(from.equals("intermediary") ? inputs.intermediaryGame() : inputs.game());
-        remap(input, output, mappings(inputs.mappings(), inputs.intermediaryMappings()), from, to, classpath, sealingOf(input));
+        remap(input, output, mappings(inputs), from, to, classpath, sealingOf(input));
+    }
+    public static MemoryMappingTree mappings(RuntimeInputs inputs) throws IOException {
+        MemoryMappingTree tree = mappings(inputs.mappings(), inputs.intermediaryMappings());
+        NativeMappingCompatibility.reconcile(tree, inputs.game()); return tree;
     }
     /** Mod artifacts keep their manifest sealing directives; the game and its libraries remain stripped. */
     private static Manifest sealingOf(Path input) throws IOException {
@@ -197,7 +201,7 @@ public final class GamePreparation {
     /** A single symbol graph prevents repeated game scans and resolves cross-module inherited references. */
     public static void remapFabricMods(List<FabricInput> mods, RuntimeInputs inputs) throws IOException {
         for (FabricInput mod : mods) if (mod.snapshot() != null) mod.snapshot().writeSnapshot(mod.source());
-        MemoryMappingTree tree = mappings(inputs.mappings(), inputs.intermediaryMappings());
+        MemoryMappingTree tree = mappings(inputs);
         FabricRemapAccess access = new FabricRemapAccess(tree);
         // Fabric permits the same class in more than one input (shaded libraries such as
         // night-config, and bundled nested libraries). The first input in resolution order

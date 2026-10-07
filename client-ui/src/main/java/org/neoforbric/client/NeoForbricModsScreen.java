@@ -147,7 +147,8 @@ public final class NeoForbricModsScreen extends Screen {
             graphics.drawString(font, shortText(info.name(), space), text, y + 5, 0xffffff);
             graphics.drawString(font, shortText(info.version() + " · " + info.id(), space), text, y + 18, 0xb5c0c7);
             graphics.drawString(font, "[" + ecosystem(info.ecosystem()) + "]", text, y + 32, 0x9ad8c8);
-            graphics.drawString(font, status(info.status()), text, y + 45, color(info.status()));
+            String state = status(info.status()) + (info.status() == LoadStatus.UNSUPPORTED ? " (hover for reason)" : "");
+            graphics.drawString(font, shortText(state, space), text, y + 45, color(info.status()));
             if (hovered) {
                 if (info.status() == LoadStatus.UNSUPPORTED || info.status() == LoadStatus.FAILED || info.status() == LoadStatus.DISABLED) hoveredTooltip = reasonTooltip(info);
                 else hoveredTooltip = List.of(Component.literal("Source: " + ecosystem(info.ecosystem())), Component.literal("Runtime: " + info.runtimeAdapter()), Component.literal("Namespace: " + info.namespace()), Component.literal("Status: " + status(info.status())));
@@ -164,13 +165,27 @@ public final class NeoForbricModsScreen extends Screen {
         DetailPane(int x, int y, int width, int height) { super(x, y, width, height, Component.literal("Mod details")); }
         void select(LoadedModInfo next) {
             info = next; lines.clear(); contentHeight = 50;
+            field("Status", status(info.status()));
+            if (info.status() != LoadStatus.UNSUPPORTED || info.diagnostics().isEmpty()) {
+                if (!info.reason().isBlank()) field(info.status() == LoadStatus.UNSUPPORTED ? "Why this mod is unsupported" : "Reason", info.reason());
+            } else {
+                diagnosticField("Unsupported features", ModDiagnostic.Kind.UNSUPPORTED_FEATURE);
+                diagnosticField("Required dependencies (not evaluated)", ModDiagnostic.Kind.REQUIRED_DEPENDENCY);
+            }
             field("Mod ID", info.id()); field("Source ecosystem", ecosystem(info.ecosystem()));
             boolean planned = info.status() != LoadStatus.LOADED;
             field(planned ? "Runtime adapter (planned)" : "Runtime adapter", info.runtimeAdapter());
-            field(planned ? "Namespace (planned)" : "Namespace", info.namespace()); field("Status", status(info.status()));
-            if (!info.reason().isBlank()) field("Reason", info.reason());
+            field(planned ? "Namespace (planned)" : "Namespace", info.namespace());
+            if (info.sourceJar() != null) field("Source JAR", info.sourceJar().toString());
             if (!info.description().isBlank()) field("Description", info.description());
             setScrollAmount(0);
+        }
+        private void diagnosticField(String label, ModDiagnostic.Kind kind) {
+            List<ModDiagnostic> diagnostics = info.diagnostics().stream().filter(item -> item.kind() == kind).toList();
+            if (diagnostics.isEmpty()) return;
+            StringJoiner report = new StringJoiner("\n\n");
+            for (ModDiagnostic item : diagnostics) report.add(item.subject() + ": " + item.value() + "\n" + item.explanation());
+            field(label + " (" + diagnostics.size() + ")", report.toString());
         }
         private void field(String label, String value) {
             for (var line : wrapText(label, getWidth() - 24)) { lines.add(new DetailLine(line.getVisualOrderText(), 0x7bbfaf, contentHeight)); contentHeight += 10; }

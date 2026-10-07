@@ -25,6 +25,16 @@ class NeoForgeMetadataTest {
         assertEquals(List.of("sample.mixins.json"), file.mixins()); assertEquals(List.of("one.cfg", "two.cfg"), file.accessTransformers());
         assertThrows(UnsupportedOperationException.class, () -> file.fields().put("license", "Changed"));
     }
+    @Test void nativeProvidesAreExplicitAndFabricVersionsStillConstrainNativeDependencies() throws Exception {
+        var provided = mod("fabric_api_base", "0.4.42", "provides=[\"fabric-api-base\"]\n");
+        assertEquals(List.of("fabric-api-base"), NeoForgeMetadata.read(provided.archive()).provides("fabric_api_base"));
+        assertTrue(NeoForgeMetadata.read(provided.archive()).provides("other").isEmpty());
+        assertEquals("METADATA_INVALID", assertThrows(Failure.class, () -> mod("invalid", "1.0", "provides=[42]\n")).code());
+        var dependent = mod("native_sample", "1.0", dependency("native_sample", "fabric_feature", "required", "[1,2)", "AFTER", "BOTH"));
+        assertEquals(List.of(dependent), Resolver.plan(List.of(dependent), "client", new AuditLog(), false, true, false, Map.of("fabric_feature", "1.5")).mods());
+        assertEquals("DEPENDENCY_VERSION", assertThrows(Failure.class, () -> Resolver.plan(List.of(dependent), "client", new AuditLog(), false, true, false, Map.of("fabric_feature", "2.0"))).code());
+        assertEquals("MISSING_DEPENDENCY", assertThrows(Failure.class, () -> Resolver.plan(List.of(dependent), "client", new AuditLog(), false, true)).code());
+    }
     @Test void presenceDoesNotImplicitlyCreateOrderingButBeforeAndAfterDo() throws Exception {
         var a = mod("aa", "1.0", dependency("aa", "bb", "required", "[1,2)", "NONE", "BOTH"));
         var b = mod("bb", "1.5", "");

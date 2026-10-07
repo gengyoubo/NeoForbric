@@ -18,6 +18,9 @@ public final class NeoForgeRuntime implements AutoCloseable {
     private java.lang.reflect.Method transformEnums;
     private List<Archive> boundArchives = List.of();
     public void install(TransformPipeline pipeline, AuditLog audit) {
+        install(pipeline, audit, null);
+    }
+    public void install(TransformPipeline pipeline, AuditLog audit, org.neoforbric.fabric.NativeFabricRuntime fabric) {
         Set<String> preceding = pipeline.registeredIds();
         pipeline.add(new TransformPipeline.Transformer() {
             public String id() { return "neoforge-enum-extension"; }
@@ -31,7 +34,7 @@ public final class NeoForgeRuntime implements AutoCloseable {
                 }
             }
         });
-        mixins = new NeoForgeMixins(pipeline, audit);
+        mixins = new NeoForgeMixins(pipeline, audit, fabric);
     }
     public GameClassLoader.Generated generated(String name, ClassIndex index) { return mixins.generated(name, index); }
     public void bind(ClassIndex index, GameClassLoader loader, TransformPipeline pipeline, List<Archive> archives) { boundArchives = List.copyOf(archives); mixins.bind(index, loader, pipeline, archives); }

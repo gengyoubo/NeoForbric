@@ -210,6 +210,7 @@ tasks.register('runClient', JavaExec) {
         systemProperty 'neoforbric.neoforge.runtime', layout.buildDirectory.file('neoforge-client/neoforge-runtime.json').get().asFile.absolutePath
         systemProperty 'neoforbric.neoforge.bridge', project(':neoforge-runtime').tasks.named('jar').get().archiveFile.get().asFile.absolutePath
         systemProperty 'neoforbric.neoforge.worldProbe', providers.gradleProperty('neoForgeWorldProbe').getOrElse('false')
+        systemProperty 'neoforbric.neoforge.mixedWorldProbe', providers.gradleProperty('mixedFabricWorldProbe').getOrElse('false')
         jvmArgs '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED', '--add-opens=java.base/java.util.jar=ALL-UNNAMED',
                 '--add-exports=java.base/sun.security.util=ALL-UNNAMED'
     }

@@ -58,8 +58,26 @@ Minecraft、NeoForge 和用户模组的命名 module 绑定到同一个 G。modu
 
 这是固定版本的客户端适配，完整整合包正在验证。模组 Mixin、脚本 coremod 和枚举扩展已接入内核转换管线；javafml、lowcodefml 以及已发现的 Kotlin / Scala 语言提供器在 G 中工作。Java ICoreMod 服务尚未接入，仍在执行前拒绝。自定义 ModLauncher transformation service 不会接管启动；这些服务提供的额外行为需要逐项适配和验证。不能据此认定全部 NeoForge 行为已等价实现。
 
-此 profile 可运行有限的 plain Fabric Java 入口探针。其 main 入口在 NeoForge 模组构造完成、`GameData.unfreezeData()` 之后、`postRegisterEvents()` 之前执行；client 入口在注册表冻结、配置加载完成后、公共及客户端 setup 事件前执行，早于模型及资源加载，避免在 vanilla 初次冻结时提前初始化。vanilla 注册表契约探针保留原有窗口。混合 profile 的 Fabric 和 NeoForge 顶层 JAR 都在审计中记录最终选择的 `descriptor`、`ecosystem` 和原始哈希。
+此 profile 默认同时启用被动 Fabric runtime。Fabric main 在 NeoForge 模组构造完成、`GameData.unfreezeData()` 之后、`postRegisterEvents()` 之前执行；早期客户端构造器回调暂存到这个窗口，再执行 Fabric client，允许客户端模组在原生冻结前注册内容。Mixin 配置在推进阶段前汇合到单一转换器，AW 和环境转换仍作用于补丁游戏；native AT、枚举及核心转换保持原有顺序。`-PfabricPlainProfile` 保留有限 Java 入口探针，其 client 入口仍在原生冻结后执行。vanilla 注册表契约探针保留原有窗口。两种来源的顶层 JAR 都在审计中记录最终选择的 `descriptor`、`ecosystem` 和原始哈希。
 
 `CommonModLoader.begin` 在启动线程捕获当前 `GameHooks.Session`，随后原生注册 worker 和资源 reload worker 显式使用该会话执行两个回调；不能在 worker 上直接读取启动线程的 `ThreadLocal`。会话串行检查注册阶段、保留入口异常并拒绝关闭后的回调。无界面回归测试覆盖两条 worker 路径及配置 / 注册顺序，不需要启动客户端。
 
-完整 Fabric Mixin runtime 与 NeoForge 补丁游戏的混装尚未实现，依赖 Fabric API / Mixin 的模组仍受准入限制。仅有 `Model loader ... not found` 不能证明注册失败：例如 Porting Lib 和 Moonlight 使用不同的 geometry 注册表，需要结合最终模型及对应入口审计确认。空 custom registry 也需要核对是否有消费该 API 的模组注册内容；不能由库存在推断其注册表必然非空。Forge 原生执行和 NeoForge 独立服务端也尚未接入。
+仅有 `Model loader ... not found` 不能证明注册失败：例如 Porting Lib 和 Moonlight 使用不同的 geometry 注册表，需要结合最终模型及对应入口审计确认。空 custom registry 也需要核对是否有消费该 API 的模组注册内容；不能由库存在推断其注册表必然非空。NeoForge 独立服务端尚未接入；Forge 使用单独 profile，三生态混装未验证。
+
+## Fabric / NeoForge 混合实测
+
+2026-10-07 实测组合：Continuity 3.0.0+1.21、Fabric API 0.116.17+1.21.1、Carpet 1.4.147、ViaFabricPlus 3.4.9，以及 NeoForge 版 Sodium 0.8.13、Sophisticated Backpacks 3.26.9、Sophisticated Core 1.5.7。正常完成资源重载、主菜单、集成世界启动、三只实体生成、原生背包同步、60 个客户端 Tick 和世界保存退出。截图位于 `build/mixed-fabric/world-run/neoforge-world-probe.png`。
+
+混合 profile 检测到 Fabric API 依赖时自动缓存固定 [Forgified Fabric API](https://github.com/Sinytra/ForgifiedFabricAPI) `0.116.7+2.2.4+1.21.1`，SHA-256 为 `a9ed758355cdbcc6ee1e71c8c512f0be3e4a407079a21a4b1283c239acd9bc5f`。原生模块通过其明确声明的 `provides` 满足 Fabric 模块依赖，真实模块版本继续参加约束检查；原始 Fabric API 总包保留声明版本。已有原生 `fabric_api` 总包时使用用户提供的版本，不再下载固定端口。缓存位于模组目录旁的 `.neoforbric/neoforge-nested/fabric-api`，不改写用户模组 JAR。其附带的原生加载器注入服务不接管启动，Facade 由内核统一提供。
+
+被原生模块替代的原始 Fabric API 签名仍进入重映射的分析类路径，使消费者的继承方法正确转换；这些分析快照不定义游戏类。编译器改动引起的 lambda 编号只在原映射和补丁游戏中均有唯一同名语义前缀、同描述符候选时协调，歧义和缺失继续报错。
+
+针对这个组合适配了补丁移动的方法、额外参数和旧版交互注入，包括 Carpet 更新控制、破坏取消及实体事件，Continuity 掉落方块渲染和 ViaFabricPlus 初始化 / 重生 / 铲子行为。旧 Fabric 标签移除 API 通过接口桥接使用 NeoForge 原生标签移除，探针实际验证 codec、API 返回和最终构建的标签值。ViaFabricPlus 的配置保存回调在 G 关闭前完成；字体尚未构造时只省去不存在的缓存清理，设置仍完整读取。必要注入继续检查，其他补丁差异仍会终止启动。
+
+重跑上述模组组合的世界探针（测试世界必须使用独立目录，不传 `clientProbeFrames`）：
+
+```powershell
+./gradlew.bat runClient -PclientRunDir=build/mixed-fabric/world-run -PclientModsDir=run/client/mods -PmixedFabricWorldProbe=true -PclientHeap=4g -PclientDebug=true
+```
+
+成功标记为 `MIXED_FABRIC_TAG_REMOVAL_OK`、`NEOFORGE_WORLD_PROBE_OK` 和 `MIXED_FABRIC_WORLD_PROBE_OK`。其他版本、外部服务器协议互通及带 CTM / 自发光材质包的视觉效果尚未专项验证。

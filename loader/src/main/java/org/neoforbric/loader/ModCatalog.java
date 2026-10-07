@@ -48,7 +48,9 @@ public final class ModCatalog implements AutoCloseable {
             Metadata mod = candidate.metadata();
             if (!mod.available("client")) { state(candidate, LoadStatus.DISABLED, "Excluded on client: environment=" + mod.environment()); continue; }
             if ((mod.ecosystem() == Metadata.Ecosystem.FORGE && !forge) || (mod.ecosystem() == Metadata.Ecosystem.NEOFORGE && !neoforge)) {
-                state(candidate, LoadStatus.UNSUPPORTED, (mod.ecosystem() == Metadata.Ecosystem.FORGE ? "Forge" : "NeoForge") + " adapter not implemented"); continue;
+                String ecosystem = mod.ecosystem() == Metadata.Ecosystem.FORGE ? "Forge" : "NeoForge";
+                String reason = "This mod requires the " + ecosystem + " runtime, which is not enabled for this launch; its native lifecycle and game patches are unavailable";
+                state(candidate, LoadStatus.UNSUPPORTED, reason, List.of(new ModDiagnostic(ModDiagnostic.Kind.UNSUPPORTED_FEATURE, "runtime", ecosystem, reason))); continue;
             }
             try {
                 if (forge) org.neoforbric.forge.ForgeAdmission.admit(candidate);
@@ -57,7 +59,7 @@ public final class ModCatalog implements AutoCloseable {
                 candidate.archive().requireSupportedLayout();
                 active.add(executable); admitted.add(candidate.archive().path());
             } catch (Failure failed) {
-                if (!Set.of("FABRIC_FEATURE_UNSUPPORTED", "NEOFORGE_FEATURE_UNSUPPORTED", "UNSUPPORTED_LAYOUT").contains(failed.code())) throw failed;
+                if (!Set.of("FABRIC_FEATURE_UNSUPPORTED", "FORGE_FEATURE_UNSUPPORTED", "NEOFORGE_FEATURE_UNSUPPORTED", "UNSUPPORTED_LAYOUT").contains(failed.code())) throw failed;
                 state(candidate, LoadStatus.UNSUPPORTED, failed.getMessage(), failed.diagnostics());
             }
         }
@@ -87,7 +89,10 @@ public final class ModCatalog implements AutoCloseable {
         for (int i = 1; i < entries.size(); i++) {
             LoadedModInfo info = entries.get(i);
             if (info.id().equals(candidate.metadata().id()) && info.sourceJar().equals(candidate.archive().path())) {
-                replace(i, info.withDecision(status, reason, diagnostics)); publisher.publish(entries); return;
+                replace(i, info.withDecision(status, reason, diagnostics)); publisher.publish(entries);
+                if (status == LoadStatus.UNSUPPORTED)
+                    System.err.println("[NeoForbric] Unsupported mod: " + info.name() + " (" + info.id() + ")\nSource: " + info.sourceJar() + "\n" + reason);
+                return;
             }
         }
         throw new Failure("CATALOG_STATE", "Unknown candidate " + candidate.metadata().id());

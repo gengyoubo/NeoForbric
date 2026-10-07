@@ -13,8 +13,11 @@ public final class NeoForgeMixins {
     private final NeoFabricLauncher bytecode;
     private boolean ready;
     public NeoForgeMixins(TransformPipeline pipeline, AuditLog audit) {
+        this(pipeline, audit, null);
+    }
+    public NeoForgeMixins(TransformPipeline pipeline, AuditLog audit, NativeFabricRuntime fabric) {
         active = true; this.audit = audit;
-        bytecode = new NeoFabricLauncher(net.fabricmc.api.EnvType.CLIENT, "net.minecraft.client.main.Main", audit);
+        bytecode = fabric == null ? new NeoFabricLauncher(net.fabricmc.api.EnvType.CLIENT, "net.minecraft.client.main.Main", audit) : fabric.launcher();
         bytecode.mixinBoundary("neoforge-mixin");
         Set<String> preceding = pipeline.registeredIds();
         pipeline.add(new TransformPipeline.Transformer() {
@@ -22,7 +25,10 @@ public final class NeoForgeMixins {
             public Set<String> after() { return preceding; }
             public byte[] transform(TransformPipeline.Context context, byte[] bytes) {
                 if (!ready) return bytes;
-                try { return NeoMixinService.transform(context.name(), bytes); }
+                try {
+                    byte[] transformed = NeoMixinService.transform(context.name(), bytes);
+                    return fabric == null ? transformed : FabricLifecycleCompatibility.afterMixin(context.name(), transformed);
+                }
                 catch (org.spongepowered.asm.mixin.transformer.throwables.IllegalClassLoadError directMixin) {
                     audit.record("MIXIN", "mixin-direct-load", context.name(), Map.of()); return bytes;
                 }
@@ -44,7 +50,8 @@ public final class NeoForgeMixins {
         // NeoForge 21.1.248 pins sponge-mixin 0.15.2 (Fabric compatibility 0.14.0).
         // Match that contract through Mixin's supported compatibility decoration; required
         // injections and explicitly strict missing-target checks remain enforced.
-        for (var config : Mixins.getConfigs()) config.getConfig().decorate(FabricUtil.KEY_COMPATIBILITY, FabricUtil.COMPATIBILITY_0_14_0);
+        for (var config : Mixins.getConfigs()) if (configs.contains(config.getName()))
+            config.getConfig().decorate(FabricUtil.KEY_COMPATIBILITY, FabricUtil.COMPATIBILITY_0_14_0);
         com.llamalad7.mixinextras.MixinExtrasBootstrap.init();
         ready = true; bytecode.finishMixin();
         audit.record("PREPARE", "neoforge-mixin-ready", "plan", Map.of("configs", Integer.toString(configs.size()), "loader", "G"));
