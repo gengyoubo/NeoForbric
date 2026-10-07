@@ -21,6 +21,8 @@ NeoForbric 继续拥有 JVM 入口、发现、准入、依赖解析、类索引�
 
 发现器递归读取 JarJar 声明，并选取满足全部版本范围的内嵌依赖。同一 modId 的不同 artifact 名称也必须满足共同范围。Crash Assistant 和 Sodium 的包装包通过已知发现器布局提取运行包，原包装包作为库保留；不执行它们的原生发现服务。签名先按原始 JAR 校验，再为 Java 21 选择 multi-release 内容；原始哈希和嵌套来源写入审计，外部 manifest Class-Path 不扩展输入。
 
+JarJar 中包含 Fabric 描述文件的模组按模组候选保留，进入准入、重映射和入口流程，避免仅提供类却丢失 main / client 初始化。显式声明 `FMLModType=LIBRARY/GAMELIBRARY/LANGPROVIDER` 的 JAR 仍作为库；顶层已提供的同 ID 模组不会重复初始化。
+
 Minecraft、NeoForge 和用户模组的命名 module 绑定到同一个 G。module 类查询和资源查询仍读取已准入的不可变快照，原始 JAR 路径、哈希与来源生态保留在 Mods 列表和审计中。NeoForge 的 Access Transformer 通过固定上游 AT 引擎纳入定义前转换；两个内建 accessor Mixin 的行为以明确字段和方法锚点实现。构造或游戏启动失败会终止实例，模组只在主菜单就绪后标为 Loaded。
 
 主菜单只保留 NeoForbric 的 Mods 按钮，移除 NeoForge 额外添加的按钮和布局行。统一 UI 按实际按钮排列主菜单，按钮高 20、行距 28，底部控制按钮另留间距，避免 NeoForge 的起始位置差异导致按钮重叠。
@@ -56,4 +58,6 @@ Minecraft、NeoForge 和用户模组的命名 module 绑定到同一个 G。modu
 
 这是固定版本的客户端适配，完整整合包正在验证。模组 Mixin、脚本 coremod 和枚举扩展已接入内核转换管线；javafml、lowcodefml 以及已发现的 Kotlin / Scala 语言提供器在 G 中工作。Java ICoreMod 服务尚未接入，仍在执行前拒绝。自定义 ModLauncher transformation service 不会接管启动；这些服务提供的额外行为需要逐项适配和验证。不能据此认定全部 NeoForge 行为已等价实现。
 
-此 profile 可运行有限的 plain Fabric Java 入口探针，完整 Fabric Mixin runtime 与 NeoForge 补丁游戏的混装尚未实现。Forge 原生执行和 NeoForge 独立服务端也尚未接入。后续应逐项增加转换与行为探针，扩大实际可运行的模组范围。
+此 profile 可运行有限的 plain Fabric Java 入口探针。其 main 入口在 NeoForge 模组构造完成、`GameData.unfreezeData()` 之后、`postRegisterEvents()` 之前执行；client 入口在注册表冻结、配置加载完成后、公共及客户端 setup 事件前执行，早于模型及资源加载，避免在 vanilla 初次冻结时提前初始化。vanilla 注册表契约探针保留原有窗口。混合 profile 的 Fabric 和 NeoForge 顶层 JAR 都在审计中记录最终选择的 `descriptor`、`ecosystem` 和原始哈希。
+
+完整 Fabric Mixin runtime 与 NeoForge 补丁游戏的混装尚未实现，依赖 Fabric API / Mixin 的模组仍受准入限制。仅有 `Model loader ... not found` 不能证明注册失败：例如 Porting Lib 和 Moonlight 使用不同的 geometry 注册表，需要结合最终模型及对应入口审计确认。空 custom registry 也需要核对是否有消费该 API 的模组注册内容；不能由库存在推断其注册表必然非空。Forge 原生执行和 NeoForge 独立服务端也尚未接入。

@@ -42,6 +42,10 @@ tasks.named('test', Test) {
     systemProperty 'fixture.mods', rootProject.layout.buildDirectory.dir('fixture/mods').get().asFile.absolutePath
     systemProperty 'loader.runtimeClasspath', sourceSets.main.runtimeClasspath.asPath
     systemProperty 'loader.expectedVersion', project.version.toString()
+    // Read already prepared pinned bytes for headless hook validation; do not prepare or launch a client.
+    def neoForgeUniversal = rootProject.layout.buildDirectory.file('neoforge-client/libraries/neoforge-universal.jar').get().asFile
+    systemProperty 'neoforge.testUniversal', neoForgeUniversal.absolutePath
+    if (neoForgeUniversal.exists()) inputs.file(neoForgeUniversal).withPropertyName('preparedNeoForgeUniversal')
 }
 
 sourceSets {

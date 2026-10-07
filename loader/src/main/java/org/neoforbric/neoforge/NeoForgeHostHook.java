@@ -71,8 +71,14 @@ public final class NeoForgeHostHook implements TransformPipeline.Transformer {
             var methods = node.methods.stream().filter(m -> m.name.equals("load")
                     && m.desc.equals("(Ljava/util/concurrent/Executor;Ljava/util/concurrent/Executor;)V")).toList();
             if (methods.size() != 1) throw new Failure("NEOFORGE_ANCHOR", "Expected one pinned NeoForge common setup anchor");
-            methods.getFirst().instructions.insert(new MethodInsnNode(Opcodes.INVOKESTATIC,
+            InsnList setup = new InsnList();
+            setup.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
                     "org/neoforbric/neoforge/runtime/NativeNeoForgeRuntime", "loadServerDefaults", "()V", false));
+            // Config loading and the native registry freeze are complete at this point;
+            // client entrypoints must register callbacks before setup / model-loading events.
+            setup.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/neoforbric/api/GameHooks", "afterRegistryFreeze", "()V", false));
+            methods.getFirst().instructions.insert(setup);
+            registryWindow(node);
             ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS); node.accept(writer); return writer.toByteArray();
         }
         if (context.name().equals("net.neoforged.neoforge.server.ServerLifecycleHooks")) {
@@ -124,6 +130,23 @@ public final class NeoForgeHostHook implements TransformPipeline.Transformer {
         method.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/neoforbric/neoforge/runtime/NeoForgeBridge", "construct", method.desc, false));
         method.instructions.add(new InsnNode(Opcodes.RETURN)); method.maxStack = 3; method.maxLocals = 3;
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS); node.accept(writer); return writer.toByteArray();
+    }
+    /** Dispatch mixed-profile Java entrypoints in NeoForge's real, unfrozen registry pass. */
+    private static void registryWindow(ClassNode node) {
+        int windows = 0;
+        for (var method : node.methods) {
+            var calls = java.util.Arrays.stream(method.instructions.toArray())
+                    .filter(instruction -> instruction instanceof MethodInsnNode call && call.getOpcode() == Opcodes.INVOKESTATIC
+                            && call.owner.equals("net/neoforged/neoforge/registries/GameData") && call.desc.equals("()V"))
+                    .map(instruction -> (MethodInsnNode) instruction).toList();
+            if (calls.stream().noneMatch(call -> call.name.equals("unfreezeData"))) continue;
+            if (!calls.stream().map(call -> call.name).toList().equals(java.util.List.of("unfreezeData", "postRegisterEvents", "freezeData")))
+                throw new Failure("NEOFORGE_ANCHOR", "Unexpected NeoForge registry initialization sequence");
+            method.instructions.insert(calls.getFirst(), new MethodInsnNode(Opcodes.INVOKESTATIC,
+                    "org/neoforbric/api/GameHooks", "beforeRegistryFreeze", "()V", false));
+            windows++;
+        }
+        if (windows != 1) throw new Failure("NEOFORGE_ANCHOR", "Expected one NeoForge registry initialization window, got " + windows);
     }
     private static byte[] passiveLauncher(byte[] bytes) {
         ClassNode node = new ClassNode(); new ClassReader(bytes).accept(node, 0); int anchors = 0;

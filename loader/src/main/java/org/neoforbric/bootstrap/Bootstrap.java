@@ -118,7 +118,10 @@ public final class Bootstrap {
             if (runtime != null) {
                 for (Path library : runtime.libraries()) { Archive archive = neoForgeRuntime == null ? Archive.read(library) : neoForgeRuntime.library(library); inputs.add(archive); libraries.add(archive.path()); }
                 if (neoForgeDiscovered != null) for (Archive library : neoForgeDiscovered.libraries()) { inputs.add(library); libraries.add(library.path()); }
-                pipeline.add(new RegistryWindowHook(runtime.registryClassSha256(), fabricRuntime != null && fabricRuntime.defersRegistries()));
+                // Patched NeoForge owns a later registration pass, after mod construction.
+                // The vanilla bootstrap freeze is too early for mixed-profile Fabric entries.
+                if (neoForgeRuntime == null || neoForgeRuntime.registryContract())
+                    pipeline.add(new RegistryWindowHook(runtime.registryClassSha256(), fabricRuntime != null && fabricRuntime.defersRegistries()));
                 if (neoForgeRuntime != null) {
                     Archive bridge = Archive.read(neoForgeRuntime.bridge()); inputs.add(bridge); clientUi.add(bridge.path());
                 }
@@ -230,12 +233,13 @@ public final class Bootstrap {
                         NativeFabricRuntime activeFabric = fabricRuntime;
                         NeoForgeRuntime activeNeoForge = neoForgeRuntime;
                         try (GameHooks.Session hooks = GameHooks.attach(() -> {
-                            phase("REGISTRY_OPEN"); audit.record(phase, "registry-window", "builtin", Map.of("state", "open", "anchor", activeFabric != null && activeFabric.defersRegistries() ? "minecraft-before-gameThread-fabric-deferred-freeze" : "createContents-before-freeze"));
+                            phase("REGISTRY_OPEN"); audit.record(phase, "registry-window", "builtin", Map.of("state", "open", "anchor", activeNeoForge != null && !activeNeoForge.registryContract()
+                                    ? "neoforge-after-unfreeze-before-register" : activeFabric != null && activeFabric.defersRegistries() ? "minecraft-before-gameThread-fabric-deferred-freeze" : "createContents-before-freeze"));
                             if (activeNeoForge != null && activeNeoForge.registryContract()) activeNeoForge.phase(loader, "REGISTRY_OPEN");
                             if (activeFabric == null) initialize(initializers.stream().filter(i -> i.group().equals("main") || i.group().equals("prototype")).toList(), initialized);
                             else activeFabric.initializeMain();
                         }, () -> {
-                            phase("REGISTRY_FROZEN"); audit.record(phase, "registry-window", "builtin", Map.of("state", "frozen", "freeze", "vanilla"));
+                            phase("REGISTRY_FROZEN"); audit.record(phase, "registry-window", "builtin", Map.of("state", "frozen", "freeze", activeNeoForge != null && !activeNeoForge.registryContract() ? "neoforge" : "vanilla"));
                             if (activeNeoForge != null && activeNeoForge.registryContract()) activeNeoForge.phase(loader, "REGISTRY_FROZEN");
                             if (activeFabric == null) {
                                 initialize(initializers.stream().filter(i -> i.group().equals(options.side())).toList(), initialized);

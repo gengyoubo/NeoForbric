@@ -44,7 +44,9 @@ public final class NeoForgeDiscovery {
         List<Discovery.Candidate> mods = new ArrayList<>(); List<Archive> libraries = new ArrayList<>(locatorLibraries); Set<String> seen = new HashSet<>();
         for (Archive library : discovery.packagedLibraries) if (seen.add(library.hash())) libraries.add(library);
         Set<String> rootIds = new HashSet<>();
-        for (Archive root : roots) if (root.names().contains("META-INF/neoforge.mods.toml")) NeoForgeMetadata.read(root).mods().forEach(mod -> rootIds.add(mod.id()));
+        for (Archive root : roots) {
+            if (hasDescriptor(root)) selectedMetadata(root).forEach(mod -> rootIds.add(mod.id()));
+        }
         for (Archive archive : selected) {
             if (!seen.add(archive.hash())) continue;
             if (archive.names().contains("META-INF/neoforge.mods.toml")) {
@@ -58,9 +60,18 @@ public final class NeoForgeDiscovery {
             } else {
                 var manifest = new Manifest(new ByteArrayInputStream(Objects.requireNonNullElse(archive.read("META-INF/MANIFEST.MF"), new byte[0])));
                 String type = manifest.getMainAttributes().getValue("FMLModType");
-                if (!roots.contains(archive) || Set.of("LIBRARY", "GAMELIBRARY", "LANGPROVIDER").contains(Objects.requireNonNullElse(type, ""))) {
+                if (Set.of("LIBRARY", "GAMELIBRARY", "LANGPROVIDER").contains(Objects.requireNonNullElse(type, ""))
+                        || (!roots.contains(archive) && !hasDescriptor(archive))) {
                     libraries.add(archive); audit.record("DISCOVER", "neoforge-library", archive.path().toString(), Map.of("sha256", archive.hash()));
-                } else for (Metadata metadata : Metadata.read(archive)) mods.add(new Discovery.Candidate(archive, metadata));
+                } else for (Metadata metadata : Metadata.read(archive)) {
+                    if (!roots.contains(archive) && rootIds.contains(metadata.id())) {
+                        audit.record("DISCOVER", "jarjar-root-provided", metadata.id(), Map.of("nestedVersion", metadata.version())); continue;
+                    }
+                    mods.add(new Discovery.Candidate(archive, metadata));
+                    audit.record("DISCOVER", "mod-discovered", metadata.id(), Map.of("source", archive.path().toString(),
+                            "sha256", archive.hash(), "ecosystem", metadata.ecosystem().name(),
+                            "descriptor", Metadata.descriptor(archive), "version", metadata.version()));
+                }
             }
         }
         Map<String, List<Discovery.Candidate>> byId = new TreeMap<>();
@@ -68,8 +79,8 @@ public final class NeoForgeDiscovery {
         Set<String> excludedNested = new HashSet<>();
         for (var entry : byId.entrySet()) if (entry.getValue().size() > 1 && !rootIds.contains(entry.getKey())) {
             List<Nested> aliases = discovery.requests.values().stream().flatMap(Collection::stream)
-                    .filter(nested -> nested.archive().names().contains("META-INF/neoforge.mods.toml")
-                            && NeoForgeMetadata.read(nested.archive()).mods().stream().anyMatch(mod -> mod.id().equals(entry.getKey()))).toList();
+                    .filter(nested -> hasDescriptor(nested.archive())
+                            && selectedMetadata(nested.archive()).stream().anyMatch(mod -> mod.id().equals(entry.getKey()))).toList();
             var winner = entry.getValue().stream().filter(candidate -> aliases.stream().allMatch(alias -> MavenVersions.matches(alias.range(), candidate.metadata().version())))
                     .max(Comparator.comparing(candidate -> new DefaultArtifactVersion(candidate.metadata().version())))
                     .orElseThrow(() -> new Failure("JARJAR_VERSION", "Conflicting nested aliases for mod " + entry.getKey()));
@@ -77,6 +88,13 @@ public final class NeoForgeDiscovery {
             audit.record("DISCOVER", "jarjar-mod-alias-selected", entry.getKey(), Map.of("version", winner.metadata().version(), "sha256", winner.archive().hash()));
         }
         return new Result(mods.stream().filter(mod -> !excludedNested.contains(mod.archive().hash())).toList(), List.copyOf(libraries));
+    }
+    private static boolean hasDescriptor(Archive archive) {
+        return java.util.stream.Stream.of("neoforbric.mod.json", "fabric.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml")
+                .anyMatch(archive.names()::contains);
+    }
+    private static List<Metadata> selectedMetadata(Archive archive) {
+        return archive.names().contains("META-INF/neoforge.mods.toml") ? NeoForgeMetadata.read(archive).mods() : Metadata.read(archive);
     }
     /** Passive equivalent of Crash Assistant's locator. Its separate helper application remains a resource. */
     private Archive locatorRuntime(Archive owner) throws IOException {

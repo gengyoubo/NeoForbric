@@ -36,6 +36,61 @@ class NeoForgeDiscoveryTest {
         wrapper(mods, "old", "renamed-old", "1", "[1]", nested("1"));
         assertEquals("JARJAR_VERSION", assertThrows(Failure.class, () -> NeoForgeDiscovery.discover(mods, new AuditLog())).code());
     }
+    @Test void auditsSelectedDescriptorsForBothNativeAndFabricRoots() throws Exception {
+        Path mods = Files.createDirectory(root.resolve("mods"));
+        byte[] fabric = TestJars.text("{\"schemaVersion\":1,\"id\":\"fabric_mod\",\"version\":\"1\"}");
+        TestJars.jar(mods.resolve("fabric.jar"), Map.of("fabric.mod.json", fabric));
+        TestJars.jar(mods.resolve("universal.jar"), Map.of("META-INF/neoforge.mods.toml", descriptor("native_mod", "1"), "fabric.mod.json", fabric));
+        AuditLog audit = new AuditLog();
+        var discovered = NeoForgeDiscovery.discover(mods, audit);
+        assertEquals(List.of(Metadata.Ecosystem.FABRIC, Metadata.Ecosystem.NEOFORGE), discovered.mods().stream().map(mod -> mod.metadata().ecosystem()).toList());
+        var events = audit.events().stream().filter(event -> event.type().equals("mod-discovered")).toList();
+        assertEquals(List.of("fabric_mod", "native_mod"), events.stream().map(AuditLog.Event::subject).toList());
+        assertEquals(List.of("fabric.mod.json", "META-INF/neoforge.mods.toml"), events.stream().map(event -> event.details().get("descriptor")).toList());
+        assertEquals(List.of("FABRIC", "NEOFORGE"), events.stream().map(event -> event.details().get("ecosystem")).toList());
+    }
+    @Test void nestedFabricModsKeepTheirEntrypointsInsteadOfBecomingPassiveLibraries() throws Exception {
+        Path mods = Files.createDirectory(root.resolve("mods"));
+        byte[] child = Files.readAllBytes(TestJars.jar(root.resolve("fabric-child.jar"), Map.of("fabric.mod.json", TestJars.text("""
+                {"schemaVersion":1,"id":"fabric_child","version":"1","entrypoints":{"main":["demo.RegisterContent"],"client":["demo.RegisterModels"]}}
+                """))));
+        wrapper(mods, "owner", "fabric-child", "1", "[1,)", child);
+        AuditLog audit = new AuditLog();
+        var discovered = NeoForgeDiscovery.discover(mods, audit);
+        assertEquals(1, discovered.mods().size()); assertEquals(1, discovered.libraries().size());
+        var candidate = discovered.mods().getFirst();
+        assertEquals(Metadata.Ecosystem.FABRIC, candidate.metadata().ecosystem());
+        assertEquals(List.of("main", "client"), org.neoforbric.minecraft.FabricAdmission.entries(candidate, "client").stream().map(entry -> entry.group()).toList());
+        assertTrue(audit.events().stream().anyMatch(event -> event.subject().equals("fabric_child") && "fabric.mod.json".equals(event.details().get("descriptor"))));
+    }
+    @Test void explicitFabricLibraryDoesNotExecuteModEntrypoints() throws Exception {
+        Path mods = Files.createDirectory(root.resolve("mods"));
+        Manifest manifest = new Manifest(); manifest.getMainAttributes().putValue("Manifest-Version", "1.0");
+        manifest.getMainAttributes().putValue("FMLModType", "LIBRARY");
+        byte[] child = Files.readAllBytes(TestJars.jar(root.resolve("fabric-library.jar"), Map.of("fabric.mod.json",
+                TestJars.text("{\"schemaVersion\":1,\"id\":\"fabric_library\",\"version\":\"1\",\"entrypoints\":{\"main\":[\"demo.Library\"]}}")), manifest));
+        wrapper(mods, "owner", "fabric-library", "1", "[1,)", child);
+        var discovered = NeoForgeDiscovery.discover(mods, new AuditLog());
+        assertTrue(discovered.mods().isEmpty()); assertEquals(2, discovered.libraries().size());
+    }
+    @Test void aRootFabricModProvidesTheNestedCopyWithoutDuplicateInitialization() throws Exception {
+        Path mods = Files.createDirectory(root.resolve("mods"));
+        byte[] fabric = TestJars.text("{\"schemaVersion\":1,\"id\":\"fabric_child\",\"version\":\"1\"}");
+        Path provided = TestJars.jar(mods.resolve("provided.jar"), Map.of("fabric.mod.json", fabric));
+        byte[] child = Files.readAllBytes(TestJars.jar(root.resolve("child.jar"), Map.of("fabric.mod.json", fabric, "nested.txt", new byte[]{1})));
+        wrapper(mods, "owner", "fabric-child", "1", "[1,)", child);
+        var discovered = NeoForgeDiscovery.discover(mods, new AuditLog());
+        assertEquals(List.of(provided), discovered.mods().stream().map(mod -> mod.archive().path()).toList());
+    }
+    @Test void nestedFabricAliasesRespectAllDeclaredVersionRanges() throws Exception {
+        Path mods = Files.createDirectory(root.resolve("mods"));
+        for (String version : List.of("1", "2")) {
+            byte[] child = Files.readAllBytes(TestJars.jar(root.resolve("fabric-" + version + ".jar"), Map.of("fabric.mod.json",
+                    TestJars.text("{\"schemaVersion\":1,\"id\":\"fabric_child\",\"version\":\"" + version + "\"}"))));
+            wrapper(mods, "owner-" + version, "alias-" + version, version, version.equals("1") ? "[1,2)" : "[2,)", child);
+        }
+        assertEquals("JARJAR_VERSION", assertThrows(Failure.class, () -> NeoForgeDiscovery.discover(mods, new AuditLog())).code());
+    }
     @Test void discoversCrashAssistantRuntimeWithoutLaunchingItsHelper() throws Exception {
         Path mods = Files.createDirectory(root.resolve("mods"));
         byte[] child = Files.readAllBytes(TestJars.jar(root.resolve("runtime.jar"), Map.of("META-INF/neoforge.mods.toml", descriptor("crash_assistant", "1"), "crash_assistant.mixins.json", TestJars.text("{}"))));
