@@ -35,5 +35,12 @@ Slime Advanture 48/100<br>
 ATM 60/100<br>
 BlazeandCave's Expanded+ 64/100
 # 结论
-
+我收集了 ATM10、Arcane Dragons [FABRIC]、BlazeandCave's Expanded+、Fabulously Optimized、Farming Experience、FlawlesslyOptimized、Forgeulously Optimized 中的全部模组。在排除重复模组，并为目标模组补齐必要前置依赖后，共得到 N 个有效测试模组。
+对这 N 个模组分别进行独立加载测试，其中：
+S 个模组成功进入游戏加载界面；
+F 个模组在显示游戏加载界面前失败或崩溃。
+其中： N=S+F
+在 N 个有效样本中，NeoForbric 的单模加载通过率为：
+(S/N)*100
+即 X%。
 # 后记

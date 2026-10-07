@@ -47,6 +47,13 @@ public final class Archive {
         this.source = source;
     }
 
+    /** Sparse, package-local view for the benchmark's passive metadata planner only. */
+    static Archive metadataSnapshot(Path path, Map<String, byte[]> entries) throws IOException {
+        byte[] bytes = entries.get("META-INF/MANIFEST.MF");
+        Manifest manifest = bytes == null ? new Manifest() : new Manifest(new ByteArrayInputStream(bytes));
+        return new Archive(path, "metadata-only", entries, manifest, new byte[0]);
+    }
+
     /** Policy views share immutable storage instead of rebuilding large resource indexes. */
     private Archive(Archive original) {
         path = original.path; hash = original.hash; entries = original.entries; directories = original.directories;

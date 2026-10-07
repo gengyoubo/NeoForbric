@@ -1,5 +1,7 @@
 ext.fabricLoaderVersion = '0.19.5'
 
+apply from: 'gradle/benchmark.gradle'
+
 tasks.register('assembleInstaller') {
     group = 'distribution'
     description = 'Build the standalone neoforbric-installer.jar in the project root.'

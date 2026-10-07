@@ -43,7 +43,11 @@ public final class Bootstrap {
         NeoForgeRuntime neoForgeRuntime = null;
         ForgeRuntime forgeRuntime = null;
         try {
+            String benchmarkStage = System.getProperty("neoforbric.benchmark.stage", "");
+            if (!benchmarkStage.isEmpty() && (!options.client() || !Set.of("admission", "menu", "world").contains(benchmarkStage)))
+                throw new Failure("ARGUMENTS", "benchmark.stage requires a client and admission, menu or world");
             audit.mode(options.inspect() ? "metadata-inspect" : options.client() ? "minecraft-1.21.1-client" : options.runServer() ? "minecraft-1.21.1-server" : options.minecraft() ? "minecraft-1.21.1-server-settings" : "java-fixture");
+            if (!benchmarkStage.isEmpty()) audit.record("BENCHMARK", "benchmark-case", System.getProperty("neoforbric.testCase", "unspecified"), Map.of("stage", benchmarkStage));
             audit.record(phase, "runtime", "JVM", Map.of("javaVersion", Runtime.version().toString(),
                     "javaVendor", System.getProperty("java.vendor"), "targetMinecraft", "1.21.1", "inspect", Boolean.toString(options.inspect())));
             if (Runtime.version().feature() != 21) throw new Failure("JAVA_VERSION", "Prototype requires Java 21, got " + Runtime.version());
@@ -124,6 +128,15 @@ public final class Bootstrap {
                 Map<Path, String> exclusions = new HashMap<>(scopeExclusions);
                 exclusions.putAll(fabricRuntime.exclusions());
                 catalog.selectFabricRuntime(candidates.stream().filter(c -> c.metadata().ecosystem() == Metadata.Ecosystem.FABRIC).toList(), mods, exclusions);
+            }
+            if (!benchmarkStage.isEmpty()) {
+                // An interactive client may exclude unsupported mods. A benchmark must
+                // never report success after silently leaving an explicit input behind.
+                Path root = options.mods().toRealPath();
+                for (var candidate : discovered) if (candidate.archive().path().getParent().equals(root)
+                        && mods.stream().noneMatch(selected -> selected.metadata().id().equals(candidate.metadata().id())
+                        && selected.archive().hash().equals(candidate.archive().hash())))
+                    throw new Failure("BENCHMARK_MOD_EXCLUDED", "Explicit input was not admitted on client: " + candidate.metadata().id());
             }
             phase("PREPARE");
             Map<String, Archive> bridgedForge = new HashMap<>();
@@ -252,6 +265,13 @@ public final class Bootstrap {
                 pipeline.seal(audit);
                 if (forgeRuntime != null) forgeRuntime.packageMetadata(loader);
                 phase("SEALED");
+                if (benchmarkStage.equals("admission")) {
+                    audit.record("BENCHMARK", "benchmark-admission-complete", "client-inputs", Map.of(
+                            "mods", mods.stream().map(mod -> mod.metadata().id()).toList().toString(),
+                            "scope", "resolve/remap/class-index/sealed-transformers; no constructors, registry lifecycle or resource reload"));
+                    outcome = "ADMITTED";
+                    return;
+                }
                 loader.open();
                 Thread thread = Thread.currentThread();
                 ClassLoader previous = thread.getContextClassLoader();
@@ -320,6 +340,8 @@ public final class Bootstrap {
                         })) {
                             if (options.client()) {
                                 Method menuVerifier = verifier;
+                                Method benchmarkFrame = benchmarkStage.equals("world")
+                                        ? Class.forName("org.neoforbric.client.BenchmarkProbe", false, loader).getMethod("frame", Object.class) : null;
                                 try (AutoCloseable fabricClient = activeFabric == null
                                         ? activeNeoForge != null && activeNeoForge.registryContract() ? FabricRuntimeHooks.attachClient(instance -> activeNeoForge.phase(loader, "CLIENT_INIT")) : () -> {}
                                         : FabricRuntimeHooks.attachClient(instance -> {
@@ -344,6 +366,13 @@ public final class Bootstrap {
                                         try { titleUi.invoke(null, screen); }
                                         catch (ReflectiveOperationException error) { throw new Failure("CLIENT_UI", "Title screen UI hook failed", error instanceof InvocationTargetException wrapper ? wrapper.getCause() : error); }
                                         audit.record("CLIENT", "title-ui-initialized", "Mods", Map.of("loader", "G"));
+                                    }
+                                }, instance -> {
+                                    if (benchmarkFrame != null) try {
+                                        if ((boolean) benchmarkFrame.invoke(null, instance))
+                                            audit.record("BENCHMARK", "benchmark-world-complete", "integrated-world", Map.of("ticks", "60"));
+                                    } catch (ReflectiveOperationException error) {
+                                        throw new Failure("BENCHMARK_WORLD", "World probe failed", error instanceof InvocationTargetException wrapper ? wrapper.getCause() : error);
                                     }
                                 })) {
                                     invokeMain(main, options); hooks.verifyComplete(); client.verifyComplete();

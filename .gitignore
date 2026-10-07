@@ -17,3 +17,5 @@ __pycache__/
 hs_err_pid*.log
 replay_pid*.log
 *.hprof
+/mods/test-set/
+/benchmark/dependencies/
