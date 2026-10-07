@@ -117,7 +117,7 @@ JAR 在发现时读成内存快照，后续资源和类定义使用同一份字�
 
 `environment` 为 `*`、`client` 或 `server`；默认 `*`，CLI 默认选择 server。被排除的模组不能满足必需依赖。必需依赖必须存在且版本匹配；可选依赖缺失可忽略，存在时必须匹配。选中的模组依赖和存在的 `after` 项构成前置关系；无关系的节点按 id 排序，循环直接失败。
 
-内建身份为 `minecraft=1.21.1`、`java=21.0.0`、`neoforbric=0.1.0`，模组不能覆盖。这是原型目标与协议版本声明，**不会读取或证明实际游戏 JAR 的 Minecraft 版本**；Java 补丁版本另记在审计里。
+内建身份为 `minecraft=1.21.1`、`java=21.0.0`，`neoforbric` 版本在构建时读取根目录 `gradle.properties` 的 `NeoForbricVersion`；模组不能覆盖。Mods 界面、原型依赖解析和 Fabric 运行时共用这个构建版本，修改后重新构建即可。这是原型目标与协议版本声明，**不会读取或证明实际游戏 JAR 的 Minecraft 版本**；Java 补丁版本另记在审计里。
 
 遇到当前侧别选中的原生 Fabric / Forge / NeoForge 模组，执行模式报 `NATIVE_RUNTIME_UNSUPPORTED`，发生在读取游戏档案、创建 G 和定义模组类之前。
 

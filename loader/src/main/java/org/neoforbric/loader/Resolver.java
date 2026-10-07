@@ -5,7 +5,7 @@ import net.fabricmc.loader.impl.FabricLoaderImpl;
 import org.neoforbric.minecraft.FabricAdmission;
 
 public final class Resolver {
-    private static final Map<String, String> BUILTINS = Map.of("minecraft", "1.21.1", "java", "21.0.0", "neoforbric", "0.1.0");
+    private static final Map<String, String> BUILTINS = Map.of("minecraft", "1.21.1", "java", "21.0.0", "neoforbric", LoaderVersion.VERSION);
     private Resolver() {}
 
     public static List<Discovery.Candidate> resolve(List<Discovery.Candidate> candidates, String side, AuditLog audit) {

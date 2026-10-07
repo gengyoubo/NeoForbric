@@ -7,6 +7,14 @@ import org.gradle.language.java.artifact.JavadocArtifact
 
 plugins { id 'application' }
 application { mainClass = 'org.neoforbric.bootstrap.Main' }
+
+tasks.named('processResources') {
+    inputs.property('loaderVersion', project.version.toString())
+    filesMatching('org/neoforbric/loader/version.properties') {
+        expand(loaderVersion: project.version.toString())
+    }
+}
+
 dependencies {
     implementation 'com.google.code.gson:gson:2.11.0'
     implementation 'org.tomlj:tomlj:1.1.1'
@@ -32,6 +40,7 @@ tasks.named('test', Test) {
     systemProperty 'fixture.game', project(':fixtures:game').tasks.named('jar').get().archiveFile.get().asFile.absolutePath
     systemProperty 'fixture.mods', rootProject.layout.buildDirectory.dir('fixture/mods').get().asFile.absolutePath
     systemProperty 'loader.runtimeClasspath', sourceSets.main.runtimeClasspath.asPath
+    systemProperty 'loader.expectedVersion', project.version.toString()
 }
 
 sourceSets {

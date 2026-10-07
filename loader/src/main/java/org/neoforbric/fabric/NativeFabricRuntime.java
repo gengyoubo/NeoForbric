@@ -45,7 +45,7 @@ public final class NativeFabricRuntime implements AutoCloseable {
         plan.builtin("java", "21", List.of(Path.of(System.getProperty("java.home"))));
         plan.builtin("fabricloader", FabricLoaderImpl.VERSION, List.of(codeSource(FabricLoaderImpl.class)));
         plan.builtin("mixinextras", "0.5.5", List.of(codeSource(MixinExtrasBootstrap.class)));
-        plan.builtin("neoforbric", "0.1.0", List.of(codeSource(NativeFabricRuntime.class)));
+        plan.builtin("neoforbric", LoaderVersion.VERSION, List.of(codeSource(NativeFabricRuntime.class)));
         // Minecraft 1.21.1 already supplies ICU. Resolve generated nested ICU
         // against that version before remapping, preserving a single class owner.
         inputs.libraries().stream().filter(path -> path.getFileName().toString().equals("icu4j-73.2.jar"))

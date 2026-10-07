@@ -13,7 +13,7 @@ public final class ModCatalog implements AutoCloseable {
     private final LoadedMods.Publisher publisher;
     public ModCatalog(List<Discovery.Candidate> candidates, AuditLog audit) {
         this.audit = audit;
-        entries.add(new LoadedModInfo("neoforbric", "NeoForbric", "0.1.0", ModEcosystem.NEOFORBRIC,
+        entries.add(new LoadedModInfo("neoforbric", "NeoForbric", LoaderVersion.VERSION, ModEcosystem.NEOFORBRIC,
                 "One loader. Multiple mod ecosystems.", null, "", LoadStatus.LOADED, "Native", "Mojang", "Built-in loader", null));
         for (var candidate : candidates) {
             Metadata mod = candidate.metadata();
