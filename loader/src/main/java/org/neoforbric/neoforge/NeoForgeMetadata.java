@@ -35,14 +35,18 @@ public record NeoForgeMetadata(String modLoader, String loaderVersion, String li
                 String id = id(required(entries.getTable(i), "modId"));
                 if (!ids.add(id)) throw new IllegalArgumentException("Duplicate modId " + id);
             }
-            TomlTable dependencies = toml.getTable("dependencies");
-            if (dependencies != null) for (String owner : dependencies.keySet())
-                if (!ids.contains(owner)) throw new IllegalArgumentException("Dependency owner not declared in [[mods]]: " + owner);
+            Object dependencySection = toml.get("dependencies");
+            TomlTable dependencies = dependencySection instanceof TomlTable table ? table : null;
+            TomlArray sharedDependencies = dependencySection instanceof TomlArray array ? array : null;
+            if (dependencySection != null && dependencies == null && sharedDependencies == null)
+                throw new IllegalArgumentException("dependencies must be a table or table array");
+            if (sharedDependencies != null && ids.size() != 1)
+                throw new IllegalArgumentException("Unscoped [[dependencies]] requires exactly one declared mod");
             List<Metadata> mods = new ArrayList<>();
             for (int i = 0; i < entries.size(); i++) {
                 TomlTable mod = entries.getTable(i); String id = mod.getString("modId");
                 List<Dependency> constraints = new ArrayList<>();
-                TomlArray deps = dependencies == null ? null : dependencies.getArray(List.of(id));
+                TomlArray deps = sharedDependencies != null ? sharedDependencies : dependencies == null ? null : dependencies.getArray(List.of(id));
                 if (deps != null) for (int j = 0; j < deps.size(); j++) {
                     TomlTable dep = deps.getTable(j);
                     String range = value(dep, "versionRange", ""); MavenVersions.matches(range, "0");
@@ -81,8 +85,7 @@ public record NeoForgeMetadata(String modLoader, String loaderVersion, String li
     private static List<String> paths(TomlTable table, String key, String field) {
         TomlArray array = table.getArray(key); List<String> result = new ArrayList<>();
         if (array != null) for (int i = 0; i < array.size(); i++) result.add(path(required(array.getTable(i), field)));
-        if (new HashSet<>(result).size() != result.size()) throw new IllegalArgumentException("Duplicate " + key + " path");
-        return List.copyOf(result);
+        return List.copyOf(new LinkedHashSet<>(result));
     }
     private static String version(String value, TomlTable table, Archive archive) throws Exception {
         Map<String, String> properties = new HashMap<>();

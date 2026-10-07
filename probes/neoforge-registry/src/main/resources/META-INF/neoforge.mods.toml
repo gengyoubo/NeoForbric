@@ -17,7 +17,7 @@ ordering="NONE"
 side="BOTH"
 [[dependencies.nf_registry_probe]]
 modId="neoforge"
-versionRange="[21.1.244]"
+versionRange="[21.1.248]"
 type="required"
 ordering="NONE"
 side="BOTH"

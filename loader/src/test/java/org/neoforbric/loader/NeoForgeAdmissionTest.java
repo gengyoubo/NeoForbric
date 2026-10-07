@@ -32,14 +32,20 @@ class NeoForgeAdmissionTest {
         }
         assertEquals("NATIVE_RUNTIME_UNSUPPORTED", assertThrows(Failure.class, () -> Resolver.resolve(List.of(mod), "client", new AuditLog())).code());
     }
-    @Test void unsupportedLanguageMixinsAndEnumExtensionsAreRejectedBeforeConstructors() throws Exception {
-        for (var requirement : List.of(Map.entry("kotlinforforge", ""), Map.entry("javafml", "[[mixins]]\nconfig=\"sample.mixins.json\""), Map.entry("javafml", "enumExtensions=\"enums.json\""))) {
+    @Test void unsupportedLanguageIsRejectedBeforeConstructors() throws Exception {
+        for (var requirement : List.of(Map.entry("unknown_language", ""))) {
             var mod = candidate(requirement.getKey(), requirement.getValue());
             assertEquals("NEOFORGE_FEATURE_UNSUPPORTED", assertThrows(Failure.class, () -> NeoForgeAdmission.admit(mod)).code());
             try (var catalog = new ModCatalog(List.of(mod), new AuditLog(), true)) {
                 assertTrue(catalog.selectClient(List.of(mod), true).isEmpty());
                 assertEquals(LoadStatus.UNSUPPORTED, LoadedMods.snapshot().getLast().status());
             }
+        }
+    }
+    @Test void runtimeFacilitiesAreAdmittedForTheConfiguredAdapter() throws Exception {
+        for (String language : List.of("javafml", "lowcodefml", "kotlinforforge", "kotori_scala")) {
+            var mod = candidate(language, "enumExtensions=\"enums.json\"\n[[mixins]]\nconfig=\"sample.mixins.json\"");
+            assertSame(mod, NeoForgeAdmission.admit(mod));
         }
     }
 }

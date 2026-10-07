@@ -19,6 +19,7 @@ public final class ClassIndex {
 
     public static boolean shared(String name) {
         return name.startsWith("org.neoforbric.api.") || name.startsWith("org.objectweb.asm.") || name.startsWith("net.fabricmc.api.")
+                || (org.neoforbric.neoforge.NeoForgeMixins.active() && ((name.startsWith("org.spongepowered.asm.") && !mixinSynthetic(name)) || name.startsWith("com.llamalad7.mixinextras.")))
                 || (NativeFabricRuntime.active() && (name.startsWith("net.fabricmc.loader.")
                 || (name.startsWith("org.spongepowered.asm.") && !mixinSynthetic(name)) || name.startsWith("com.llamalad7.mixinextras.")));
     }
@@ -46,6 +47,7 @@ public final class ClassIndex {
             for (String resource : new TreeSet<>(archive.names())) {
                 if (!resource.endsWith(".class")) continue;
                 String name = resource.substring(0, resource.length() - 6).replace('/', '.');
+                if (libraries.contains(archive.path()) && shared(name)) continue;
                 boolean ownedUi = clientUi.contains(archive.path()) && (name.startsWith("org.neoforbric.client.") || name.startsWith("org.neoforbric.neoforge.runtime."));
                 if (clientUi.contains(archive.path()) && !ownedUi) throw new Failure("CLIENT_UI_PACKAGE", "First-party UI JAR contains an unexpected class " + name);
                 if (name.startsWith("java.") || name.startsWith("jdk.") || name.startsWith("sun.")

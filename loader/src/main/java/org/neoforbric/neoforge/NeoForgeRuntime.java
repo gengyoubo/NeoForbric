@@ -14,6 +14,27 @@ public final class NeoForgeRuntime implements AutoCloseable {
     private NeoForgeAccessTransformers access;
     private final List<Path> snapshots = new ArrayList<>();
     private java.lang.reflect.Method closeBridge;
+    private NeoForgeMixins mixins;
+    private java.lang.reflect.Method transformEnums;
+    private List<Archive> boundArchives = List.of();
+    public void install(TransformPipeline pipeline, AuditLog audit) {
+        Set<String> preceding = pipeline.registeredIds();
+        pipeline.add(new TransformPipeline.Transformer() {
+            public String id() { return "neoforge-enum-extension"; }
+            public Set<String> after() { return preceding; }
+            public byte[] transform(TransformPipeline.Context context, byte[] bytes) throws Exception {
+                try { return transformEnums == null ? bytes : (byte[])transformEnums.invoke(null, context.name(), bytes); }
+                catch (java.lang.reflect.InvocationTargetException error) {
+                    if (error.getCause() instanceof Exception cause) throw cause;
+                    if (error.getCause() instanceof Error fatal) throw fatal;
+                    throw error;
+                }
+            }
+        });
+        mixins = new NeoForgeMixins(pipeline, audit);
+    }
+    public GameClassLoader.Generated generated(String name, ClassIndex index) { return mixins.generated(name, index); }
+    public void bind(ClassIndex index, GameClassLoader loader, TransformPipeline pipeline, List<Archive> archives) { boundArchives = List.copyOf(archives); mixins.bind(index, loader, pipeline, archives); }
     public NeoForgeRuntime(Path plan, Path bridge) throws Exception {
         this.plan = NeoForgePreparation.verify(plan);
         root = plan.toAbsolutePath().normalize().getParent(); this.bridge = bridge.toRealPath();
@@ -100,23 +121,54 @@ public final class NeoForgeRuntime implements AutoCloseable {
     private static String key(String coordinate) {
         String[] parts = coordinate.split(":"); return parts[0] + ":" + parts[1];
     }
-    public void prepare(GameClassLoader loader, Path directory, List<Discovery.Candidate> mods, Map<String, Set<String>> predecessors) throws Exception {
+    public void prepare(GameClassLoader loader, Path directory, List<Discovery.Candidate> mods, Map<String, Set<String>> predecessors, List<Archive> libraries) throws Exception {
         List<Path> paths = new ArrayList<>(); Set<String> seen = new HashSet<>();
+        Map<Path, java.util.function.Consumer<java.util.function.Consumer<byte[]>>> scans = new HashMap<>();
+        Path snapshotDirectory = root.resolve("mod-snapshots"); Files.createDirectories(snapshotDirectory);
         for (var mod : mods) if (mod.metadata().ecosystem() == Metadata.Ecosystem.NEOFORGE && seen.add(mod.archive().hash())) {
-            Path snapshot = Files.createTempFile(root, "mod-snapshot-", ".jar"); snapshots.add(snapshot);
-            mod.archive().writeSnapshot(snapshot); paths.add(snapshot);
+            Path snapshot = snapshotDirectory.resolve(mod.archive().hash() + ".jar");
+            if (!Files.exists(snapshot) || !Archive.sha256(Files.readAllBytes(snapshot)).equals(mod.archive().hash())) {
+                Path temporary = Files.createTempFile(snapshotDirectory, "snapshot-", ".part");
+                try { mod.archive().writeSnapshot(temporary); Files.move(temporary, snapshot, StandardCopyOption.REPLACE_EXISTING); }
+                finally { Files.deleteIfExists(temporary); }
+            }
+            paths.add(snapshot);
+            scans.put(snapshot, consumer -> scanClasses(mod.archive(), consumer));
         }
-        Path originalUniversal = root.resolve("maven/net/neoforged/neoforge/21.1.244/neoforge-21.1.244-universal.jar");
+        String version = plan.get("neoforge").getAsString();
+        Path originalUniversal = root.resolve("maven/net/neoforged/neoforge/" + version + "/neoforge-" + version + "-universal.jar");
         var universalEntry = plan.getAsJsonArray("files").asList().stream().map(JsonElement::getAsJsonObject)
                 .filter(f -> f.get("role").getAsString().equals("neoforge")).findFirst().orElseThrow();
         if (!Archive.sha256(Files.readAllBytes(originalUniversal)).equals(universalEntry.get("originalSha256").getAsString()))
             throw new Failure("INPUT_CHECKSUM", "Original NeoForge metadata archive differs");
+        scans.put(selectedGame, consumer -> scanClasses(boundArchives.stream().filter(archive -> archive.path().equals(selectedGame)).findFirst().orElseThrow(), consumer));
+        scans.put(originalUniversal, consumer -> scanClasses(boundArchives.stream().filter(archive -> archive.path().equals(universal)).findFirst().orElseThrow(), consumer));
         var type = Class.forName("org.neoforbric.neoforge.runtime.NeoForgeBridge", true, loader);
         closeBridge = type.getMethod("close");
         var ids = mods.stream().filter(mod -> mod.metadata().ecosystem() == Metadata.Ecosystem.NEOFORGE).map(mod -> mod.metadata().id()).toList();
         Map<String, List<String>> entrypoints = new TreeMap<>(); Set<String> scanned = new HashSet<>();
-        for (var mod : mods) if (mod.metadata().ecosystem() == Metadata.Ecosystem.NEOFORGE && scanned.add(mod.archive().hash())) entrypoints.putAll(NeoForgeEntrypoints.scan(mod.archive(), "client"));
-        type.getMethod("prepare", Path.class, Path.class, Path.class, List.class, ClassLoader.class, List.class, Map.class, Map.class, boolean.class)
-                .invoke(null, directory, selectedGame, originalUniversal, paths, loader, ids, predecessors, entrypoints, registryContract());
+        for (var mod : mods) if (mod.metadata().ecosystem() == Metadata.Ecosystem.NEOFORGE && scanned.add(mod.archive().hash()) && NeoForgeMetadata.read(mod.archive()).modLoader().equals("javafml")) entrypoints.putAll(NeoForgeEntrypoints.scan(mod.archive(), "client"));
+        @SuppressWarnings("unchecked")
+        List<String> configs = (List<String>)type.getMethod("prepare", Path.class, Path.class, Path.class, List.class, ClassLoader.class, List.class, Map.class, Map.class, boolean.class, List.class, Map.class)
+                .invoke(null, directory, selectedGame, originalUniversal, paths, loader, ids, predecessors, entrypoints, registryContract(), libraries.stream().map(Archive::path).toList(), scans);
+        var enumType = Class.forName("org.neoforbric.neoforge.runtime.NativeNeoForgeTransforms", true, loader);
+        transformEnums = enumType.getMethod("transform", String.class, byte[].class);
+        Set<String> allConfigs = new LinkedHashSet<>(configs);
+        for (Archive archive : boundArchives) {
+            if (archive.path().equals(selectedGame) || archive.path().equals(universal)) continue;
+            byte[] manifest = archive.read("META-INF/MANIFEST.MF"); if (manifest == null) continue;
+            String declared = new java.util.jar.Manifest(new java.io.ByteArrayInputStream(manifest)).getMainAttributes().getValue("MixinConfigs");
+            if (declared == null) continue;
+            for (String config : declared.split(",")) if (!config.isBlank()) {
+                config = config.trim();
+                if (archive.read(config) == null) throw new Failure("NEOFORGE_MIXIN", "Missing manifest Mixin config " + config + " in " + archive.path());
+                allConfigs.add(config);
+            }
+        }
+        mixins.start(List.copyOf(allConfigs));
+        type.getMethod("finish", Map.class, boolean.class).invoke(null, entrypoints, registryContract());
+    }
+    private static void scanClasses(Archive archive, java.util.function.Consumer<byte[]> consumer) {
+        for (String name : new TreeSet<>(archive.names())) if (name.endsWith(".class")) consumer.accept(archive.read(name));
     }
 }

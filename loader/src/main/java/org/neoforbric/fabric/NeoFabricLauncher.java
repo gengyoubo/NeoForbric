@@ -18,13 +18,15 @@ public final class NeoFabricLauncher extends FabricLauncherBase {
     private GameClassLoader game;
     private TransformPipeline pipeline;
     private List<Path> classpath = List.of();
-    NeoFabricLauncher(EnvType side, String entrypoint, AuditLog audit) {
+    private String mixinBoundary = "fabric-runtime-mixin";
+    public NeoFabricLauncher(EnvType side, String entrypoint, AuditLog audit) {
         this.side = side; this.entrypoint = entrypoint; this.audit = audit; setProperties(new HashMap<>());
     }
-    void bind(ClassIndex index, GameClassLoader game, TransformPipeline pipeline, List<Archive> archives) {
+    public void bind(ClassIndex index, GameClassLoader game, TransformPipeline pipeline, List<Archive> archives) {
         this.index = index; this.game = game; this.pipeline = pipeline; this.classpath = archives.stream().map(Archive::path).toList();
     }
-    void finishMixin() { finishMixinBootstrapping(); }
+    public void mixinBoundary(String boundary) { mixinBoundary = boundary; }
+    public void finishMixin() { finishMixinBootstrapping(); }
     @Override public void addToClassPath(Path path, String... prefixes) { throw forbidden("addToClassPath", path); }
     @Override public void setAllowedPrefixes(Path path, String... prefixes) { throw forbidden("setAllowedPrefixes", path); }
     @Override public void setValidParentClassPath(Collection<Path> paths) { throw new Failure("NATIVE_BOOTSTRAP_FORBIDDEN", "NeoForbric owns parent classpath boundaries"); }
@@ -51,9 +53,12 @@ public final class NeoFabricLauncher extends FabricLauncherBase {
         if (index != null && index.entry(dotted) != null) {
             byte[] original = index.original(dotted);
             if (!transformed) return original;
-            try { return pipeline.applyBefore(dotted, original, index::original, audit, "fabric-runtime-mixin"); }
+            try { return pipeline.applyBefore(dotted, original, index::original, audit, mixinBoundary); }
             catch (IOException error) { throw error; }
-            catch (Exception error) { throw new IOException("Pre-Mixin bytes unavailable: " + name, error); }
+            catch (Exception error) {
+                if (Boolean.getBoolean("neoforbric.debug")) error.printStackTrace(System.err);
+                throw new IOException("Pre-Mixin bytes unavailable: " + name + ": " + error, error);
+            }
         }
         if (game != null) { byte[] added = game.addedClassBytes(name); if (added != null) return added; }
         try (InputStream in = NeoFabricLauncher.class.getClassLoader().getResourceAsStream(dotted.replace('.', '/') + ".class")) { return in == null ? null : in.readAllBytes(); }

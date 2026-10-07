@@ -47,12 +47,27 @@ class NeoForgeMetadataTest {
         var warning = mod("aa", "1.0", dependency("aa", "bb", "discouraged", "[1,2)", "NONE", "BOTH"));
         AuditLog audit = new AuditLog(); Resolver.resolve(List.of(warning,b),"client",audit,false,true);
         assertTrue(audit.events().stream().anyMatch(event -> event.type().equals("dependency-warning")));
-        var builtin = mod("aa", "1.0", dependency("aa", "neoforge", "required", "[21.1.245,)", "NONE", "BOTH"));
+        var builtin = mod("aa", "1.0", dependency("aa", "neoforge", "required", "[21.1.249,)", "NONE", "BOTH"));
         assertEquals("DEPENDENCY_VERSION", assertThrows(Failure.class, () -> Resolver.resolve(List.of(builtin),"client",new AuditLog(),false,true)).code());
     }
     @Test void mavenRangesIncludeUnionsBoundsAndReleaseQualifiers() {
         assertTrue(MavenVersions.matches("(,1.0],[1.2,)", "1.3")); assertFalse(MavenVersions.matches("(,1.0],[1.2,)", "1.1"));
         assertTrue(MavenVersions.matches("[1.0]", "1.0.0")); assertFalse(MavenVersions.matches("[1.0,)", "1.0-rc1"));
         assertThrows(Failure.class, () -> MavenVersions.matches("[2,1)", "0"));
+    }
+    @Test void readsUnscopedDependenciesForSingleModButRejectsAmbiguousOwners() throws Exception {
+        var single = mod("arseng", "2.1.1-beta", "[[dependencies]]\nmodId=\"ae2\"\nversionRange=\"[19,)\"\n");
+        assertEquals("ae2", single.metadata().constraints().getFirst().id());
+        assertEquals(Dependency.Kind.REQUIRED, single.metadata().constraints().getFirst().kind());
+        assertThrows(Failure.class, () -> mod("ambiguous", "1", "[[mods]]\nmodId=\"second\"\n[[dependencies]]\nmodId=\"ae2\"\n"));
+    }
+    @Test void appliesExplicitPackDependencyOverridesAndBuiltinCompatibilityVersions() throws Exception {
+        var a = mod("aa", "1", dependency("aa", "missing", "required", "[1,)", "NONE", "BOTH")
+                + dependency("aa", "minecraft", "required", "[1.21,1.21.1)", "NONE", "BOTH"));
+        var b = mod("bb", "1", "");
+        Files.createDirectories(root.resolve("config")); Files.writeString(root.resolve("config/fml.toml"), "[dependencyOverrides]\naa=[\"-missing\",\"+bb\"]\n");
+        var plan = org.neoforbric.neoforge.NeoForgeOverrides.apply(List.of(a,b), root, new AuditLog());
+        assertEquals(List.of("bb", "aa"), Resolver.resolve(plan, "client", new AuditLog(), false, true).stream().map(mod -> mod.metadata().id()).toList());
+        assertEquals(2, a.metadata().constraints().size());
     }
 }

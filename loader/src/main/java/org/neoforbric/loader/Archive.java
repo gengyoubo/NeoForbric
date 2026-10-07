@@ -32,6 +32,7 @@ public final class Archive {
     private Set<String> permittedNested = Set.of();
     private boolean inertNestedResources;
     private boolean verifiedSignatures;
+    private boolean normalizedLayout;
 
     private Archive(Path path, String hash, Map<String, byte[]> entries, Manifest manifest, byte[] source) {
         this.path = path;
@@ -52,6 +53,30 @@ public final class Archive {
         manifest = original.manifest; source = original.source;
         permittedNested = original.permittedNested; inertNestedResources = original.inertNestedResources;
         verifiedSignatures = original.verifiedSignatures;
+        normalizedLayout = original.normalizedLayout;
+    }
+
+    /** Selects the JVM 21 view without changing the immutable source identity. External Class-Path is never followed. */
+    public Archive java21View(AuditLog audit) throws IOException {
+        Archive verified = verifyJarSignatures(audit);
+        Map<String, byte[]> selected = new LinkedHashMap<>(); Map<String, Integer> versions = new HashMap<>();
+        boolean multi = "true".equalsIgnoreCase(manifest.getMainAttributes().getValue("Multi-Release"));
+        for (var entry : entries.entrySet()) {
+            String name = entry.getKey(); int version = 0;
+            if (name.startsWith("META-INF/versions/")) {
+                String[] parts = name.split("/", 4);
+                if (!multi || parts.length != 4) continue;
+                version = Integer.parseInt(parts[2]); if (version < 9 || version > 21) continue;
+                name = parts[3];
+            }
+            String upper = name.toUpperCase(Locale.ROOT);
+            if (name.equals("module-info.class") || upper.startsWith("META-INF/SIG-") || (upper.startsWith("META-INF/") && upper.matches(".*\\.(SF|RSA|DSA|EC)$"))) continue;
+            if (version < versions.getOrDefault(name, -1)) continue;
+            selected.put(name, entry.getValue()); versions.put(name, version);
+        }
+        Archive view = new Archive(path, hash, selected, manifest, source);
+        view.normalizedLayout = true; view.inertNestedResources = true; view.verifiedSignatures = verified.verifiedSignatures;
+        return view;
     }
 
     public static Archive read(Path path) throws IOException {
@@ -72,7 +97,6 @@ public final class Archive {
                 String name = next.getName();
                 if (name.contains("\\") || Arrays.stream(name.split("/", -1)).anyMatch(p -> p.isEmpty() || p.equals(".") || p.equals("..")))
                     throw new Failure("ARCHIVE_PATH", actual + " contains non-canonical path " + name);
-                if (entries.containsKey(name)) throw new Failure("DUPLICATE_ENTRY", actual + " contains duplicate " + name);
                 if (entries.size() >= MAX_ENTRIES)
                     throw new Failure("ARCHIVE_LIMIT", actual + " exceeds " + MAX_ENTRIES + " file entries at " + name);
                 byte[] bytes = zip.readNBytes(MAX_ENTRY + 1);
@@ -81,6 +105,12 @@ public final class Archive {
                     throw new Failure("ARCHIVE_LIMIT", actual + " entry " + name + " exceeds 32 MiB");
                 if (expanded > maxExpanded)
                     throw new Failure("ARCHIVE_LIMIT", actual + " exceeds " + mib(maxExpanded) + " expanded size at " + name);
+                byte[] previous = entries.get(name);
+                if (previous != null) {
+                    if (name.endsWith(".class") || !Arrays.equals(previous, bytes))
+                        throw new Failure("DUPLICATE_ENTRY", actual + " contains conflicting or class duplicate " + name);
+                    continue;
+                }
                 entries.put(name, bytes);
             }
         }
@@ -129,10 +159,17 @@ public final class Archive {
         boolean signed = names().stream().map(name -> name.toUpperCase(Locale.ROOT)).anyMatch(name -> name.startsWith("META-INF/") && name.matches(".*\\.(SF|RSA|DSA|EC)$"));
         if (!signed) return this;
         int verified = 0;
-        try (var jar = new java.util.jar.JarInputStream(new ByteArrayInputStream(source), true)) {
-            java.util.jar.JarEntry entry;
-            while ((entry = jar.getNextJarEntry()) != null) { jar.transferTo(OutputStream.nullOutputStream()); if (entry.getCodeSigners() != null) verified++; }
+        Path signatureSnapshot = Files.createTempFile("neoforbric-signature-", ".jar");
+        try {
+            Files.write(signatureSnapshot, source);
+            try (var jar = new java.util.jar.JarFile(signatureSnapshot.toFile(), true)) {
+                for (var entry : Collections.list(jar.entries())) if (!entry.isDirectory()) {
+                    try (var stream = jar.getInputStream(entry)) { stream.transferTo(OutputStream.nullOutputStream()); }
+                    if (entry.getCodeSigners() != null) verified++;
+                }
+            }
         } catch (SecurityException invalid) { throw new Failure("JAR_SIGNATURE", "Invalid signed input " + path, invalid); }
+        finally { Files.deleteIfExists(signatureSnapshot); }
         if (verified == 0) throw new Failure("JAR_SIGNATURE", "Signature metadata could not be verified: " + path);
         Archive view = new Archive(this);
         view.inertNestedResources = inertNestedResources; view.verifiedSignatures = true;
@@ -150,6 +187,7 @@ public final class Archive {
     }
 
     private void requireSupportedLayout(boolean normalizeModules) {
+        normalizeModules |= normalizedLayout;
         var attributes = manifest.getMainAttributes();
         if (!normalizeModules && (attributes.getValue("Class-Path") != null
                 || "true".equalsIgnoreCase(attributes.getValue("Multi-Release"))))
@@ -169,6 +207,11 @@ public final class Archive {
         String value = entry == null ? null : entry.getValue("Sealed");
         if (value == null) value = manifest.getMainAttributes().getValue("Sealed");
         return "true".equalsIgnoreCase(value);
+    }
+    public String packageAttribute(String packageName, String key) {
+        Attributes attributes = manifest.getAttributes(packageName.replace('.', '/') + "/");
+        String value = attributes == null ? null : attributes.getValue(key);
+        return value == null ? manifest.getMainAttributes().getValue(key) : value;
     }
 
     /** Sealing directives only, so remapped artifacts keep the JVM package-sealing contract without other manifest state. */

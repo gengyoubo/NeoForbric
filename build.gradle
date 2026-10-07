@@ -58,7 +58,7 @@ tasks.register('prepareMinecraftClient', JavaExec) {
 
 tasks.register('prepareNeoForgeClient', JavaExec) {
     group = 'application'
-    description = 'Prepare pinned NeoForge 21.1.244 patched client inputs under NeoForbric ownership.'
+    description = 'Prepare pinned NeoForge 21.1.248 patched client inputs under NeoForbric ownership.'
     dependsOn 'prepareMinecraftClient', ':loader:classes'
     javaLauncher = project(':loader').javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
     classpath = project(':loader').sourceSets.main.runtimeClasspath
@@ -87,6 +87,7 @@ def clientDirectory = providers.gradleProperty('neoForgeWorldProbe').getOrElse('
         ? layout.buildDirectory.dir('neoforge-world/run').get().asFile : layout.projectDirectory.dir('run/client').asFile
 def clientModsDirectory = providers.gradleProperty('clientModsDir').isPresent()
         ? file(providers.gradleProperty('clientModsDir').get()) : new File(clientDirectory, 'mods')
+def clientTestMod = providers.gradleProperty('clientTestMod').getOrElse('false') == 'true'
 def neoForgeProfile = providers.gradleProperty('neoForgeProfile').isPresent()
         ? providers.gradleProperty('neoForgeProfile').get() == 'true'
         : (clientModsDirectory.listFiles()?.any { mod ->
@@ -107,12 +108,13 @@ tasks.register('prepareClientUi') {
     }
 }
 tasks.register('prepareClient') {
-    dependsOn 'prepareFabricClientProbe', 'prepareClientUi'
+    dependsOn 'prepareClientUi'
+    if (clientTestMod) dependsOn 'prepareFabricClientProbe'
     def probeJar = project(':probes:fabric-client').layout.buildDirectory.file('libs/fabric-client-intermediary.jar')
     doLast {
         clientDirectory.mkdirs()
         new File(clientDirectory, 'mods').mkdirs()
-        java.nio.file.Files.copy(probeJar.get().asFile.toPath(), new File(clientDirectory, 'mods/fabric-client-intermediary.jar').toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        if (clientTestMod) java.nio.file.Files.copy(probeJar.get().asFile.toPath(), new File(clientDirectory, 'mods/fabric-client-intermediary.jar').toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
         def options = new File(clientDirectory, 'options.txt')
         if (!options.exists()) options.setText('onboardAccessibility:false\nrenderDistance:6\nsimulationDistance:6\n', 'UTF-8')
     }
@@ -136,7 +138,10 @@ tasks.register('runClient', JavaExec) {
     workingDir = clientDirectory
     args '--minecraft-client', '--runtime', layout.buildDirectory.file('minecraft-client/runtime.json').get().asFile.absolutePath,
             '--mods', clientModsDirectory.absolutePath, '--client-ui', layout.buildDirectory.file('minecraft-client/client-ui.jar').get().asFile.absolutePath,
-            '--verify', neoForgeProfile ? 'org.neoforbric.neoforge.runtime.NeoForgeProbe' : providers.gradleProperty('sscRenderProbe').isPresent() ? 'org.neoforbric.client.SscRenderProbe' : 'demo.clientprobe.ClientProbe', '--audit', new File(clientDirectory, 'audit.json').absolutePath
+            '--audit', new File(clientDirectory, 'audit.json').absolutePath
+    if (neoForgeProfile) args '--verify', 'org.neoforbric.neoforge.runtime.NeoForgeProbe'
+    else if (providers.gradleProperty('sscRenderProbe').isPresent()) args '--verify', 'org.neoforbric.client.SscRenderProbe'
+    else if (clientTestMod) args '--verify', 'demo.clientprobe.ClientProbe'
     if (providers.gradleProperty('clientProbeFrames').isPresent() && !providers.gradleProperty('sscRenderProbe').isPresent()) args '--stop-after-frames', providers.gradleProperty('clientProbeFrames').get()
     if (providers.gradleProperty('clientModsProbe').getOrElse('false') == 'true') systemProperty 'neoforbric.probe.mods', 'true'
     if (providers.gradleProperty('fabricPlainProfile').getOrElse('false') == 'true') systemProperty 'neoforbric.fabric.plain', 'true'

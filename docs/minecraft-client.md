@@ -7,7 +7,7 @@ $env:JAVA_HOME = 'C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot' # 换成自�
 ./gradlew.bat runClient
 ```
 
-游戏目录为 `run/client`，用户模组放在 `run/client/mods`。准备任务更新演示用 Fabric 客户端探针，不清空用户模组目录。账号是本地离线开发身份 `NeoForbricDev`，可用 `-PclientUsername=名字` 修改；此任务没有 Microsoft 登录流程。
+游戏目录为 `run/client`，用户模组放在 `run/client/mods`。默认启动不添加内部测试模组；仅显式使用 `-PclientTestMod=true` 时复制 Fabric 客户端探针并启用其验证入口。账号是本地离线开发身份 `NeoForbricDev`，可用 `-PclientUsername=名字` 修改；此任务没有 Microsoft 登录流程。
 
 `runClient` 默认最大堆为 6 GiB，可用 `-PclientHeap=4g` 等参数覆盖。完整包重映射缓存位于 `build/minecraft-client/fabric-remap-cache`；命中前逐一校验输入、游戏和映射、转换代码、工具依赖及输出 SHA-256，任何变化都会重建。`-PclientDebug=true` 输出异常原因链，`-PclientProbeFrames=40` 在主菜单探针成功后渲染 40 帧并自动结束。
 
@@ -19,7 +19,7 @@ Kotlin 模组在字节码重映射后，通过固定 `kotlin-metadata-jvm:2.2.20
 
 目标命名空间可能使原本不同的父子方法重名，例如 UniLib 开放 `EditBox.method_20316()` 后转换为 final `isEditable()`，与 Konkrete 自定义的 `AdvancedTextField.isEditable()` 相撞。重映射前扫描游戏祖先方法，给这类独立模组方法及其字节码引用分配 `neoforbric$distinct$` 名称；保留游戏方法的访问 / final 规则和原有覆盖关系。Mixin 声明由 Mixin 专项重映射处理。回归测试加载实际转换后的父子类并验证两种方法的独立返回值及组合调用结果。
 
-同一个 JAR 可以包含多平台描述文件，统一按 `neoforbric.mod.json → fabric.mod.json → META-INF/neoforge.mods.toml → META-INF/mods.toml` 选择第一份，只发现和加载一次，不合并各平台入口。Explorify 等同时携带 Fabric / Forge / NeoForge 描述的模组会选择 Fabric。选中描述文件无效时直接报错，不回退到其他平台；审计 `mod-discovered.details.descriptor` 记录选择结果。该优先级决定模组使用哪个适配器；是否执行仍取决于所选 profile 的准入和依赖验证。
+同一个 JAR 可以包含多平台描述文件。Fabric profile 按 `neoforbric.mod.json → fabric.mod.json → META-INF/neoforge.mods.toml → META-INF/mods.toml` 选择第一份；NeoForge profile 优先选 `META-INF/neoforge.mods.toml`。每个模组只发现和加载一次，不合并各平台入口。选中描述文件无效时直接报错，不回退到其他平台；审计 `mod-discovered.details.descriptor` 记录选择结果。该优先级决定模组使用哪个适配器；是否执行仍取决于所选 profile 的准入和依赖验证。
 
 Fabric Loader 被动组件已升级到 **0.19.5**；构建依赖与两个 Fabric 探针共用根构建中的版本配置，默认 runtime、plain profile 和启动审计均从实际依赖的 `FabricLoaderImpl.VERSION` 获取内建身份。Mixin 0.17.4+mixin.0.8.7、ASM 9.10.1 和 MixinExtras 0.5.5 对齐 [Loader 0.19.5 的上游配置](https://github.com/FabricMC/fabric-loader/blob/0.19.5/gradle.properties)。默认 runtime 使用新版 `loadClassTweakers()` 读取已转换到 Mojang 的 AW，并通过 GameProvider 声明运行命名空间和转换范围。`fabricloader >=0.17` 不再被旧的 0.16.10 身份阻挡；更高且未满足的版本要求仍由解析器拒绝。
 
@@ -95,8 +95,8 @@ Loader 将每项诊断作为不可变的 `ModDiagnostic(kind, subject, value, ex
 
 ```powershell
 ./gradlew.bat :loader:test :loader:minecraftClientTest
-./gradlew.bat runClient -PclientModsProbe=true -PclientProbeFrames=40
-./gradlew.bat runClient -PfabricPlainProfile   # 回归 plain Fabric entrypoint baseline
+./gradlew.bat runClient -PclientTestMod=true -PclientModsProbe=true -PclientProbeFrames=40
+./gradlew.bat runClient -PclientTestMod=true -PfabricPlainProfile   # 回归 plain Fabric entrypoint baseline
 ```
 
 探针验证实际 OpenGL 窗口、资源加载、主菜单、Fabric main / client 各执行一次、注册物品身份和原生清理。Mods 专项点击实际按钮，验证 Loaded / Unsupported / Disabled 决策、完整结构化诊断、实际悬停提示中的配置名、详情实际滚动、渲染截图和返回主菜单后按钮无重复；失败探针验证 vanilla 崩溃仍回到内核审计。客户端测试截图保存在 `loader/build/client-evidence`（包括 `neoforbric-mod-diagnostics.png` 和 `neoforbric-mod-tooltip.png`）；运行任务截图在 `run/client/screenshots`。

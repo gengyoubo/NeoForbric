@@ -1,6 +1,7 @@
 package org.neoforbric.neoforge;
 
 import org.neoforbric.loader.*;
+import java.util.Set;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
@@ -11,6 +12,17 @@ public final class NeoForgeHostHook implements TransformPipeline.Transformer {
     public NeoForgeHostHook(boolean registryContract) { this.registryContract = registryContract; }
     @Override public String id() { return "neoforge-passive-host"; }
     @Override public byte[] transform(TransformPipeline.Context context, byte[] bytes) {
+        if (context.name().equals("cpw.mods.modlauncher.Launcher")) return passiveLauncher(bytes);
+        if (context.name().equals("net.neoforged.fml.loading.JarVersionLookupHandler")) {
+            ClassNode node = new ClassNode(); new ClassReader(bytes).accept(node, 0);
+            var method = node.methods.stream().filter(candidate -> candidate.name.equals("getVersion") && candidate.desc.equals("(Ljava/lang/Class;)Ljava/util/Optional;")).findFirst()
+                    .orElseThrow(() -> new Failure("NEOFORGE_ANCHOR", "Missing passive jar version lookup"));
+            method.instructions.clear(); method.tryCatchBlocks.clear(); method.localVariables = null;
+            method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            method.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/neoforbric/neoforge/runtime/NeoForgeBridge", "jarVersion", method.desc, false));
+            method.instructions.add(new InsnNode(Opcodes.ARETURN));
+            ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS); node.accept(writer); return writer.toByteArray();
+        }
         if (registryContract && !context.name().equals("cpw.mods.jarhandling.impl.JarContentsImpl")) {
             if (context.name().equals("net.neoforged.neoforge.registries.DeferredHolder")) {
                 ClassNode node = new ClassNode(); new ClassReader(bytes).accept(node, 0); int anchors = 0;
@@ -102,6 +114,32 @@ public final class NeoForgeHostHook implements TransformPipeline.Transformer {
         method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 2));
         method.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/neoforbric/neoforge/runtime/NeoForgeBridge", "construct", method.desc, false));
         method.instructions.add(new InsnNode(Opcodes.RETURN)); method.maxStack = 3; method.maxLocals = 3;
+        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS); node.accept(writer); return writer.toByteArray();
+    }
+    private static byte[] passiveLauncher(byte[] bytes) {
+        ClassNode node = new ClassNode(); new ClassReader(bytes).accept(node, 0); int anchors = 0;
+        var signatures = java.util.Map.of("<init>", "()V", "main", "([Ljava/lang/String;)V", "run", "([Ljava/lang/String;)V",
+                "findLaunchPlugin", "(Ljava/lang/String;)Ljava/util/Optional;", "findLaunchHandler", "(Ljava/lang/String;)Ljava/util/Optional;", "findLayerManager", "()Ljava/util/Optional;");
+        for (var method : node.methods) {
+            String name = method.name;
+            if (!signatures.containsKey(name)) continue;
+            if (!signatures.get(name).equals(method.desc)) throw new Failure("NEOFORGE_ANCHOR", "Unexpected Launcher method " + name + method.desc);
+            method.instructions.clear(); method.tryCatchBlocks.clear(); method.localVariables = null;
+            if (name.equals("<init>")) {
+                method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                method.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false));
+                method.instructions.add(new InsnNode(Opcodes.RETURN));
+            } else if (name.equals("main") || name.equals("run")) {
+                method.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/neoforbric/neoforge/runtime/NeoForgeBridge", "forbiddenNativeLaunch", "()V", false));
+                method.instructions.add(new InsnNode(Opcodes.RETURN));
+            } else {
+                if (name.equals("findLayerManager")) method.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/neoforbric/neoforge/runtime/NeoForgeBridge", "layerManager", "()Ljava/util/Optional;", false));
+                else method.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/util/Optional", "empty", "()Ljava/util/Optional;", false));
+                method.instructions.add(new InsnNode(Opcodes.ARETURN));
+            }
+            anchors++;
+        }
+        if (anchors != 6) throw new Failure("NEOFORGE_ANCHOR", "Expected six passive Launcher anchors, found " + anchors);
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS); node.accept(writer); return writer.toByteArray();
     }
     /** Remove the native button and its extra layout row; the kernel UI supplies Mods. */

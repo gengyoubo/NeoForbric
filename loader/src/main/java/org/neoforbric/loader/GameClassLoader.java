@@ -97,7 +97,8 @@ public final class GameClassLoader extends URLClassLoader implements Closeable {
             // Native Mixin plugins execute in G and can link Minecraft APIs as well as
             // their helpers. Each dependency still runs the complete transformation plan;
             // Mixin enforces its own target preparation rules. Cycles never define twice.
-            boolean metadataTool = NativeFabricRuntime.active() && "fabric-runtime-mixin".equals(transforms.activeRule()) && !targets.contains(name);
+            boolean metadataTool = ((NativeFabricRuntime.active() && "fabric-runtime-mixin".equals(transforms.activeRule()))
+                    || (org.neoforbric.neoforge.NeoForgeMixins.active() && Set.of("neoforge-mixin", "neoforge-enum-extension").contains(transforms.activeRule()))) && !targets.contains(name);
             if (!metadataTool) throw new Failure("REENTRANT_DEFINITION", "Transformer for " + targets.getLast() + " requested class " + name + "; use bytecode access");
             audit.record("PREPARE", "mixin-plugin-class", name, Map.of("requestingTarget", targets.getLast(), "loader", "G"));
         }
@@ -169,7 +170,9 @@ public final class GameClassLoader extends URLClassLoader implements Closeable {
             URL sealBase = owner.seals(packageName) ? owner.codeSource() : null;
             Package defined = getDefinedPackage(packageName);
             if (defined == null) {
-                definePackage(packageName, null, null, null, null, null, null, sealBase);
+                definePackage(packageName, owner.packageAttribute(packageName, "Specification-Title"), owner.packageAttribute(packageName, "Specification-Version"),
+                        owner.packageAttribute(packageName, "Specification-Vendor"), owner.packageAttribute(packageName, "Implementation-Title"),
+                        owner.packageAttribute(packageName, "Implementation-Version"), owner.packageAttribute(packageName, "Implementation-Vendor"), sealBase);
                 return;
             }
             if (defined.isSealed()) {

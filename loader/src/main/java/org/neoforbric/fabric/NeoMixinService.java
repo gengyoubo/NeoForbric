@@ -11,7 +11,7 @@ import org.neoforbric.loader.*;
 public final class NeoMixinService extends MixinServiceKnot {
     private static IMixinTransformer transformer;
     private static AuditLog audit;
-    static void attach(AuditLog log) { audit = log; }
+    public static void attach(AuditLog log) { audit = log; }
     @Override public String getName() { return "NeoForbric"; }
     @Override public Class<?> findAgentClass(String name, boolean initialize) throws ClassNotFoundException { return Class.forName(name, initialize, NeoMixinService.class.getClassLoader()); }
     @Override public void offer(IMixinInternal internal) {
@@ -20,11 +20,11 @@ public final class NeoMixinService extends MixinServiceKnot {
             transformer = factory.createTransformer();
         }
     }
-    static byte[] transform(String name, byte[] bytes) {
+    public static byte[] transform(String name, byte[] bytes) {
         if (transformer == null) throw new Failure("MIXIN_NOT_READY", "NeoForbric Mixin transformer was not offered");
         return transformer.transformClassBytes(name, name, bytes);
     }
-    static GameClassLoader.Generated generated(String name, ClassIndex index) {
+    public static GameClassLoader.Generated generated(String name, ClassIndex index) {
         if (transformer == null) return null;
         var info = transformer.getExtensions().getSyntheticClassRegistry().findSyntheticClass(name);
         if (info == null) return null;

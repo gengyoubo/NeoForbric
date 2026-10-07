@@ -52,7 +52,8 @@ public final class Bootstrap {
                 audit.record(phase, "eula", path.toString(), Map.of("accepted", "true"));
             }
             phase("DISCOVER");
-            var discovered = Discovery.discover(options.mods(), audit);
+            NeoForgeDiscovery.Result neoForgeDiscovered = options.client() && System.getProperty("neoforbric.neoforge.runtime") != null ? NeoForgeDiscovery.discover(options.mods(), audit) : null;
+            var discovered = neoForgeDiscovered == null ? Discovery.discover(options.mods(), audit) : neoForgeDiscovered.mods();
             boolean hasFabricMods = discovered.stream().anyMatch(candidate -> candidate.metadata().ecosystem() == Metadata.Ecosystem.FABRIC);
             RuntimeInputs runtime = null;
             List<Discovery.Candidate> candidates = discovered;
@@ -89,6 +90,10 @@ public final class Bootstrap {
             phase("RESOLVE");
             if (options.client() && fabricRuntime == null) candidates = catalog.selectClient(candidates, neoForgeRuntime != null);
             else if (options.minecraft() && fabricRuntime == null) candidates = candidates.stream().map(c -> c.metadata().available(options.side()) ? FabricAdmission.admit(c) : c).toList();
+            if (neoForgeRuntime != null) {
+                int gameDir = options.gameArguments().indexOf("--gameDir");
+                candidates = NeoForgeOverrides.apply(candidates, gameDir >= 0 ? Path.of(options.gameArguments().get(gameDir + 1)) : options.mods().toAbsolutePath().getParent(), audit);
+            }
             var resolution = fabricRuntime == null ? Resolver.plan(candidates, options.side(), audit, options.minecraft(), neoForgeRuntime != null) : null;
             var mods = resolution == null ? fabricRuntime.resolve() : resolution.mods();
             if (fabricRuntime != null) {
@@ -112,6 +117,7 @@ public final class Bootstrap {
             Set<Path> clientUi = new HashSet<>();
             if (runtime != null) {
                 for (Path library : runtime.libraries()) { Archive archive = neoForgeRuntime == null ? Archive.read(library) : neoForgeRuntime.library(library); inputs.add(archive); libraries.add(archive.path()); }
+                if (neoForgeDiscovered != null) for (Archive library : neoForgeDiscovered.libraries()) { inputs.add(library); libraries.add(library.path()); }
                 pipeline.add(new RegistryWindowHook(runtime.registryClassSha256(), fabricRuntime != null && fabricRuntime.defersRegistries()));
                 if (neoForgeRuntime != null) {
                     Archive bridge = Archive.read(neoForgeRuntime.bridge()); inputs.add(bridge); clientUi.add(bridge.path());
@@ -161,6 +167,7 @@ public final class Bootstrap {
                 } else preparedMods.add(mod);
             }
             preparedMods.forEach(m -> inputs.add(m.archive()));
+            if (neoForgeRuntime != null) neoForgeRuntime.install(pipeline, audit);
             ClassLoader parent = Bootstrap.class.getClassLoader();
             phase("CLASS_INDEX");
             ClassIndex index = ClassIndex.prepare(inputs, parent, audit, libraries, clientUi, fabricRuntime != null);
@@ -171,6 +178,9 @@ public final class Bootstrap {
                 if (fabricRuntime != null) {
                     NativeFabricRuntime generatedFabric = fabricRuntime;
                     loader.generatedClasses(name -> generatedFabric.generated(name, index));
+                } else if (neoForgeRuntime != null) {
+                    NeoForgeRuntime generatedNeoForge = neoForgeRuntime;
+                    loader.generatedClasses(name -> generatedNeoForge.generated(name, index));
                 }
                 pipeline.seal(audit);
                 phase("SEALED");
@@ -188,8 +198,9 @@ public final class Bootstrap {
                     }
                     // Check every entrypoint shape before executing any candidate static initializer / constructor.
                     if (neoForgeRuntime != null) {
+                        neoForgeRuntime.bind(index, loader, pipeline, inputs);
                         int gameDir = options.gameArguments().indexOf("--gameDir");
-                        neoForgeRuntime.prepare(loader, gameDir >= 0 ? Path.of(options.gameArguments().get(gameDir + 1)) : options.mods().toAbsolutePath().getParent(), preparedMods, resolution.predecessors());
+                        neoForgeRuntime.prepare(loader, gameDir >= 0 ? Path.of(options.gameArguments().get(gameDir + 1)) : options.mods().toAbsolutePath().getParent(), preparedMods, resolution.predecessors(), neoForgeDiscovered.libraries());
                     }
                     List<Initializer> initializers = new ArrayList<>();
                     if (fabricRuntime == null) for (var mod : preparedMods) {

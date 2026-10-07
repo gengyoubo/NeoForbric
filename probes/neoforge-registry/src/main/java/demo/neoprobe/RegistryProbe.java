@@ -44,6 +44,24 @@ public final class RegistryProbe {
         });
     }
     public static void verifyClient(Object client) {
+        var launcher = cpw.mods.modlauncher.Launcher.INSTANCE;
+        if (launcher == null || launcher.getClass().getClassLoader() != RegistryProbe.class.getClassLoader()
+                || !launcher.environment().getProperty(cpw.mods.modlauncher.api.IEnvironment.Keys.LAUNCHTARGET.get()).orElseThrow().equals("neoforbricclient"))
+            throw new AssertionError("Passive launcher information did not preserve kernel ownership");
+        try {
+            for (String name : List.of("classLoader", "transformationServicesHandler", "moduleLayerHandler")) {
+                var nativeField = launcher.getClass().getDeclaredField(name); nativeField.setAccessible(true);
+                if (nativeField.get(launcher) != null) throw new AssertionError("Native launcher facility was initialized: " + name);
+            }
+        } catch (ReflectiveOperationException error) { throw new AssertionError("Cannot verify passive launcher boundary", error); }
+        try { cpw.mods.modlauncher.Launcher.main(new String[0]); throw new AssertionError("Native main was allowed"); }
+        catch (IllegalStateException forbidden) {
+            if (!forbidden.getMessage().contains("native ModLauncher execution is forbidden")) throw forbidden;
+        }
+        if (launcher.findLayerManager().orElseThrow().getLayer(cpw.mods.modlauncher.api.IModuleLayerManager.Layer.GAME).orElseThrow().modules()
+                .stream().noneMatch(module -> module.getClassLoader() == RegistryProbe.class.getClassLoader()))
+            throw new AssertionError("Passive module information does not point to G");
+        System.out.println("NEOFORGE_LAUNCHER_FACADE_OK nativeMainBlocked=true nativeLoader=false gameLoader=G");
         try {
             var field = AccessTarget.class.getDeclaredField("VALUE");
             if (!java.lang.reflect.Modifier.isPublic(field.getModifiers()) || java.lang.reflect.Modifier.isFinal(field.getModifiers()))

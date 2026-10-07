@@ -56,13 +56,15 @@ public final class Resolver {
             mod.after().stream().filter(selected::containsKey).forEach(predecessors::add);
             if (mod.ecosystem() == Metadata.Ecosystem.NEOFORGE) {
                 var file = org.neoforbric.neoforge.NeoForgeMetadata.read(candidate.archive());
-                if (!MavenVersions.matches(file.loaderVersion(), builtins.get("javafml")))
+                if (file.modLoader().equals("javafml") && !MavenVersions.matches(file.loaderVersion(), builtins.get("javafml")))
                     throw new Failure("DEPENDENCY_VERSION", mod.id() + " requires javafml " + file.loaderVersion() + ", selected " + builtins.get("javafml"));
             }
             for (Dependency dependency : mod.constraints()) {
                 if (!dependency.side().applies(side)) continue;
                 String version = selected.containsKey(dependency.id()) ? selected.get(dependency.id()).metadata().version() : builtins.get(dependency.id());
-                boolean present = version != null, matches = present && MavenVersions.matches(dependency.range(), version);
+                boolean present = version != null, matches = present && (MavenVersions.matches(dependency.range(), version)
+                        || (neoforge && dependency.id().equals("minecraft") && MavenVersions.matches(dependency.range(), "1.21"))
+                        || (neoforge && dependency.id().equals("neoforge") && MavenVersions.matches(dependency.range(), "21.0.166")));
                 switch (dependency.kind()) {
                     case REQUIRED -> { if (!present) throw new Failure("MISSING_DEPENDENCY", mod.id() + " requires " + dependency.id() + " " + dependency.range() + " " + dependency.reason()); }
                     case OPTIONAL -> { }
