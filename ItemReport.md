@@ -80,7 +80,7 @@ Minecraft 版本为 **1.21.1**。批次记录的 loader、NeoForge bridge、Forg
 | 依赖或元数据输入错误，未启动游戏 | 9 |
 | 合计 | 500 |
 
-**500 = 453 个主菜单通过 + 32 个阶段失败 + 6 个超时 + 9 个输入错误。**32 个阶段失败由 2 个 admission FAIL 和 30 个 menu FAIL 组成，尚未逐一确认是否属于 NF 缺陷。
+500 = 453 个主菜单通过 + 32 个阶段失败 + 6 个超时 + 9 个输入错误。32 个阶段失败由 2 个 admission FAIL 和 30 个 menu FAIL 组成，尚未逐一确认是否属于 NF 缺陷。
 
 前 500 个的依赖规划为 491 PASS、9 INPUT_ERROR；admission 为 489 PASS、2 FAIL，另有 9 个未执行。实际执行的主菜单阶段共 489 个，453 PASS、30 FAIL、6 TIMEOUT；11 个未执行主菜单，原因是 9 个输入错误和 2 个 admission 失败。
 
