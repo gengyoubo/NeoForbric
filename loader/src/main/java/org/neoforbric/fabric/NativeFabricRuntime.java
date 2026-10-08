@@ -26,6 +26,8 @@ public final class NativeFabricRuntime implements AutoCloseable {
     private FabricRuntimePlan plan;
     private org.spongepowered.asm.mixin.extensibility.IRemapper mixinRemapper;
     private boolean mainInvoked, clientInvoked;
+    private boolean sharedMixin;
+    private Object pendingClient;
     public NativeFabricRuntime(LaunchOptions options, AuditLog audit) {
         if (!options.client()) throw new Failure("FABRIC_RUNTIME_SCOPE", "Initial experimental Fabric runtime is client-only");
         active = true;
@@ -53,7 +55,29 @@ public final class NativeFabricRuntime implements AutoCloseable {
         return all;
     }
     public List<Discovery.Candidate> resolve() { return plan.resolve(); }
+    public void nativeMods(List<Discovery.Candidate> mods) {
+        for (var candidate : mods) {
+            Metadata mod = candidate.metadata();
+            plan.builtin(mod.id(), mod.version(), List.of(candidate.archive().path()));
+            if (mod.ecosystem() == Metadata.Ecosystem.NEOFORGE)
+                for (String alias : org.neoforbric.neoforge.NeoForgeMetadata.read(candidate.archive()).provides(mod.id())) {
+                    // The original API aggregate is metadata-only; its nested modules
+                    // use native implementations, while its declared version stays visible.
+                    if (plan.nodes().stream().anyMatch(node -> node.nativeCandidate().isRoot()
+                            && (node.metadata().getId().equals(alias) || node.metadata().getProvides().contains(alias)))) continue;
+                    plan.builtin(alias, mod.version(), List.of(candidate.archive().path()));
+                    audit.record("DISCOVER", "fabric-native-provided", alias, Map.of("owner", mod.id(), "version", mod.version()));
+                }
+        }
+        plan.builtin("neoforge", "21.1.248", List.of(codeSource(NativeFabricRuntime.class)));
+    }
+    public NeoFabricLauncher launcher() { return launcher; }
     public Map<Path, String> exclusions() { return plan.exclusions(); }
+    /** Original API signatures are needed to map inherited overrides in consumers. */
+    public List<Archive> providedCompileSources() {
+        return plan.nodes().stream().filter(node -> plan.exclusions().getOrDefault(node.source().archive().path(), "").startsWith("Provided by builtin "))
+                .map(node -> node.source().archive()).toList();
+    }
     public boolean defersRegistries() { return plan.selectedNative().stream().anyMatch(mod -> mod.getId().equals("fabric-registry-sync-v0")); }
     public void prepareClient(Object minecraft) { facade.prepareModInit(provider.getLaunchDirectory(), minecraft); }
     public Set<String> nestedPaths(Discovery.Candidate candidate) { return plan.node(candidate).nestedPaths(); }
@@ -61,12 +85,16 @@ public final class NativeFabricRuntime implements AutoCloseable {
     public boolean bundledLibrary(Discovery.Candidate candidate) { return plan.bundledLibrary(candidate); }
     public GameClassLoader.Generated generated(String name, ClassIndex index) { return NeoMixinService.generated(name, index); }
     public void install(List<Discovery.Candidate> prepared, RuntimeInputs inputs, TransformPipeline pipeline) throws IOException {
+        install(prepared, inputs, pipeline, false);
+    }
+    public void install(List<Discovery.Candidate> prepared, RuntimeInputs inputs, TransformPipeline pipeline, boolean sharedMixin) throws IOException {
+        this.sharedMixin = sharedMixin;
         Map<String, Discovery.Candidate> byId = new HashMap<>(); prepared.forEach(c -> byId.put(c.metadata().id(), c));
         for (var candidate : plan.selectedNative()) {
             if (byId.containsKey(candidate.getId())) candidate.setPaths(List.of(byId.get(candidate.getId()).archive().path()));
             NativeAccess.call(facade, FabricLoaderImpl.class, "addMod", new Class<?>[]{net.fabricmc.loader.impl.discovery.ModCandidateImpl.class}, candidate);
         }
-        var mappingTree = GamePreparation.mappings(inputs.mappings(), inputs.intermediaryMappings());
+        var mappingTree = GamePreparation.mappings(inputs);
         NativeAccess.set(facade, FabricLoaderImpl.class, "mappingResolver", new NeoMappingResolver(mappingTree));
         // The passive Fabric implementation is shaded against its own mapping-io ABI.
         // Serialize our verified tree so both implementations consume exactly the same mappings.
@@ -85,7 +113,7 @@ public final class NativeFabricRuntime implements AutoCloseable {
                 return FabricLifecycleCompatibility.beforeMixin(context.name(), FabricTransformer.transform(false, EnvType.CLIENT, context.name(), bytes));
             }
         });
-        pipeline.add(new TransformPipeline.Transformer() {
+        if (!sharedMixin) pipeline.add(new TransformPipeline.Transformer() {
             @Override public String id() { return "fabric-runtime-mixin"; }
             @Override public Set<String> after() { return Set.of("fabric-runtime-access-and-environment"); }
             @Override public byte[] transform(TransformPipeline.Context context, byte[] bytes) {
@@ -120,7 +148,11 @@ public final class NativeFabricRuntime implements AutoCloseable {
         NativeAccess.call(facade, FabricLoaderImpl.class, "setupMods", new Class<?>[0]);
         FabricMixinBootstrap.init(EnvType.CLIENT, facade);
         org.spongepowered.asm.mixin.MixinEnvironment.getDefaultEnvironment().getRemappers().add(mixinRemapper);
+        if (sharedMixin) return; // Native configs join the same transformer before it advances phases.
         MixinExtrasBootstrap.init(); launcher.finishMixin();
+        finishPreparation();
+    }
+    public void finishPreparation() {
         facade.prepareModInit(provider.getLaunchDirectory(), null);
         invoke("preLaunch", PreLaunchEntrypoint.class, PreLaunchEntrypoint::onPreLaunch);
         audit.record("PREPARE", "fabric-runtime-ready", "plan", Map.of("mixinService", "NeoForbric", "loader", "G", "targetNamespace", "mojang"));
@@ -128,8 +160,10 @@ public final class NativeFabricRuntime implements AutoCloseable {
     public void initializeMain() {
         if (mainInvoked) throw new Failure("DUPLICATE_INITIALIZATION", "Fabric main invoked twice"); mainInvoked = true;
         invoke("main", ModInitializer.class, ModInitializer::onInitialize);
+        if (pendingClient != null) { Object instance = pendingClient; pendingClient = null; initializeClient(instance); }
     }
     public void initializeClient(Object minecraft) {
+        if (sharedMixin && !mainInvoked) { pendingClient = minecraft; return; }
         if (!mainInvoked || clientInvoked) throw new Failure("FABRIC_LIFECYCLE", "Client initialization out of order"); clientInvoked = true;
         facade.prepareModInit(provider.getLaunchDirectory(), minecraft);
         invoke("client", ClientModInitializer.class, ClientModInitializer::onInitializeClient);

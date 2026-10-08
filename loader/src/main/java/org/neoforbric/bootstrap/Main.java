@@ -24,8 +24,10 @@ public final class Main {
         }
         try {
             LaunchOptions options = LaunchOptions.parse(args);
-            new Bootstrap().run(options);
-            System.out.println((options.inspect() ? "Inspection" : options.minecraft() ? "Minecraft bootstrap" : "Fixture launch") + " completed. Audit: " + options.audit().toAbsolutePath());
+            Bootstrap bootstrap = new Bootstrap();
+            bootstrap.run(options);
+            System.out.println((options.inspect() ? "Inspection" : options.minecraft() ? "Minecraft bootstrap" : "Fixture launch") + " completed. Audit: "
+                    + bootstrap.audit().savedPath().map(Object::toString).orElse("unavailable; see audit warning above"));
             return 0;
         } catch (Failure failed) {
             System.err.println("[" + failed.code() + "] " + failed.getMessage());

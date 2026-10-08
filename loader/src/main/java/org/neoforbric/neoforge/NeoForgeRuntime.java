@@ -18,6 +18,9 @@ public final class NeoForgeRuntime implements AutoCloseable {
     private java.lang.reflect.Method transformEnums;
     private List<Archive> boundArchives = List.of();
     public void install(TransformPipeline pipeline, AuditLog audit) {
+        install(pipeline, audit, null);
+    }
+    public void install(TransformPipeline pipeline, AuditLog audit, org.neoforbric.fabric.NativeFabricRuntime fabric) {
         Set<String> preceding = pipeline.registeredIds();
         pipeline.add(new TransformPipeline.Transformer() {
             public String id() { return "neoforge-enum-extension"; }
@@ -31,7 +34,7 @@ public final class NeoForgeRuntime implements AutoCloseable {
                 }
             }
         });
-        mixins = new NeoForgeMixins(pipeline, audit);
+        mixins = new NeoForgeMixins(pipeline, audit, fabric);
     }
     public GameClassLoader.Generated generated(String name, ClassIndex index) { return mixins.generated(name, index); }
     public void bind(ClassIndex index, GameClassLoader loader, TransformPipeline pipeline, List<Archive> archives) { boundArchives = List.copyOf(archives); mixins.bind(index, loader, pipeline, archives); }
@@ -62,7 +65,7 @@ public final class NeoForgeRuntime implements AutoCloseable {
         }
         List<Path> rules = new ArrayList<>();
         List<Archive> archives = new ArrayList<>(); if (!registryContract()) archives.add(Archive.read(universal));
-        mods.stream().filter(m -> m.metadata().ecosystem() == Metadata.Ecosystem.NEOFORGE).map(Discovery.Candidate::archive).forEach(archives::add);
+        mods.stream().filter(ForgeNeoForgeCompatibility::nativeMod).map(Discovery.Candidate::archive).forEach(archives::add);
         for (Archive archive : archives) {
             List<String> names = new ArrayList<>();
             byte[] descriptor = archive.read("META-INF/neoforge.mods.toml");
@@ -125,7 +128,7 @@ public final class NeoForgeRuntime implements AutoCloseable {
         List<Path> paths = new ArrayList<>(); Set<String> seen = new HashSet<>();
         Map<Path, java.util.function.Consumer<java.util.function.Consumer<byte[]>>> scans = new HashMap<>();
         Path snapshotDirectory = root.resolve("mod-snapshots"); Files.createDirectories(snapshotDirectory);
-        for (var mod : mods) if (mod.metadata().ecosystem() == Metadata.Ecosystem.NEOFORGE && seen.add(mod.archive().hash())) {
+        for (var mod : mods) if (ForgeNeoForgeCompatibility.nativeMod(mod) && seen.add(mod.archive().hash())) {
             Path snapshot = snapshotDirectory.resolve(mod.archive().hash() + ".jar");
             if (!Files.exists(snapshot) || !Archive.sha256(Files.readAllBytes(snapshot)).equals(mod.archive().hash())) {
                 Path temporary = Files.createTempFile(snapshotDirectory, "snapshot-", ".part");
@@ -145,9 +148,9 @@ public final class NeoForgeRuntime implements AutoCloseable {
         scans.put(originalUniversal, consumer -> scanClasses(boundArchives.stream().filter(archive -> archive.path().equals(universal)).findFirst().orElseThrow(), consumer));
         var type = Class.forName("org.neoforbric.neoforge.runtime.NeoForgeBridge", true, loader);
         closeBridge = type.getMethod("close");
-        var ids = mods.stream().filter(mod -> mod.metadata().ecosystem() == Metadata.Ecosystem.NEOFORGE).map(mod -> mod.metadata().id()).toList();
+        var ids = mods.stream().filter(ForgeNeoForgeCompatibility::nativeMod).map(mod -> mod.metadata().id()).toList();
         Map<String, List<String>> entrypoints = new TreeMap<>(); Set<String> scanned = new HashSet<>();
-        for (var mod : mods) if (mod.metadata().ecosystem() == Metadata.Ecosystem.NEOFORGE && scanned.add(mod.archive().hash()) && NeoForgeMetadata.read(mod.archive()).modLoader().equals("javafml")) entrypoints.putAll(NeoForgeEntrypoints.scan(mod.archive(), "client"));
+        for (var mod : mods) if (ForgeNeoForgeCompatibility.nativeMod(mod) && scanned.add(mod.archive().hash()) && NeoForgeMetadata.read(mod.archive()).modLoader().equals("javafml")) entrypoints.putAll(NeoForgeEntrypoints.scan(mod.archive(), "client"));
         @SuppressWarnings("unchecked")
         List<String> configs = (List<String>)type.getMethod("prepare", Path.class, Path.class, Path.class, List.class, ClassLoader.class, List.class, Map.class, Map.class, boolean.class, List.class, Map.class)
                 .invoke(null, directory, selectedGame, originalUniversal, paths, loader, ids, predecessors, entrypoints, registryContract(), libraries.stream().map(Archive::path).toList(), scans);

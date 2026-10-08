@@ -13,6 +13,7 @@ public final class NeoForgeProbe {
         long buttons = minecraft.screen.children().stream().filter(child -> child.getClass().getName().equals("org.neoforbric.client.NeoForbricClientUi$ModsButton")).count();
         if (buttons != 1) throw new IllegalStateException("Expected one NeoForbric Mods button, found " + buttons);
         System.out.println("NEOFORGE_TITLE_UI_OK neoforbricButtons=" + buttons + " nativeButtons=0");
+        verifyJadeResources(minecraft);
         if (Boolean.getBoolean("neoforbric.probe.mods")) {
             try (var image = net.minecraft.client.Screenshot.takeScreenshot(minecraft.getMainRenderTarget())) {
                 image.writeToFile(minecraft.gameDirectory.toPath().resolve("neoforge-title-probe.png"));
@@ -20,6 +21,17 @@ public final class NeoForgeProbe {
         }
         String namespace = "ecologicalgarden";
         if (!ModList.get().isLoaded("neoforge")) throw new IllegalStateException("NeoForge did not construct successfully");
+        if (Boolean.getBoolean("neoforbric.neoforge.mixedWorldProbe")) {
+            try {
+                Class<?> facade = Class.forName("net.fabricmc.loader.api.FabricLoader"); Object fabric = facade.getMethod("getInstance").invoke(null);
+                for (String id : java.util.List.of("continuity", "carpet", "viafabricplus", "fabric-api"))
+                    if (!(boolean)facade.getMethod("isModLoaded", String.class).invoke(fabric, id)) throw new IllegalStateException("Missing Fabric mod " + id);
+            } catch (ReflectiveOperationException error) { throw new IllegalStateException("Passive Fabric API not available", error); }
+            for (String id : java.util.List.of("sodium", "sophisticatedbackpacks", "sophisticatedcore"))
+                if (!ModList.get().isLoaded(id)) throw new IllegalStateException("Missing native mod " + id);
+            verifyMixedTagRemoval();
+            NeoForgeWorldProbe.start(minecraft); return;
+        }
         if (!ModList.get().isLoaded(namespace)) {
             if (Boolean.getBoolean("neoforbric.neoforge.worldProbe")) throw new IllegalStateException("World probe requires EcologicalGarden");
             System.out.println("NEOFORGE_PROBE_OK mods=" + ModList.get().getMods().stream().map(mod -> mod.getModId()).toList());
@@ -34,5 +46,40 @@ public final class NeoForgeProbe {
         System.out.println("NEOFORGE_PROBE_OK target=" + namespace + " items=" + items + " blocks=" + blocks + " entityTypes=" + entities
                 + " gameLoader=" + client.getClass().getClassLoader().getName() + " itemIdentity=" + (net.minecraft.world.item.Item.class.getClassLoader() == client.getClass().getClassLoader()));
         if (Boolean.getBoolean("neoforbric.neoforge.worldProbe")) NeoForgeWorldProbe.start((net.minecraft.client.Minecraft)client);
+    }
+    private static void verifyJadeResources(net.minecraft.client.Minecraft minecraft) {
+        try {
+            Class<?> helper;
+            try { helper = Class.forName("snownee.jade.impl.theme.ThemeHelper"); }
+            catch (ClassNotFoundException absent) { return; }
+            var id = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("jade", "jade_themes/waila.json");
+            var resource = minecraft.getResourceManager().getResource(id).orElseThrow(() -> new IllegalStateException("Jade default theme resource is not mounted"));
+            try (var reader = resource.openAsReader()) {
+                if (!com.google.gson.JsonParser.parseReader(reader).isJsonObject()) throw new IllegalStateException("Invalid Jade default theme resource");
+            }
+            Object instance = helper.getField("INSTANCE").get(null);
+            var fallback = helper.getDeclaredField("fallback"); fallback.setAccessible(true);
+            var themes = helper.getDeclaredField("themes"); themes.setAccessible(true);
+            int count = ((java.util.Map<?, ?>)themes.get(instance)).size();
+            if (fallback.get(instance) == null || count < 4) throw new IllegalStateException("Jade themes did not finish resource reload");
+            System.out.println("JADE_RESOURCES_OK defaultTheme=jade:waila themes=" + count + " pack=" + resource.sourcePackId());
+        } catch (ReflectiveOperationException | java.io.IOException error) { throw new IllegalStateException("Jade resource verification failed", error); }
+    }
+    private static void verifyMixedTagRemoval() {
+        var file = net.minecraft.tags.TagFile.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE,
+                com.google.gson.JsonParser.parseString("{\"values\":[\"minecraft:stone\",\"minecraft:dirt\"],\"remove\":[\"minecraft:stone\"]}")).getOrThrow();
+        if (file.remove().size() != 1) throw new IllegalStateException("Native tag codec did not decode remove entries");
+        try {
+            var api = Class.forName("net.fabricmc.fabric.api.tag.v1.FabricTagFile");
+            if (!api.isInstance(file) || !api.getMethod("remove").invoke(file).equals(file.remove())) throw new IllegalStateException("Fabric tag API does not expose native remove entries");
+        } catch (ReflectiveOperationException error) { throw new IllegalStateException(error); }
+        var loader = new net.minecraft.tags.TagLoader<net.minecraft.world.level.block.Block>(BuiltInRegistries.BLOCK::getOptional, "tags/block");
+        var entries = new java.util.ArrayList<net.minecraft.tags.TagLoader.EntryWithSource>();
+        file.entries().forEach(entry -> entries.add(new net.minecraft.tags.TagLoader.EntryWithSource(entry, "mixed probe", false)));
+        file.remove().forEach(entry -> entries.add(new net.minecraft.tags.TagLoader.EntryWithSource(entry, "mixed probe", true)));
+        var id = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("neoforbric", "probe");
+        var values = loader.build(java.util.Map.of(id, entries)).get(id);
+        if (values == null || values.size() != 1 || !values.contains(net.minecraft.world.level.block.Blocks.DIRT)) throw new IllegalStateException("Native tag removal did not preserve Fabric semantics");
+        System.out.println("MIXED_FABRIC_TAG_REMOVAL_OK codec=true api=true values=[minecraft:dirt]");
     }
 }

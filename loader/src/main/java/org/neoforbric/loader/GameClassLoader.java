@@ -14,6 +14,8 @@ import org.neoforbric.fabric.NativeFabricRuntime;
 
 /** The sole defining loader for all admitted game and mod types. Parent access is an allowlist. */
 public final class GameClassLoader extends URLClassLoader implements Closeable {
+    // Keep the kernel stream: a poisoned game logger cannot load its crash helpers.
+    private final java.io.PrintStream definitionDiagnostics = System.err;
     static { registerAsParallelCapable(); }
     // Kept for diagnostics/probes; URLClassLoader has no configurable name.
     @Override public String getName() { return "NeoForbric-Game"; }
@@ -207,7 +209,10 @@ public final class GameClassLoader extends URLClassLoader implements Closeable {
 
     private Failure definitionFailure(String name, Throwable failed) {
         Failure failure = failed instanceof Failure f ? f : new Failure("CLASS_DEFINITION", "Cannot define / resolve " + name, failed);
-        poison.compareAndSet(null, failure);
+        if (poison.compareAndSet(null, failure)) {
+            definitionDiagnostics.println("[NeoForbric] Class definition failed: " + name);
+            failure.printStackTrace(definitionDiagnostics);
+        }
         audit.record("FAILED", "definition-failed", name, Map.of("code", failure.code(), "message", failure.getMessage(),
                 "severity", "INSTANCE_FATAL", "stateTainted", "true"));
         return failure;

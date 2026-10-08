@@ -81,6 +81,10 @@ public final class NeoForgeBridge {
             String text; try (var stream = jar.getInputStream(service)) { text = new String(stream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8); }
             for (String line : text.split("\\R")) {
                 String name = line.split("#", 2)[0].trim(); if (name.isEmpty()) continue;
+                // Forgified Fabric Loader uses this service to inject a second Fabric
+                // loader into ModLauncher. The kernel already owns the passive Fabric
+                // facade and classloader; the port's API modules use javafml/lowcodefml.
+                if (name.equals("net.fabricmc.loader.impl.bootstrap.FabricLoaderHackyInjector")) continue;
                 IModLanguageLoader provider = (IModLanguageLoader)Class.forName(name, true, loader).getConstructor().newInstance();
                 if (languages.putIfAbsent(provider.name(), provider) != null) throw new IllegalStateException("Duplicate language provider " + provider.name());
             }

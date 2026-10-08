@@ -32,6 +32,16 @@ public final class NeoForgeDiscovery {
                 else { roots.add(archive); discovery.nested(archive); }
             }
         }
+        // Native ports preserve NeoForge's events and patched interfaces; Fabric's
+        // passive resolver substitutes only the aliases explicitly declared by them.
+        if (!Boolean.getBoolean("neoforbric.fabric.plain") && roots.stream().noneMatch(archive ->
+                archive.names().contains("META-INF/neoforge.mods.toml") && NeoForgeMetadata.read(archive).mods().stream().anyMatch(mod -> mod.id().equals("fabric_api")))
+                && roots.stream().anyMatch(NeoForgeDiscovery::needsFabricApi)) {
+            Archive api;
+            try { api = org.neoforbric.minecraft.NeoForgeFabricApi.prepare(discovery.cache.resolve("fabric-api"), audit); }
+            catch (Exception error) { throw new Failure("FABRIC_NATIVE_API", "Cannot prepare the pinned NeoForge Fabric API implementation", error); }
+            roots.add(api); discovery.nested(api);
+        }
         List<Archive> selected = new ArrayList<>(roots);
         for (var entry : discovery.requests.entrySet()) {
             List<Nested> choices = entry.getValue();
@@ -88,6 +98,12 @@ public final class NeoForgeDiscovery {
             audit.record("DISCOVER", "jarjar-mod-alias-selected", entry.getKey(), Map.of("version", winner.metadata().version(), "sha256", winner.archive().hash()));
         }
         return new Result(mods.stream().filter(mod -> !excludedNested.contains(mod.archive().hash())).toList(), List.copyOf(libraries));
+    }
+    private static boolean needsFabricApi(Archive archive) {
+        if (archive.read("fabric.mod.json") == null || archive.read("META-INF/neoforge.mods.toml") != null) return false;
+        JsonObject metadata = FabricJson.metadata(archive);
+        if (metadata.get("id").getAsString().equals("fabric-api")) return true;
+        return metadata.has("depends") && metadata.getAsJsonObject("depends").keySet().stream().anyMatch(id -> id.startsWith("fabric-"));
     }
     private static boolean hasDescriptor(Archive archive) {
         return java.util.stream.Stream.of("neoforbric.mod.json", "fabric.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml")

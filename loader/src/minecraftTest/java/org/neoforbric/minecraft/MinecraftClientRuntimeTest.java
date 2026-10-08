@@ -1,18 +1,40 @@
 package org.neoforbric.minecraft;
 
 import com.google.gson.*;
+import com.sun.nio.file.ExtendedOpenOption;
+import java.nio.channels.FileChannel;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.*;
 import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MinecraftClientRuntimeTest {
     @TempDir Path temporary;
     private record Launch(int status, String output, JsonObject audit) {}
+    @Test @EnabledOnOs(OS.WINDOWS)
+    void lockedAuditStillRendersMenuAndCompletesCleanupWithSavedReport() throws Exception {
+        Path target = temporary.resolve("audit.json");
+        Files.writeString(target, "reader-owned original report");
+        try (var reader = FileChannel.open(target, StandardOpenOption.READ, ExtendedOpenOption.NOSHARE_DELETE)) {
+            Launch launch = launch(false, null, true);
+            assertEquals(0, launch.status(), launch.output());
+            assertEquals("SUCCESS", launch.audit().get("outcome").getAsString());
+            assertTrue(launch.output().contains("CLIENT_PROBE_OK"), launch.output());
+            assertTrue(launch.output().contains("saved report to"), launch.output());
+            assertFalse(launch.output().contains("Unreported exception thrown"), launch.output());
+            assertTrue(events(launch).stream().anyMatch(e -> e.get("type").getAsString().equals("client-complete")));
+            assertEquals("reader-owned original report", Files.readString(target));
+            try (var reports = Files.list(temporary)) {
+                assertEquals(2, reports.filter(p -> p.getFileName().toString().startsWith("audit.json.fallback-")).count());
+            }
+        }
+    }
     @Test void nativeWindowLoadsResourcesRendersMainMenuAndClosesAfterFiveFrames() throws Exception {
         Launch launch = launch(false);
         assertEquals(0, launch.status(), launch.output()); assertEquals("SUCCESS", launch.audit().get("outcome").getAsString());
@@ -69,6 +91,8 @@ class MinecraftClientRuntimeTest {
         var decisions = events(launch).stream().filter(e -> e.get("type").getAsString().equals("mod-status")).toList();
         var diagnostic = decisions.stream().filter(e -> e.get("subject").getAsString().equals("diagnostic_ui_probe")).findFirst().orElseThrow().getAsJsonObject("details");
         assertTrue(diagnostic.get("reason").getAsString().contains("diagnostic.accesswidener"));
+        assertTrue(launch.output().contains("[NeoForbric] Unsupported mod: Unsupported Fabric Probe (diagnostic_ui_probe)"), launch.output());
+        assertTrue(launch.output().contains(diagnostic.get("reason").getAsString()), "Startup log omits the full rejection report");
         assertEquals(8, JsonParser.parseString(diagnostic.get("diagnostics").getAsString()).getAsJsonArray().size());
         for (String id : List.of("forge_ui_probe", "neoforge_ui_probe"))
             assertTrue(decisions.stream().anyMatch(e -> e.get("subject").getAsString().equals(id) && e.getAsJsonObject("details").get("status").getAsString().equals("UNSUPPORTED")));
@@ -84,6 +108,9 @@ class MinecraftClientRuntimeTest {
         return launch(fail, null);
     }
     private Launch launch(boolean fail, Path mods) throws Exception {
+        return launch(fail, mods, false);
+    }
+    private Launch launch(boolean fail, Path mods, boolean lockedAudit) throws Exception {
         Files.writeString(temporary.resolve("options.txt"), "onboardAccessibility:false\nrenderDistance:4\n");
         Path java = Path.of(System.getProperty("java.home"), "bin/java.exe");
         List<String> command = new ArrayList<>(List.of(java.toString(), "-Xmx2g", "-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8"));
@@ -101,10 +128,19 @@ class MinecraftClientRuntimeTest {
         try {
             assertTrue(process.waitFor(180, TimeUnit.SECONDS), "Client did not exit: " + Files.readString(temporary.resolve("output.txt")));
             Path evidence = Files.createDirectories(Path.of(System.getProperty("minecraft.clientEvidence")));
-            String label = mods != null ? "mods" : fail ? "failure" : "native";
+            String label = lockedAudit ? "locked-audit" : mods != null ? "mods" : fail ? "failure" : "native";
             Files.copy(temporary.resolve("output.txt"), evidence.resolve(label + "-output.txt"), StandardCopyOption.REPLACE_EXISTING);
-            if (Files.exists(temporary.resolve("audit.json"))) Files.copy(temporary.resolve("audit.json"), evidence.resolve(label + "-audit.json"), StandardCopyOption.REPLACE_EXISTING);
-            return new Launch(process.exitValue(), Files.readString(temporary.resolve("output.txt")), JsonParser.parseString(Files.readString(temporary.resolve("audit.json"))).getAsJsonObject());
+            Path report = temporary.resolve("audit.json");
+            if (lockedAudit) {
+                try (var paths = Files.list(temporary)) {
+                    for (Path candidate : paths.filter(p -> p.getFileName().toString().startsWith("audit.json.fallback-")).toList()) {
+                        if (JsonParser.parseString(Files.readString(candidate)).getAsJsonObject().get("outcome").getAsString().equals("SUCCESS")) report = candidate;
+                    }
+                }
+            }
+            Files.copy(report, evidence.resolve(label + "-audit.json"), StandardCopyOption.REPLACE_EXISTING);
+            if (lockedAudit) assertTrue(Files.readString(temporary.resolve("output.txt")).contains("completed. Audit: " + report), "Exit message points at the locked original report");
+            return new Launch(process.exitValue(), Files.readString(temporary.resolve("output.txt")), JsonParser.parseString(Files.readString(report)).getAsJsonObject());
         } finally { if (process.isAlive()) process.destroyForcibly(); }
     }
     private List<JsonObject> events(Launch launch) { return launch.audit().getAsJsonArray("events").asList().stream().map(JsonElement::getAsJsonObject).toList(); }

@@ -1,5 +1,7 @@
 ext.fabricLoaderVersion = '0.19.5'
 
+apply from: 'gradle/benchmark.gradle'
+
 tasks.register('assembleInstaller') {
     group = 'distribution'
     description = 'Build the standalone neoforbric-installer.jar in the project root.'
@@ -209,7 +211,9 @@ tasks.register('runClient', JavaExec) {
         dependsOn 'prepareNeoForgeClient', ':neoforge-runtime:jar'
         systemProperty 'neoforbric.neoforge.runtime', layout.buildDirectory.file('neoforge-client/neoforge-runtime.json').get().asFile.absolutePath
         systemProperty 'neoforbric.neoforge.bridge', project(':neoforge-runtime').tasks.named('jar').get().archiveFile.get().asFile.absolutePath
+        systemProperty 'neoforbric.forge.compat.root', layout.buildDirectory.dir('forge-client').get().asFile.absolutePath
         systemProperty 'neoforbric.neoforge.worldProbe', providers.gradleProperty('neoForgeWorldProbe').getOrElse('false')
+        systemProperty 'neoforbric.neoforge.mixedWorldProbe', providers.gradleProperty('mixedFabricWorldProbe').getOrElse('false')
         jvmArgs '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED', '--add-opens=java.base/java.util.jar=ALL-UNNAMED',
                 '--add-exports=java.base/sun.security.util=ALL-UNNAMED'
     }

@@ -51,7 +51,10 @@ class ModCatalogTest {
             assertEquals(LoadStatus.DISABLED, infos.stream().filter(i -> i.id().equals("server_sample")).findFirst().orElseThrow().status());
             for (String id : List.of("forge_sample", "neo_sample")) {
                 var unsupported = infos.stream().filter(i -> i.id().equals(id)).findFirst().orElseThrow();
-                assertEquals(LoadStatus.UNSUPPORTED, unsupported.status()); assertTrue(unsupported.reason().contains("adapter not implemented"));
+                assertEquals(LoadStatus.UNSUPPORTED, unsupported.status());
+                assertTrue(unsupported.reason().contains("not enabled for this launch"));
+                assertEquals("runtime", unsupported.diagnostics().getFirst().subject());
+                assertEquals(ModDiagnostic.Kind.UNSUPPORTED_FEATURE, unsupported.diagnostics().getFirst().kind());
             }
             catalog.failed("Fatal initialization failure");
             assertEquals(LoadStatus.FAILED, LoadedMods.snapshot().stream().filter(i -> i.id().equals("fabric_sample")).findFirst().orElseThrow().status());

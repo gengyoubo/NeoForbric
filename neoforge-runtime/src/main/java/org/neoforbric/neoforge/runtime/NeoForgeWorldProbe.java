@@ -48,14 +48,23 @@ public final class NeoForgeWorldProbe {
                         for (int y = 0; y < 4; y++) level.setBlockAndUpdate(center.offset(x, y, z), Blocks.AIR.defaultBlockState());
                     }
                     List<Integer> ids = new ArrayList<>();
-                    for (var key : BuiltInRegistries.ENTITY_TYPE.keySet().stream().filter(id -> id.getNamespace().equals("ecologicalgarden")).sorted().toList()) {
+                    boolean mixed = Boolean.getBoolean("neoforbric.neoforge.mixedWorldProbe");
+                    var types = mixed ? java.util.Collections.nCopies(3, net.minecraft.resources.ResourceLocation.withDefaultNamespace("sheep"))
+                            : BuiltInRegistries.ENTITY_TYPE.keySet().stream().filter(id -> id.getNamespace().equals("ecologicalgarden")).sorted().toList();
+                    for (var key : types) {
                         var entity = BuiltInRegistries.ENTITY_TYPE.get(key).create(level);
                         if (!(entity instanceof Mob mob)) continue;
                         mob.setNoAi(true); mob.moveTo(center.getX() + 2 + ids.size(), center.getY(), center.getZ(), 180, 0);
                         if (!level.addFreshEntity(mob)) throw new IllegalStateException("Failed to spawn " + key);
                         ids.add(mob.getId()); if (ids.size() == 3) break;
                     }
-                    if (ids.size() != 3) throw new IllegalStateException("Could not create three EcologicalGarden mobs");
+                    if (ids.size() != 3) throw new IllegalStateException("Could not create three probe mobs");
+                    if (mixed) {
+                        var item = BuiltInRegistries.ITEM.get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("sophisticatedbackpacks", "backpack"));
+                        if (item == net.minecraft.world.item.Items.AIR) throw new IllegalStateException("Backpack was not registered");
+                        player.getInventory().setItem(0, new net.minecraft.world.item.ItemStack(item));
+                        net.minecraft.world.entity.item.FallingBlockEntity.fall(level, center.offset(3, 5, 0), Blocks.SAND.defaultBlockState());
+                    }
                     player.connection.teleport(center.getX() + 0.5, center.getY(), center.getZ() + 0.5, -90, 15);
                     spawned.complete(ids);
                 } catch (Throwable error) { spawned.completeExceptionally(error); }
@@ -65,9 +74,12 @@ public final class NeoForgeWorldProbe {
         List<Integer> ids = spawned.join();
         if (ids.stream().anyMatch(id -> client.level.getEntity(id) == null)) return;
         if (++ticks != 60) return;
+        if (Boolean.getBoolean("neoforbric.neoforge.mixedWorldProbe") && !BuiltInRegistries.ITEM.getKey(client.player.getInventory().getItem(0).getItem()).toString().equals("sophisticatedbackpacks:backpack"))
+            throw new IllegalStateException("Native backpack did not synchronize to the mixed client");
         try (var image = Screenshot.takeScreenshot(client.getMainRenderTarget())) {
             Path screenshot = client.gameDirectory.toPath().resolve("neoforge-world-probe.png"); image.writeToFile(screenshot);
             System.out.println("NEOFORGE_WORLD_PROBE_OK mobs=" + ids.size() + " ticks=" + ticks + " screenshot=" + screenshot);
+            if (Boolean.getBoolean("neoforbric.neoforge.mixedWorldProbe")) System.out.println("MIXED_FABRIC_WORLD_PROBE_OK backpack=true fabric=[continuity,carpet,viafabricplus,fabric-api] native=[sodium,sophisticatedbackpacks,sophisticatedcore]");
         } catch (java.io.IOException error) { throw new IllegalStateException(error); }
         client.stop();
     }

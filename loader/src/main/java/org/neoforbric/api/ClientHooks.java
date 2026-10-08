@@ -12,7 +12,10 @@ public final class ClientHooks {
         return attach(lifecycle, ready, stopAfterFrames, screen -> {});
     }
     public static Session attach(Consumer<String> lifecycle, Consumer<Object> ready, int stopAfterFrames, Consumer<Object> title) {
-        Session session = new Session(lifecycle, ready, stopAfterFrames, title);
+        return attach(lifecycle, ready, stopAfterFrames, title, instance -> {});
+    }
+    public static Session attach(Consumer<String> lifecycle, Consumer<Object> ready, int stopAfterFrames, Consumer<Object> title, Consumer<Object> frame) {
+        Session session = new Session(lifecycle, ready, stopAfterFrames, title, frame);
         if (!ACTIVE.compareAndSet(null, session)) throw new IllegalStateException("A client already owns this JVM");
         return session;
     }
@@ -36,13 +39,14 @@ public final class ClientHooks {
         private final Consumer<String> lifecycle;
         private final Consumer<Object> ready;
         private final Consumer<Object> title;
+        private final Consumer<Object> frame;
         private final int stopAfterFrames;
         private final AtomicReference<Throwable> failure = new AtomicReference<>();
         private Object client;
         private Thread shutdownHook;
         private boolean menu, destroyed, stopRequested;
         private int frames;
-        private Session(Consumer<String> lifecycle, Consumer<Object> ready, int stopAfterFrames, Consumer<Object> title) { this.lifecycle = lifecycle; this.ready = ready; this.stopAfterFrames = stopAfterFrames; this.title = title; }
+        private Session(Consumer<String> lifecycle, Consumer<Object> ready, int stopAfterFrames, Consumer<Object> title, Consumer<Object> frame) { this.lifecycle = lifecycle; this.ready = ready; this.stopAfterFrames = stopAfterFrames; this.title = title; this.frame = frame; }
         private void frameRendered(Object instance) {
             client = instance;
             if (stopRequested || destroyed) return;
@@ -54,6 +58,7 @@ public final class ClientHooks {
                     Field fading = screen.getClass().getDeclaredField("fading"); fading.setAccessible(true);
                     if (!fading.getBoolean(screen)) { ready.accept(instance); menu = true; lifecycle.accept("main-menu"); }
                 }
+                if (menu) frame.accept(instance);
                 if (menu && ++frames == stopAfterFrames) { stopRequested = true; lifecycle.accept("stop-requested"); instance.getClass().getMethod("stop").invoke(instance); }
             } catch (ReflectiveOperationException error) {
                 RuntimeException failed = new IllegalStateException("Client frame callback failed", error instanceof InvocationTargetException wrapper ? wrapper.getCause() : error);

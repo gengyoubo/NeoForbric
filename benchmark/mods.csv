@@ -1,0 +1,2 @@
+case_id,mods,dependencies,profile,stages,timeout_s,enabled
+vanilla-smoke,,,fabric,,180,true

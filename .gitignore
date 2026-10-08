@@ -9,3 +9,13 @@
 /logs/
 /bivrik/
 /.mixin.out/
+/fabric.mod.json
+/META-INF/MANIFEST.MF
+__pycache__/
+*.pyc
+*.iml
+hs_err_pid*.log
+replay_pid*.log
+*.hprof
+/mods/test-set/
+/benchmark/dependencies/
