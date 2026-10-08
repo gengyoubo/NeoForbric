@@ -19,3 +19,4 @@ replay_pid*.log
 *.hprof
 /mods/test-set/
 /benchmark/dependencies/
+/benchmark/
