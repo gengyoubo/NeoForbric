@@ -288,13 +288,62 @@ Colorwheel、Iris 1.8.14 和 IrisSearch 共同在定义 Minecraft Window 时缺 
 
 清单见 [第三阶段样本清单](benchmark/stage3-retest.csv)，逐项前置变化与来源见 [第三阶段准备记录](benchmark/stage3-plan-2026-10-09.md)、[前置来源及哈希](benchmark/stage3-dependency-acquisition-2026-10-09.json)、[输入变化](benchmark/stage3-input-changes-2026-10-09.json)、[依赖预检](benchmark/stage3-preflight-2026-10-09.json)和[缺失类核对](benchmark/stage3-class-verification-2026-10-09.json)。
 
+## 第四阶段：再测试
+
+第三阶段 34 个样本中有 5 个 menu FAIL，其中 4 个存在运行前置输入不完整的问题。补齐后，对这 4 个样本建立独立批次重测；另一个 Aether 扩展样本的动态 Mixin 问题继续单独分析。
+
+### 前置补充与核验
+
+| 编号 | 目标模组 | 本次调整 |
+| --- | --- | --- |
+| 0204 | Colorwheel 1.3.0-beta3 | 将 Sodium 0.8.13 缓存子包替换为同版本官方完整发布包，保留 Iris 1.8.14-beta.1。 |
+| 0357 | Expanded AE 2.1.3 | 添加完整 AE2WTLib 19.2.5；保留 AE2 19.2.17、GuideMe 21.1.19、ExtendedAE 2.2.38 和 Glodium 2.2。 |
+| 0538 | Iris 1.8.14-beta.1 | 使用完整 Sodium 0.8.13 发布包。 |
+| 0539 | IrisSearch 1.8.1 | 保留 Iris 1.8.14-beta.1，使用完整 Sodium 0.8.13 发布包。 |
+
+**Sodium 的原因已确认：第三阶段准备时误将缓存中拆出的运行子 JAR 当作完整发布包。** 该文件的 SHA-256 与官方下载完整包内部的 `*-mod.jar` 完全一致；缺失的 `NativeWindowHandle` 位于官方完整包的外层根目录。第四阶段替换为完整发布包，版本仍是 0.8.13，没有抽取旧版类拼补。三个样本在第三阶段的 FAIL 保持原始记录；它们的这一处阻断源于输入准备错误，不能计为三个独立 NF 兼容缺陷。
+
+AE2WTLib 19.2.5 包含缺失的 `AE2wtlibItems`，其必需 AE2 范围为 `[19.2.13,20.0.0)`，与当前 AE2 19.2.17 匹配；其 API 要求固定为 19.2.5，与目标内嵌版本一致。
+
+两份官方发布 JAR 的发布哈希均已核验。4 个样本递归依赖预检均 **READY**；实际选中输入的 7 项缺失类/代表类检查均通过，目标 JAR 及共享运行文件与第三阶段的哈希一致。以上为输入与静态核验，不代表实际主菜单已通过。
+
+### 启动命令（已完成）
+
+本批次由用户串行执行 admission 和 menu，每阶段最多 300 秒、堆 4 GiB。使用现有运行环境直接启动 JVM，保留日志、崩溃报告和审计。
+
+```powershell
+Set-Location 'C:\Users\gengy\Desktop\NeoForbric'
+python tools/benchmark_mods.py --runtime build/benchmark/runtime.json --cases benchmark/stage4-retest.csv --mod-pool benchmark/mods --mod-pool benchmark/dependencies/abnormal-retest --mod-pool benchmark/dependencies/stage3 --mod-pool benchmark/dependencies/stage4 --output build/benchmark/stage4-runs --stages admission,menu --timeout 300 --heap 4g --discard-mod-copies --min-free-mib 1024
+```
+
+输出保存在 `build/benchmark/stage4-runs/` 的新批次中。本次输入有变化，应启动新批次；之后若中断，可按本批次输出的目录使用 `--resume`。
+
+### 第四阶段结果
+
+批次 `20261009T002509Z-1a402572` 已 COMPLETE，共 12 条阶段结果：4 个 dependencies PASS、4 个 admission PASS、4 个 menu PASS，**本轮主菜单通过率为 100%（4/4）**，无失败、超时、输入错误或跳过。四个主菜单 PASS 均已核对原始审计 SUCCESS、main-menu、client-complete 及退出码 0。
+
+| 编号 | 目标模组 | dependencies | admission | menu | admission 耗时 | menu 耗时 |
+| --- | --- | --- | --- | --- | ---: | ---: |
+| 0204 | Colorwheel | PASS | PASS | PASS | 4.546 秒 | 20.091 秒 |
+| 0357 | Expanded AE | PASS | PASS | PASS | 4.765 秒 | 21.574 秒 |
+| 0538 | Iris 1.8.14-beta.1 | PASS | PASS | PASS | 4.502 秒 | 19.996 秒 |
+| 0539 | IrisSearch | PASS | PASS | PASS | 4.474 秒 | 19.935 秒 |
+
+补齐完整前置后，这四个样本均完成主菜单阶段。结果支持此前对它们运行输入不完整的判断；第三阶段的失败记录保留。[本轮结果与审计核验](benchmark/stage4-results-2026-10-09.json)。
+
+清单与资料：[第四阶段清单](benchmark/stage4-retest.csv)、[准备记录](benchmark/stage4-plan-2026-10-09.md)、[官方来源及哈希](benchmark/stage4-dependency-acquisition-2026-10-09.json)、[输入变化](benchmark/stage4-input-changes-2026-10-09.json)、[递归依赖预检](benchmark/stage4-preflight-2026-10-09.json)、[实际输入类核验](benchmark/stage4-class-verification-2026-10-09.json)、[Sodium 子包来源证明](benchmark/stage4-sodium-package-proof-2026-10-09.json)、[共享运行文件核验](benchmark/stage4-runtime-baseline-2026-10-09.json)。
 
 # 结论
 
-第一阶段已完成全部 1136 个样本的判定：**1041 个主菜单通过、64 个阶段失败、12 个超时、19 个输入错误**。排除输入错误后，主菜单通过比例为 **93.20%**。通过结果对应目标模组及其选定必需依赖组合能够完成主菜单阶段。第二阶段重测 95 个异常目标，得到 11 个通过、65 个失败、19 个输入错误、0 个超时；逐项日志分析已确认多项失败来自运行前置未入输入、加载器选择或下载器提前退出，65 个失败目标不能直接等同于 65 个 NF 缺陷。
+在 1136 个测试样本中，排除 19 个 INPUT_ERROR 后，共有 1117 个样本进入有效测试范围，其中 1085 个成功进入主界面，主界面通过率为 **97.14%**。
 
-该结果支持第一阶段单样本加载与主菜单的观察结论。世界加载、模组专属功能、不同生态混合以及整合包整体稳定性尚未由本批次验证，不能把 93.20% 表述为全部功能兼容率或整合包稳定率。
+剩余未通过样本的原因并不完全来自 NeoForbric 本身，主要包括：模组未完整声明实际运行所需前置、依赖版本或平台实现不匹配、加载器 profile 选择错误、Java 版本要求不满足、下载器提前退出、历史 shaded 库或特殊打包结构、动态生成的 Mixin 类不可见，以及少量仍需继续确认的生命周期、类索引或运行时兼容问题。
 
+经过第二、第三阶段复测与依赖修正后，大量第一阶段异常样本能够正常进入主界面，说明第一阶段的 FAIL、TIMEOUT 或缺类错误不能直接等同于 NeoForbric 的兼容性缺陷。
+
+因此，本次实验能够说明：在 Minecraft 1.21.1 环境下，对于本次从多个实际整合包中收集的 1136 个模组样本，NeoForbric 在“单模组及其所需前置能够完成加载并进入主界面”这一层面的兼容性已经达到较高水平。
+
+需要注意的是，**97.14% 仅表示主界面级别的通过率，不代表模组全部功能均正常，也不能直接等同于整合包稳定率或完整兼容率**。世界加载、服务端运行、网络通信、渲染功能、模组专属功能以及不同加载器模组混合运行仍需要进一步测试。
 # 后记
 
 ## 2026/10/08 实验与中断记录
@@ -334,3 +383,11 @@ harness 已增加断点恢复、文件替换重试、锁定时的持久化 fallb
 ## 2026/10/09 第三阶段结果与剩余异常
 
 已完成的 34 个样本中，29 个主菜单通过、5 个失败。五个失败的首个致命异常及 cause 链已记录，分为动态 Mixin（1）、仍缺完整 ae2wtlib（1）和当前 Sodium 输入缺平台实现类（3）；日志、崩溃报告、精简审计与包体核对独立保存。29 个 PASS 的审计和探针再次核验。未启动新测试。
+
+## 2026/10/09 第四阶段准备
+
+已补入完整 Sodium 0.8.13 与 AE2WTLib 19.2.5，并记录第三阶段 Sodium 输入误用缓存子包的原因。新清单为 4 个目标，依赖预检均 READY，7 项静态类检查通过；目标及运行文件哈希与第三阶段一致。实际 admission/menu 尚未启动，结果待用户执行后填写。
+
+## 2026/10/09 第四阶段结果与最终主界面通过率
+
+第四阶段 4 个目标全部通过 dependencies、admission 与 menu，已核对原始审计及退出码。按 1136 个原始样本逐项合并最新结果，得到 1085 PASS、32 FAIL、19 INPUT_ERROR、0 TIMEOUT。最终有效输入主界面通过率 97.14%（1085/1117），全样本比例 95.51%（1085/1136）；原阶段结果保留，新增最终汇总快照。本次只记录和核验，未启动新的实验。
