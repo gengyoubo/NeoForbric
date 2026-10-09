@@ -1,3 +1,5 @@
+[English version](ItemReport.en.md) | 中文
+
 # 题目
 关于三端加载器是否能成立，并且能正常稳定运行大部分模组和整合包
 # 许可与使用

@@ -267,3 +267,155 @@ Audits for all 11 PASS cases were reread and checked for SUCCESS, main-menu, cli
 Of the 19 INPUT_ERROR cases, 8 lacked an available client descriptor for the current profile, 9 had missing or version-incompatible required dependencies, 1 had a Java version requirement, and 1 had a Minecraft version requirement. There were no game-stage logs. Inputs must be corrected before valid client testing.
 
 Actual exceptions, log line numbers, confidence levels, and follow-up actions for every failed target are recorded in the [individual Stage 2 log analysis](benchmark/abnormal-log-analysis-2026-10-09.md), with machine-readable data in the [results and analysis snapshot](benchmark/abnormal-log-analysis-2026-10-09.json). Original logs, crash reports, and concise audit evidence were separately archived in benchmark/abnormal-log-analysis-2026-10-09-evidence/, retaining their original SHA-256 hashes without duplicating entire large audits. This update only analyzed and recorded data; it did not launch a new experiment or delete material.
+
+## Stage 3: Retesting
+
+Stage 2 log analysis identified **34 samples** with missing runtime dependencies in their inputs, omitted dependency declarations, or selected library versions lacking required APIs. Actual runtime dependencies were added or corrected for these 34 samples in preparation for further testing. The number 34 refers to target samples, not 34 distinct dependency JARs.
+
+### Preparation and Verification
+
+Stage 3 retained the original target JARs, case_id values, and profiles. Its case list contained **16 Fabric and 18 NeoForge** samples. Dependencies were explicitly specified through the CSV's dependencies field, with their declared required dependencies resolved recursively. Other Stage 2 failures, the 19 input errors, and the 11 recovered passes were not included in this batch.
+
+The new dependency pool, benchmark/dependencies/stage3/, retained **17 JARs**: 12 restored from the local cache named by SHA-256 and recorded at preparation as original archives, and 5 downloaded from release files with published hashes verified. Previously retained dependencies were also reused. Original target files were not rewritten. The main additions were Fabric API, GeckoLib, Bundle API, Sodium, ResourcefulLib, Titanium, EMF, ExtendedAE/Glodium, Immersive Engineering, Mekanism, Cloth Config, Architectury, MidnightLib, Silent Lib, Ranged Weapon API, and the Kotlin standard library.
+
+For Supplementaries, Moonlight 3.6.3 was replaced with 2.17.16, which included its required BoolConfigValue. CreeperOverhaul was pinned to the NeoForge version of ResourcefulConfig. Iris 1.8.0 was pinned to Sodium 0.6.0, while Iris 1.8.14 and related samples were pinned to Sodium 0.8.13. The Aether-related case additionally received the actual owo-lib to prevent an early downloader exit from a newly added dependency.
+
+Observable itself used javafml, and no references to symbols exclusive to Kotlin for Forge were found in its original JAR. The retained Fabric Language Kotlin package's Kotlin 2.4.20 standard library was explicitly added, and the presence of the missing EnumEntriesKt was verified. This was an NF input combining dependencies from different ecosystems; language services and runtime behavior remained subject to actual retesting.
+
+Read-only dependency planning produced **34 READY and 0 INPUT_ERROR** cases. Inspection of each newly selected JAR and its nested libraries found all **36 checks**: 33 previously reported missing classes plus representative classes for REI's three dependencies. This established only dependency-closure completeness and class presence, not full ABI, Mixin, lifecycle, or main-menu behavior. All shared runtime file hashes matched those saved for Stage 2; NF was not rebuilt.
+
+### Launch Command for This Batch (Completed)
+
+Testing remained serial, with a 4 GiB heap and 300 seconds per stage, executing admission and menu while retaining logs, crash reports, and audits. This was a new batch launched with the following command:
+
+```powershell
+Set-Location 'C:\Users\gengy\Desktop\NeoForbric'
+python tools/benchmark_mods.py --runtime build/benchmark/runtime.json --cases benchmark/stage3-retest.csv --mod-pool benchmark/mods --mod-pool benchmark/dependencies/abnormal-retest --mod-pool benchmark/dependencies/stage3 --output build/benchmark/stage3-runs --stages admission,menu --timeout 300 --heap 4g --discard-mod-copies --min-free-mib 1024
+```
+
+Output was saved under build/benchmark/stage3-runs/. Each sample and stage used an independent JVM/runDir. Stage failures retained evidence and allowed testing to continue to the next sample; COMPLETE did not mean every sample passed. If interrupted, use --resume with the actual batch directory printed by the terminal, rather than resuming Stage 2's old results.
+
+### Stage 3 Results
+
+Batch `20261008T235419Z-06dd7cbd` reached COMPLETE with 102 stage-result records. All 34 samples passed dependencies and admission. menu produced **29 PASS and 5 FAIL, with no timeouts, input errors, or skips**. **29/34 = 85.29%** was the main-menu pass rate for this group of samples whose runtime dependencies had previously been incomplete. Original audits for the 29 passes were rechecked for SUCCESS, main-menu, client-complete, and exit code 0.
+
+| case_id | menu duration in this run | Primary blocking issue |
+| --- | ---: | --- |
+| mod0032-aether_enhanced_extinguishing-1.21.1-1.0.0-fabric | 6.718 seconds | Dynamically generated me.shedaniel.gen.mixin.MassExport_1 was not visible during Mixin PREPARE. |
+| mod0204-colorwheel-neoforge-1.3.0-beta3-mc1.21.1 | 11.225 seconds | The selected Sodium 0.8.13 lacked the NativeWindowHandle platform class, causing Window definition to fail. |
+| mod0357-expandedae-2.1.3 | 22.737 seconds | AE2wtlibItems from the complete ae2wtlib was still absent; the embedded API did not contain this implementation. |
+| mod0538-iris-neoforge-1.8.14-beta.1-mc1.21.1 | 11.233 seconds | Shared the same missing Sodium platform class as Colorwheel. |
+| mod0539-IrisSearch-1.8.1-neoforge | 11.314 seconds | Depended on the same Iris/Sodium combination; its own functionality had not yet been tested. |
+
+The five remaining failures fell into three groups: **one invisible dynamic Mixin class, one still missing the complete ae2wtlib, and three sharing a missing Sodium platform implementation class**. The Aether-related sample's earlier missing DeferredRegister class was resolved; the current blocker was mm_shedaniel's dynamically generated MassExport_1 being invisible during PREPARE. Logs showed that MM had started, so generated-class registration and bytecode-query timing needed investigation. Expanded AE's earlier missing EAEConfig was supplied, but a deferred task then referenced AE2wtlibItems. Only ae2wtlib_api was present, without the complete item implementation.
+
+Colorwheel, Iris 1.8.14, and IrisSearch all lacked NativeWindowHandle while defining Minecraft Window. Read-only inspection confirmed that WindowMixin in the Sodium 0.8.13 JAR selected for Stage 3 referenced this class, but neither the root archive nor nested content provided it, and the file contained no embedded service JAR. The service JARs in 0.6.0 and the local 0.6.13 did contain the class. Checking only the previously reported VertexSerializer had not revealed this subsequent type requirement; a complete Sodium platform implementation still needed to be matched. INSTANCE_TAINTED was a cascading state after the first definition failure. The evidence at this point applied to the selected file and combination, rather than confirming three independent NF defects or a problem in every Sodium release archive of the same version.
+
+Stage 1 had saved a standalone Sodium 0.8.13 target as PASS, whereas the current cases used an Iris combination. Historical results were retained unchanged, with companion packages and specific loading paths requiring comparison. Detailed evidence, log line numbers, and next steps are in the [analysis of remaining Stage 3 failures](benchmark/stage3-results-analysis-2026-10-09.md) and the [batch results snapshot](benchmark/stage3-results-analysis-2026-10-09.json). That update only analyzed and archived results; it did not change code or launch retests.
+
+See the [Stage 3 case list](benchmark/stage3-retest.csv), [preparation record](benchmark/stage3-plan-2026-10-09.md), [dependency sources and hashes](benchmark/stage3-dependency-acquisition-2026-10-09.json), [input changes](benchmark/stage3-input-changes-2026-10-09.json), [dependency preflight](benchmark/stage3-preflight-2026-10-09.json), and [missing-class verification](benchmark/stage3-class-verification-2026-10-09.json) for individual dependency changes and their sources.
+
+## Stage 4: Retesting
+
+Of the 34 samples in Stage 3, five had menu FAIL results, including four with incomplete runtime-dependency inputs. After completing those inputs, the four samples were assigned to a separate retest batch. The dynamic Mixin issue in the other Aether extension sample remained under separate investigation.
+
+### Dependency Additions and Verification
+
+| Number | Target mod | Change in this stage |
+| --- | --- | --- |
+| 0204 | Colorwheel 1.3.0-beta3 | Replaced the cached Sodium 0.8.13 child archive with the complete official release of the same version; retained Iris 1.8.14-beta.1. |
+| 0357 | Expanded AE 2.1.3 | Added complete AE2WTLib 19.2.5; retained AE2 19.2.17, GuideMe 21.1.19, ExtendedAE 2.2.38, and Glodium 2.2. |
+| 0538 | Iris 1.8.14-beta.1 | Used the complete Sodium 0.8.13 release archive. |
+| 0539 | IrisSearch 1.8.1 | Retained Iris 1.8.14-beta.1 and used the complete Sodium 0.8.13 release archive. |
+
+**The Sodium cause was confirmed: Stage 3 preparation had mistaken an extracted cached runtime child JAR for the complete release archive.** Its SHA-256 matched the `*-mod.jar` inside the complete official download exactly; the missing NativeWindowHandle was located at the root of the official outer archive. Stage 4 replaced it with the complete release, still version 0.8.13, without patching in classes extracted from older versions. The three Stage 3 FAIL records were retained unchanged. Their specific blocker came from an input-preparation error and cannot count as three independent NF compatibility defects.
+
+AE2WTLib 19.2.5 contained the missing AE2wtlibItems. Its required AE2 range was `[19.2.13,20.0.0)`, matching the existing AE2 19.2.17. Its API requirement was fixed at 19.2.5, matching the target's embedded version.
+
+Published hashes were verified for both official release JARs. Recursive dependency preflight was **READY** for all four samples. All seven missing-class/representative-class checks passed on the actual selected inputs, and target JAR and shared runtime file hashes matched Stage 3. These were input and static checks at preparation time, not evidence that the actual main menu had passed.
+
+### Launch Command (Completed)
+
+The user ran this batch serially through admission and menu, with a maximum of 300 seconds per stage and a 4 GiB heap. The existing runtime launched JVMs directly, retaining logs, crash reports, and audits.
+
+```powershell
+Set-Location 'C:\Users\gengy\Desktop\NeoForbric'
+python tools/benchmark_mods.py --runtime build/benchmark/runtime.json --cases benchmark/stage4-retest.csv --mod-pool benchmark/mods --mod-pool benchmark/dependencies/abnormal-retest --mod-pool benchmark/dependencies/stage3 --mod-pool benchmark/dependencies/stage4 --output build/benchmark/stage4-runs --stages admission,menu --timeout 300 --heap 4g --discard-mod-copies --min-free-mib 1024
+```
+
+Output was saved in a new batch under `build/benchmark/stage4-runs/`. Because inputs changed, a new batch was required. Subsequent interruptions can be resumed using `--resume` with this batch's output directory.
+
+### Stage 4 Results
+
+Batch `20261009T002509Z-1a402572` reached COMPLETE with 12 stage-result records: four dependencies PASS, four admission PASS, and four menu PASS. **The main-menu pass rate for this stage was 100% (4/4)**, with no failures, timeouts, input errors, or skips. All four main-menu passes were verified against original audits for SUCCESS, main-menu, client-complete, and exit code 0.
+
+| Number | Target mod | dependencies | admission | menu | admission duration | menu duration |
+| --- | --- | --- | --- | --- | ---: | ---: |
+| 0204 | Colorwheel | PASS | PASS | PASS | 4.546 seconds | 20.091 seconds |
+| 0357 | Expanded AE | PASS | PASS | PASS | 4.765 seconds | 21.574 seconds |
+| 0538 | Iris 1.8.14-beta.1 | PASS | PASS | PASS | 4.502 seconds | 19.996 seconds |
+| 0539 | IrisSearch | PASS | PASS | PASS | 4.474 seconds | 19.935 seconds |
+
+All four samples completed the main-menu stage after their dependencies were supplied in full. These results support the earlier diagnosis of incomplete runtime inputs; Stage 3's failure records were retained. [Stage 4 results and audit verification](benchmark/stage4-results-2026-10-09.json).
+
+Case list and records: [Stage 4 case list](benchmark/stage4-retest.csv), [preparation record](benchmark/stage4-plan-2026-10-09.md), [official sources and hashes](benchmark/stage4-dependency-acquisition-2026-10-09.json), [input changes](benchmark/stage4-input-changes-2026-10-09.json), [recursive dependency preflight](benchmark/stage4-preflight-2026-10-09.json), [class verification on actual inputs](benchmark/stage4-class-verification-2026-10-09.json), [proof of Sodium child-archive provenance](benchmark/stage4-sodium-package-proof-2026-10-09.json), and [shared runtime file verification](benchmark/stage4-runtime-baseline-2026-10-09.json).
+
+# Conclusion
+
+Of the 1136 test samples, 1117 entered the valid testing scope after excluding 19 INPUT_ERROR cases. Of these, 1085 successfully reached the main menu, giving a main-menu pass rate of **97.14%**.
+
+The remaining failures were not all attributable to NeoForbric itself. Main causes included mods incompletely declaring their actual runtime dependencies, dependency-version or platform-implementation mismatches, incorrect loader profile selection, unmet Java version requirements, early downloader exits, legacy shaded libraries or unusual packaging structures, invisible dynamically generated Mixin classes, and a small number of lifecycle, class-index, or runtime compatibility issues still requiring confirmation.
+
+After Stage 2 and Stage 3 retesting and dependency corrections, many samples that had failed in Stage 1 could reach the main menu normally. This shows that Stage 1 FAIL, TIMEOUT, or missing-class errors cannot directly be equated with NeoForbric compatibility defects.
+
+This experiment therefore indicates that, in Minecraft 1.21.1, NeoForbric achieved a high level of compatibility for the 1136 mod samples collected from several real modpacks, specifically at the level of an individual mod and its required dependencies completing loading and reaching the main menu.
+
+**97.14% represents only the main-menu pass rate. It does not establish that all mod features work, and cannot directly be equated with modpack stability or complete compatibility.** World loading, server operation, networking, rendering features, mod-specific functionality, and combinations of mods from different loader ecosystems still require further testing.
+
+# Postscript
+
+## 2026/10/08 Experiment and Interruption Record
+
+| Time (Asia/Tokyo) | Record |
+| --- | --- |
+| Batch started at 01:09 | The first 44 samples completed both stages. Sample 45 passed admission, but replacing the results file encountered WinError 5, delaying the summary write. |
+| Resumed at 07:41 | Recovered sample 45's admission result and completed through sample 67. Execution then stopped because free space fell below the 1 GiB reserve, with status STOPPED_LOW_DISK. |
+| Resumed again at 09:00 | Completed through sample 501; sample 502's admission was interrupted. 18:33:12 was the status-file write time, not the exact process exit time. |
+
+The harness added resumption, file-replacement retries, a persistent fallback for file locking, and a mutually exclusive batch lock. The relevant 26 tests passed. Historical details are in the [experiment interruption record](benchmark/experiment-interruption-2026-10-08.md).
+
+## 2026/10/08 Cleanup of Passed Samples
+
+At the user's request, **453 target JARs** with menu PASS among samples 1–500 were removed from `benchmark/mods`: 405 were deleted directly, while 48 still required by retained samples were moved to `benchmark/dependencies/retained-passed-1-500/` and hash-verified. Actual deletions freed approximately 868.29 MiB.
+
+The directory retained **683 JARs**: 47 failed, timed-out, or input-error samples from the first 500, plus 636 samples numbered 501–1136. The remaining file count was not the failure count. Passed sample 501 remained because it was outside the cleanup range. Cleanup did not change the historical results above.
+
+Individual actions are in the [cleanup record](benchmark/cleanup-passed-1-500-2026-10-08.md) and [deletion and move list](benchmark/cleanup-passed-1-500-2026-10-08.json). Subsequent new batches can use the [remaining sample list](benchmark/experiment-remaining-after-1-500.csv) together with the retained dependency pool. The original batch's strict `--resume` still referenced paths that had been deleted or moved, so it could not be resumed directly after cleanup. Restoring this report did not launch an experiment.
+
+## 2026/10/09 Recording Stage 1 Results
+
+The second resumed batch for samples 501–1136 completed with final status COMPLETE. Its latest results for 636 samples were merged with the earlier 500 samples numbered 1–500, excluding the duplicated sample 501 in the old snapshot, to produce Stage 1 statistics for all 1136 samples. The latest conclusions and complete abnormal-case lists were saved in the [complete Stage 1 record](benchmark/experiment-stage1-final-2026-10-09.md) and its JSON snapshot, with a separate backup of the main report. This update only recorded results; it did not launch new experiments or delete logs.
+
+## 2026/10/09 Stage 2 Preparation
+
+Normal targets were cleaned up, retaining 95 abnormal samples and 29 required dependencies separately. Incomplete initial dependency information caused cleanup to omit two dependencies required by archers. They were restored from the original release versions and checked against the original SHA-256 hashes. Repeated preflight produced 76 READY and 19 INPUT_ERROR cases, matching Stage 1's abnormal-input list. Individual actions are in the [normal Stage 1 sample cleanup list](benchmark/cleanup-normal-stage1-2026-10-09.json). The Stage 2 list and plan were generated; actual retest results were to be recorded after the user's run.
+
+## 2026/10/09 Stage 2 Results and Log Analysis
+
+All 285 batch-result records were checked. The first fatal exception was traced individually for 65 stage failures, and 19 input errors were listed separately. Final audits and probes for the 11 retest passes were reverified successfully. Logs, crash reports, concise audits, JAR metadata and packaging checks, and result snapshots were independently archived. No new experiment was launched and no files were deleted.
+
+## 2026/10/09 Stage 3 Preparation
+
+A new case list was created for the 34 samples with incomplete runtime dependencies, explicitly adding or matching dependencies. All 34 passive dependency plans were READY, and all 36 missing-class/dependency representative-class checks found matches in the actual selected inputs. Shared runtime files matched Stage 2's hashes. Sources, versions, and SHA-256 hashes were saved, and a launch command for a new batch was supplied. Actual admission/menu results were to be filled in after execution.
+
+## 2026/10/09 Stage 3 Results and Remaining Failures
+
+Of the 34 completed samples, 29 passed the main menu and five failed. The first fatal exception and cause chain for each failure were recorded, grouped as dynamic Mixin (1), still missing the complete ae2wtlib (1), and the current Sodium input lacking platform implementation classes (3). Logs, crash reports, concise audits, and archive checks were saved independently. Audits and probes for the 29 passes were reverified. No new test was launched during this analysis.
+
+## 2026/10/09 Stage 4 Preparation
+
+Complete Sodium 0.8.13 and AE2WTLib 19.2.5 were supplied, and Stage 3's mistaken use of a cached Sodium child archive was documented. The new list contained four targets, all with READY dependency preflight and seven passing static class checks. Target and runtime hashes matched Stage 3. Actual admission/menu testing had not yet started at preparation time; results were to be filled in after the user's run.
+
+## 2026/10/09 Stage 4 Results and Final Main-Menu Pass Rate
+
+All four Stage 4 targets passed dependencies, admission, and menu. Original audits and exit codes were checked. Merging the latest result for each of the 1136 original samples produced 1085 PASS, 32 FAIL, 19 INPUT_ERROR, and 0 TIMEOUT. The final main-menu pass rate for valid inputs was 97.14% (1085/1117), and the proportion across all samples was 95.51% (1085/1136). Original stage results were retained, and a final summary snapshot was added. This update only recorded and verified results; it did not launch a new experiment.
