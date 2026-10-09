@@ -240,6 +240,55 @@ ConnectorExtras 的 relocated class entry 与 internal name 不一致，已在�
 
 每一个失败目标的实际异常、日志行号、确认程度与后续处理均已写入 [第二阶段逐项日志分析](benchmark/abnormal-log-analysis-2026-10-09.md)，机器可读数据见 [结果与分析快照](benchmark/abnormal-log-analysis-2026-10-09.json)。原始日志、崩溃报告和精简审计证据另存于 benchmark/abnormal-log-analysis-2026-10-09-evidence/，保留原 SHA-256，不重复复制整份大审计。本次只分析和记录，没有启动新实验或删除资料。
 
+## 第三阶段：再测试
+
+根据第二阶段日志分析，**34 个样本**存在运行前置未加入、前置声明遗漏或选定库版本缺少所需 API 的问题。已为这 34 个样本补齐或校正真实运行前置，准备继续测试。34 是目标样本数，不代表 34 个不同前置 JAR。
+
+### 准备与验证
+
+第三阶段沿用原目标 JAR、case_id 与 profile，清单包含 **16 个 Fabric、18 个 NeoForge** 样本。前置通过 CSV 的 dependencies 显式指定，递归补齐其声明的必需依赖。第二阶段的其他失败、19 个输入错误和 11 个恢复通过样本不进入本批次。
+
+新增依赖池 benchmark/dependencies/stage3/ 保留 **17 个 JAR**：12 个从本地 SHA-256 命名的原始缓存恢复、5 个从发布文件下载并核对发布哈希；同时复用先前保留的前置。原始目标文件未改写。主要补充 Fabric API、GeckoLib、Bundle API、Sodium、ResourcefulLib、Titanium、EMF、ExtendedAE/Glodium、Immersive Engineering、Mekanism、Cloth Config、Architectury、MidnightLib、Silent Lib、Ranged Weapon API 和 Kotlin 标准库。
+
+对 Supplementaries，将 Moonlight 3.6.3 替换为含其所需 BoolConfigValue 的 2.17.16；对 CreeperOverhaul，固定 NeoForge 版 ResourcefulConfig；Iris 1.8.0 固定 Sodium 0.6.0，Iris 1.8.14 及关联样本固定 Sodium 0.8.13。Aether 关联 case 额外补齐真正 owo-lib，避免新增前置的下载器提前退出。
+
+Observable 本身使用 javafml，原 JAR 未发现 Kotlin for Forge 专属符号引用。本次显式加入保留的 Fabric Language Kotlin 所带 Kotlin 2.4.20 标准库，验证其缺失的 EnumEntriesKt 存在；这是 NF 的混合依赖输入，语言服务与运行表现仍由实际重测判断。
+
+只读依赖规划结果为 **34 READY、0 INPUT_ERROR**；逐个检查新选中 JAR 及嵌套库，之前报缺的 33 项类与 REI 三项前置的代表类共 **36 项均存在**。这只证明输入闭包与类存在性，尚未验证完整 ABI、Mixin、生命周期或主菜单。共享运行文件与第二阶段保存的哈希全部一致，没有重新构建 NF。
+
+### 本轮启动命令（已完成）
+
+保持串行、4 GiB 堆、每阶段 300 秒，执行 admission 和 menu，保留日志、崩溃报告及审计。这是新批次，使用下列命令启动：
+
+```powershell
+Set-Location 'C:\Users\gengy\Desktop\NeoForbric'
+python tools/benchmark_mods.py --runtime build/benchmark/runtime.json --cases benchmark/stage3-retest.csv --mod-pool benchmark/mods --mod-pool benchmark/dependencies/abnormal-retest --mod-pool benchmark/dependencies/stage3 --output build/benchmark/stage3-runs --stages admission,menu --timeout 300 --heap 4g --discard-mod-copies --min-free-mib 1024
+```
+
+本批次输出位于 build/benchmark/stage3-runs/，每个样本与阶段使用独立 JVM/runDir。阶段失败会保留证据并继续下一个；执行结束为 COMPLETE 也不表示全部通过。若中断，按终端输出的实际批次目录使用 --resume，而不是续跑第二阶段的旧结果。
+
+### 第三阶段结果
+
+批次 `20261008T235419Z-06dd7cbd` 已 COMPLETE，共 102 条阶段结果。全部 34 个样本 dependencies 和 admission PASS；menu **29 PASS、5 FAIL，无超时、输入错误或跳过**。29/34 = **85.29%**，是这一组原先运行前置不完整样本在补齐后的主菜单通过比例。29 个 PASS 的原始审计已重新核对 SUCCESS、main-menu、client-complete 和退出码 0。
+
+| case_id | 本次 menu 耗时 | 首要阻断 |
+| --- | ---: | --- |
+| mod0032-aether_enhanced_extinguishing-1.21.1-1.0.0-fabric | 6.718 秒 | 动态生成的 me.shedaniel.gen.mixin.MassExport_1 在 Mixin PREPARE 不可见。 |
+| mod0204-colorwheel-neoforge-1.3.0-beta3-mc1.21.1 | 11.225 秒 | 所选 Sodium 0.8.13 缺 NativeWindowHandle 平台类，Window 定义失败。 |
+| mod0357-expandedae-2.1.3 | 22.737 秒 | 仍缺完整 ae2wtlib 中的 AE2wtlibItems，内嵌 API 不包含该实现。 |
+| mod0538-iris-neoforge-1.8.14-beta.1-mc1.21.1 | 11.233 秒 | 与 Colorwheel 共用同一 Sodium 平台类缺失。 |
+| mod0539-IrisSearch-1.8.1-neoforge | 11.314 秒 | 依赖同一 Iris/Sodium 组合，尚未进入自身功能测试。 |
+
+
+剩余 5 个对应三组问题：**1 个动态 Mixin 类不可见、1 个仍缺完整 ae2wtlib、3 个共同缺 Sodium 平台实现类**。Aether 关联样本的旧 DeferredRegister 缺类已消失，当前阻断为 mm_shedaniel 动态生成的 MassExport_1 在 PREPARE 不可见；日志显示 MM 已启动，需要核对生成类注册/字节码查询时序。Expanded AE 的旧 EAEConfig 已补齐，但延迟任务又引用 AE2wtlibItems；当前只有 ae2wtlib_api，尚无完整物品实现。
+
+Colorwheel、Iris 1.8.14 和 IrisSearch 共同在定义 Minecraft Window 时缺 NativeWindowHandle。只读检查确认，我为第三阶段选入的 Sodium 0.8.13 JAR 中 WindowMixin 自己引用此类，但根目录和嵌套内容均未提供该类，文件也没有内嵌 service JAR；0.6.0 和本地 0.6.13 的 service JAR 则含该类。先前只核对已报缺的 VertexSerializer 不足以发现这一后续类型需求，需进一步匹配完整 Sodium 平台实现。INSTANCE_TAINTED 是首次定义失败后的连锁状态。当前证据针对所选文件和组合，不代表已经确认三个独立 NF 缺陷，或所有同版本 Sodium 发布包都存在问题。
+
+第一阶段曾保存 Sodium 0.8.13 单目标 PASS，当前则是 Iris 组合；保持历史结果原值，后续应对照配套包与具体加载路径。详细证据、日志行号和处理方向见 [第三阶段剩余异常分析](benchmark/stage3-results-analysis-2026-10-09.md)及[本批次结果快照](benchmark/stage3-results-analysis-2026-10-09.json)。本次只分析、存档，未修改代码或启动重测。
+
+清单见 [第三阶段样本清单](benchmark/stage3-retest.csv)，逐项前置变化与来源见 [第三阶段准备记录](benchmark/stage3-plan-2026-10-09.md)、[前置来源及哈希](benchmark/stage3-dependency-acquisition-2026-10-09.json)、[输入变化](benchmark/stage3-input-changes-2026-10-09.json)、[依赖预检](benchmark/stage3-preflight-2026-10-09.json)和[缺失类核对](benchmark/stage3-class-verification-2026-10-09.json)。
+
+
 # 结论
 
 第一阶段已完成全部 1136 个样本的判定：**1041 个主菜单通过、64 个阶段失败、12 个超时、19 个输入错误**。排除输入错误后，主菜单通过比例为 **93.20%**。通过结果对应目标模组及其选定必需依赖组合能够完成主菜单阶段。第二阶段重测 95 个异常目标，得到 11 个通过、65 个失败、19 个输入错误、0 个超时；逐项日志分析已确认多项失败来自运行前置未入输入、加载器选择或下载器提前退出，65 个失败目标不能直接等同于 65 个 NF 缺陷。
@@ -277,3 +326,11 @@ harness 已增加断点恢复、文件替换重试、锁定时的持久化 fallb
 ## 2026/10/09 第二阶段结果与日志分析
 
 已核对批次全部 285 条结果，对 65 个阶段失败逐项追踪首个致命异常，并单列 19 个输入错误。11 个重测 PASS 的最终审计和探针重新核验通过。日志、崩溃报告、精简审计、JAR 元数据与打包核对及结果快照已独立存档；没有启动新实验或删除文件。
+
+## 2026/10/09 第三阶段准备
+
+已为 34 个运行前置不完整样本建立新清单，显式补齐/匹配前置。34 个被动依赖规划均 READY，36 项缺失类/前置代表类均在实际选中输入中找到；共享运行文件与第二阶段哈希一致。已保存来源、版本与 SHA-256，并给出新批次启动命令，实际 admission/menu 结果待运行后填写。
+
+## 2026/10/09 第三阶段结果与剩余异常
+
+已完成的 34 个样本中，29 个主菜单通过、5 个失败。五个失败的首个致命异常及 cause 链已记录，分为动态 Mixin（1）、仍缺完整 ae2wtlib（1）和当前 Sodium 输入缺平台实现类（3）；日志、崩溃报告、精简审计与包体核对独立保存。29 个 PASS 的审计和探针再次核验。未启动新测试。
